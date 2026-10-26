@@ -62,7 +62,10 @@
     var banner = $("banner"), cls = "info", html;
     if (z) {
       var mine = z.changes.length;
-      if (!z.ocr_ok) {
+      if (z.po_raspisaniyu) {
+        cls = "ok";
+        html = "<strong>Замен нет</strong>На сайте техникума: занятия по расписанию.";
+      } else if (!z.ocr_ok) {
         cls = "warn";
         html = "<strong>Замены опубликованы, но таблицу распознать не удалось</strong>Посмотрите картинку ниже.";
       } else if (mine) {

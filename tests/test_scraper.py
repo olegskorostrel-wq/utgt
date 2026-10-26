@@ -96,3 +96,32 @@ def test_process_block_writes_json_and_skips_unchanged(tmp_path):
     assert json.loads((tmp_path / "index.json").read_text(encoding="utf-8"))["days"] == ["2026-10-24"]
     scraper.write_index(tmp_path, today=dt.date(2026, 12, 1))  # старше 21 дня — удаляется
     assert not (tmp_path / "2026-10-24.json").exists()
+
+
+def test_parse_page_po_raspisaniyu():
+    html = """<div class="com-content-article__body">
+    <p><strong>Изменение в расписании занятий</strong></p><p><strong>на 28 октября 2026 года</strong></p>
+    <p>очное отделение</p><p>по расписанию</p>
+    <p><strong>на 28 октября 2026 года</strong></p><p>заочное отделение</p><p><img src="/images/28.10_26Z.png"></p>
+    </div>"""
+    blocks = scraper.parse_page(html)
+    assert blocks == [
+        {"date": "2026-10-28", "section": "ochnoe", "images": []},
+        {"date": "2026-10-28", "section": "zaochnoe", "images": ["https://utgt-pgups.ru/images/28.10_26Z.png"]},
+    ]
+
+
+def test_process_block_po_raspisaniyu(tmp_path):
+    block = {"date": "2026-10-28", "section": "ochnoe", "images": []}
+    assert scraper.process_block(block, None, scraper.subject_vocab(), tmp_path, lambda *_: None)
+    meta = json.loads((tmp_path / "2026-10-28.json").read_text(encoding="utf-8"))
+    assert meta["po_raspisaniyu"] and meta["ocr_ok"] and meta["changes"] == []
+
+
+def test_today_agenda_applies_changes(capsys):
+    import today_agenda
+    today_agenda.main(["2026-10-24"])
+    out = capsys.readouterr().out
+    assert "09:00-10:30  Математика (1-8)  [замена]" in out
+    assert "10:40-12:10  Обществознание (Дятчина Н.И., 2-10)" in out
+    assert "14:30-16:00  Биология (2-7)  [замена]" in out

@@ -36,11 +36,15 @@ sudo apt install tesseract-ocr tesseract-ocr-rus
 pip install -r requirements.txt
 python scraper.py                  # проверить сайт и обновить data/zameny
 python scraper.py --ocr картинка.png   # распознать одну картинку
+python today_agenda.py             # расписание на сегодня в консоли (или: today_agenda.py 2026-10-24)
 python build_site.py && python -m http.server -d _site 8000
 python -m pytest tests -q && node --test tests/agenda.test.js
 ```
 
 Посмотреть любой день: `index.html?date=2026-10-24`.
+
+Данные расписания и звонков совпадают с присланными `schedule_11A.json` / `bells.json`
+(проверено программно), формат приведён к одному для сайта и консоли.
 
 ## Когда начнётся новый семестр
 

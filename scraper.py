@@ -87,6 +87,10 @@ def parse_page(html, base_url=URL):
             section = "zaochnoe"
         elif "очн" in text:
             section = "ochnoe"
+        if "по расписанию" in text and date and section:
+            # вместо картинки написано «по расписанию» — замен в этот день нет
+            if not blocks or (blocks[-1]["date"], blocks[-1]["section"]) != (date, section):
+                blocks.append({"date": date, "section": section, "images": []})
     return blocks
 
 
@@ -269,6 +273,7 @@ def process_block(block, session, vocab, out_dir=OUT_DIR, log=print):
         "fetched_at": dt.datetime.now(TZ).isoformat(timespec="minutes"),
         "images": images,
         "title": next((t["title"] for t in tables if t.get("title")), ""),
+        "po_raspisaniyu": not images,
         "ocr_ok": all(t["ok"] for t in tables),
         "ocr_uncertain": any(t.get("uncertain_course1") for t in tables) or any(c["uncertain"] for c in changes),
         "groups_in_order": sorted({r["group"] for t in tables for r in t["rows"] if r["group"]}),
