@@ -7,6 +7,7 @@
 """
 import datetime as dt
 import json
+import re
 import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -34,11 +35,26 @@ def lesson_time(bells, weekday, n):
     return fmt(to_min(end) - bells["lesson_minutes"]), end
 
 
+def week_number(date, schedule, zamena):
+    """1 или 2. Номер из распоряжения о замене («2-я неделя») важнее расчёта от опорной даты."""
+    m = re.search(r"([12])\s*-?\s*я\s+недел", (zamena or {}).get("title", ""), re.I)
+    if m:
+        return int(m.group(1))
+    anchor = schedule.get("week_anchor")
+    if not anchor:
+        return 1
+    weeks = (date - dt.date.fromisoformat(anchor["date"])).days // 7
+    return anchor["week"] if weeks % 2 == 0 else 3 - anchor["week"]
+
+
 def agenda(date, schedule, bells, zamena):
     """Список (уроки, начало, конец, предмет, преподаватель, кабинет, пометка)."""
     wd = date.isoweekday()
     by_lesson = {}
+    week = week_number(date, schedule, zamena)
     for i, b in enumerate(schedule["days"].get(str(wd), [])):
+        if b.get("week", week) != week:
+            continue
         for n in b["lessons"]:
             by_lesson[n] = (f"b{i}", b["subject"], b["teacher"], b["room"], "")
     for i, c in enumerate((zamena or {}).get("changes", [])):
@@ -74,7 +90,8 @@ def main(argv):
     zpath = DATA / "zameny" / f"{date}.json"
     zamena = load(zpath) if zpath.exists() else None
 
-    print(f"Расписание {schedule['group']} на {date:%d.%m.%Y} ({WEEKDAYS[date.weekday()]})")
+    print(f"Расписание {schedule['group']} на {date:%d.%m.%Y} ({WEEKDAYS[date.weekday()]}, "
+          f"{week_number(date, schedule, zamena)}-я неделя)")
     if date.isoweekday() == 7:
         print("  Воскресенье — занятий нет.")
         return 0

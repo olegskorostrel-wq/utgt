@@ -19,11 +19,26 @@ test("понедельник 26.10 без замен", () => {
   ]);
 });
 
-test("пятница: пара из двух разных уроков делится по 45 минут", () => {
-  assert.deepStrictEqual(brief(A.build("2026-10-30", schedule, bells, null)).slice(2), [
-    "12:50-13:35 История 2-10",
-    "13:35-14:20 Литература 2-18",
-  ]);
+test("пятница, 3-я пара: 1-я неделя История, 2-я неделя Литература (на всю пару)", () => {
+  const w1 = A.build("2026-10-23", schedule, bells, null);
+  const w2 = A.build("2026-10-30", schedule, bells, null);
+  assert.deepStrictEqual([w1.week, w2.week], [1, 2]);
+  assert.deepStrictEqual(brief(w1).slice(2), ["12:50-14:20 История 2-10"]);
+  assert.deepStrictEqual(brief(w2).slice(2), ["12:50-14:20 Литература 2-18"]);
+});
+
+test("суббота, 3-я пара по неделям", () => {
+  assert.deepStrictEqual(brief(A.build("2026-10-31", schedule, bells, null)).slice(2), ["12:50-14:20 Физика 2-5"]);
+  assert.deepStrictEqual(brief(A.build("2026-11-07", schedule, bells, null)).slice(2), ["12:50-14:20 Математика 1-8"]);
+});
+
+test("номер недели: от опорной даты, через Новый год, и из распоряжения", () => {
+  const wk = (d, z) => A.weekNumber(d, schedule, z || null);
+  assert.deepStrictEqual(["2026-10-19", "2026-10-25", "2026-10-26", "2026-11-02", "2026-12-28", "2027-01-04"].map((d) => wk(d)),
+    [1, 1, 2, 1, 1, 2]);
+  assert.strictEqual(wk("2026-10-27", { title: "Вторник, 2-я неделя" }), 2);
+  assert.strictEqual(wk("2026-10-27", { title: "Вторник, 1-я неделя" }), 1); // распоряжение важнее расчёта
+  assert.strictEqual(wk("2026-10-27", { title: "" }), 2);
 });
 
 test("суббота 24.10 с реальными заменами", () => {

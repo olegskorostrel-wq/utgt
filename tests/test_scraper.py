@@ -125,3 +125,13 @@ def test_today_agenda_applies_changes(capsys):
     assert "09:00-10:30  Математика (1-8)  [замена]" in out
     assert "10:40-12:10  Обществознание (Дятчина Н.И., 2-10)" in out
     assert "14:30-16:00  Биология (2-7)  [замена]" in out
+
+
+def test_today_agenda_week_alternation(capsys):
+    import today_agenda
+    today_agenda.main(["2026-10-23"])
+    out = capsys.readouterr().out
+    assert "1-я неделя" in out and "12:50-14:20  История (Дятчина Н.И., 2-10)" in out and "Литература" not in out
+    today_agenda.main(["2026-10-30"])
+    out = capsys.readouterr().out
+    assert "2-я неделя" in out and "12:50-14:20  Литература (Изъюрова Н.М., 2-18)" in out and "История" not in out

@@ -54,6 +54,7 @@
 
   function draw(ag, z, date, now) {
     $("title").textContent = A.humanDate(date);
+    $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(+b.dataset.day === state.offset));
     });

@@ -49,11 +49,25 @@
     return n % 2 === 1 ? { start: s, end: s + len } : { start: e - len, end: e };
   }
 
-  // Возвращает { items: [...], cancelled: [...], changed: bool }
+  // Номер учебной недели (1 или 2). Если в распоряжении о замене написано
+  // «2-я неделя» — верим ему, иначе считаем от опорной даты из расписания.
+  function weekNumber(date, schedule, zamena) {
+    var m = zamena && zamena.title && zamena.title.match(/([12])\s*-?\s*я\s+недел/i);
+    if (m) return +m[1];
+    var a = schedule.week_anchor;
+    if (!a) return 1;
+    var days = Math.round((Date.parse(date) - Date.parse(a.date)) / 86400000);
+    var weeks = Math.floor(days / 7);
+    return ((((weeks % 2) + 2) % 2) === 0) ? a.week : 3 - a.week;
+  }
+
+  // Возвращает { items: [...], cancelled: [...], changed: bool, week: 1|2 }
   function build(date, schedule, bells, zamena) {
     var wd = isoWeekday(date);
+    var week = weekNumber(date, schedule, zamena);
     var byLesson = {};
     (schedule.days[String(wd)] || []).forEach(function (b, i) {
+      if (b.week && b.week !== week) return;
       b.lessons.forEach(function (n) {
         byLesson[n] = { subject: b.subject, teacher: b.teacher, room: b.room, block: "b" + i, changed: false };
       });
@@ -114,7 +128,7 @@
 
     // Отменённые уроки, которые потом заменили другим предметом, отменой не считаем
     cancelled = mergeCancelled(cancelled.filter(function (c) { return !byLesson[c.n]; }), bells, wd);
-    return { date: date, weekday: wd, items: items, cancelled: cancelled,
+    return { date: date, weekday: wd, week: week, items: items, cancelled: cancelled,
       changed: cancelled.length > 0 || items.some(function (i) { return i.changed; }) };
   }
 
@@ -157,7 +171,7 @@
       time: v.hour + ":" + v.minute };
   }
 
-  var api = { build: build, markNow: markNow, moscowNow: moscowNow, isoWeekday: isoWeekday,
+  var api = { build: build, weekNumber: weekNumber, markNow: markNow, moscowNow: moscowNow, isoWeekday: isoWeekday,
     addDays: addDays, humanDate: humanDate, lessonTime: lessonTime, CANCEL: CANCEL };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Agenda = api;
