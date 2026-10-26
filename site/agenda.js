@@ -1,0 +1,164 @@
+// Сборка расписания на конкретный день: базовое расписание + звонки + замены.
+// Работает и в браузере (window.Agenda), и в node (require) — для тестов.
+(function (root) {
+  "use strict";
+
+  var CANCEL = "Отменить";
+  var WEEKDAYS = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
+  var MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа",
+    "сентября", "октября", "ноября", "декабря"];
+
+  function toMin(hhmm) {
+    var p = hhmm.split(":");
+    return +p[0] * 60 + +p[1];
+  }
+
+  function fromMin(m) {
+    var h = Math.floor(m / 60), mm = m % 60;
+    return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm;
+  }
+
+  // "2026-10-26" -> 1..7 (1 = понедельник)
+  function isoWeekday(iso) {
+    var p = iso.split("-");
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+    return d === 0 ? 7 : d;
+  }
+
+  function addDays(iso, n) {
+    var p = iso.split("-");
+    return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10);
+  }
+
+  function humanDate(iso) {
+    var p = iso.split("-");
+    var wd = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+    return WEEKDAYS[wd] + ", " + +p[2] + " " + MONTHS[+p[1] - 1];
+  }
+
+  // Время урока: пара делится на два урока по lesson_minutes без перемены.
+  function lessonTime(bells, weekday, n) {
+    var day = weekday === 1 ? bells.monday : bells.other_days;
+    if (n === 0) {
+      var r = bells.monday.razgovory;
+      return { start: toMin(r[0]), end: toMin(r[1]) };
+    }
+    var pair = day.pairs[String(Math.ceil(n / 2))];
+    if (!pair) return null;
+    var s = toMin(pair[0]), e = toMin(pair[1]), len = bells.lesson_minutes;
+    return n % 2 === 1 ? { start: s, end: s + len } : { start: e - len, end: e };
+  }
+
+  // Возвращает { items: [...], cancelled: [...], changed: bool }
+  function build(date, schedule, bells, zamena) {
+    var wd = isoWeekday(date);
+    var byLesson = {};
+    (schedule.days[String(wd)] || []).forEach(function (b, i) {
+      b.lessons.forEach(function (n) {
+        byLesson[n] = { subject: b.subject, teacher: b.teacher, room: b.room, block: "b" + i, changed: false };
+      });
+    });
+
+    var cancelled = [], extra = [];
+    var changes = (zamena && zamena.changes) || [];
+    changes.forEach(function (c, i) {
+      if (!c.lessons.length) {
+        if (c.time && c.subject !== CANCEL) {
+          var t = toMin(c.time);
+          extra.push({ lessons: [], start: t, end: t + 45, subject: c.subject, teacher: "", room: c.room,
+            changed: true, uncertain: c.uncertain });
+        }
+        return;
+      }
+      c.lessons.forEach(function (n) {
+        var old = byLesson[n];
+        if (c.subject === CANCEL) {
+          if (old) cancelled.push({ n: n, subject: old.subject, teacher: old.teacher, room: old.room });
+          delete byLesson[n];
+        } else {
+          var same = old && old.subject === c.subject;
+          byLesson[n] = {
+            subject: c.subject,
+            teacher: same ? old.teacher : "",
+            room: c.room || (same ? old.room : ""),
+            block: "z" + i,
+            changed: !(same && (!c.room || c.room === old.room)),
+            was: old && !same ? old.subject : null,
+            uncertain: c.uncertain
+          };
+        }
+      });
+    });
+
+    // Склеиваем соседние уроки одного блока в одну строку
+    var nums = Object.keys(byLesson).map(Number).sort(function (a, b) { return a - b; });
+    var items = [];
+    nums.forEach(function (n) {
+      var l = byLesson[n], t = lessonTime(bells, wd, n);
+      if (!t) return;
+      var last = items[items.length - 1];
+      if (last && last.block === l.block && last.lessons[last.lessons.length - 1] === n - 1) {
+        last.lessons.push(n);
+        last.end = t.end;
+        return;
+      }
+      items.push({ lessons: [n], start: t.start, end: t.end, subject: l.subject, teacher: l.teacher,
+        room: l.room, block: l.block, changed: l.changed, was: l.was || null, uncertain: !!l.uncertain });
+    });
+    items = items.concat(extra).sort(function (a, b) { return a.start - b.start; });
+    items.forEach(function (it) {
+      it.startText = fromMin(it.start);
+      it.endText = fromMin(it.end);
+      delete it.block;
+    });
+
+    // Отменённые уроки, которые потом заменили другим предметом, отменой не считаем
+    cancelled = mergeCancelled(cancelled.filter(function (c) { return !byLesson[c.n]; }), bells, wd);
+    return { date: date, weekday: wd, items: items, cancelled: cancelled,
+      changed: cancelled.length > 0 || items.some(function (i) { return i.changed; }) };
+  }
+
+  function mergeCancelled(list, bells, wd) {
+    var out = [];
+    list.sort(function (a, b) { return a.n - b.n; }).forEach(function (c) {
+      var t = lessonTime(bells, wd, c.n), last = out[out.length - 1];
+      if (last && last.subject === c.subject && last.lessons[last.lessons.length - 1] === c.n - 1) {
+        last.lessons.push(c.n);
+        last.endText = fromMin(t.end);
+      } else {
+        out.push({ lessons: [c.n], subject: c.subject, teacher: c.teacher, room: c.room,
+          startText: fromMin(t.start), endText: fromMin(t.end) });
+      }
+    });
+    return out;
+  }
+
+  // Статус каждого урока относительно текущего времени (минуты от полуночи)
+  function markNow(agenda, nowMin) {
+    var nextFound = false;
+    agenda.items.forEach(function (it) {
+      if (nowMin >= it.end) it.state = "past";
+      else if (nowMin >= it.start) it.state = "now";
+      else if (!nextFound) { it.state = "next"; nextFound = true; }
+      else it.state = "later";
+    });
+    return agenda;
+  }
+
+  // Текущие дата и время в Ухте (Europe/Moscow)
+  function moscowNow(d) {
+    var parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    }).formatToParts(d || new Date());
+    var v = {};
+    parts.forEach(function (p) { v[p.type] = p.value; });
+    return { date: v.year + "-" + v.month + "-" + v.day, minutes: +v.hour * 60 + +v.minute,
+      time: v.hour + ":" + v.minute };
+  }
+
+  var api = { build: build, markNow: markNow, moscowNow: moscowNow, isoWeekday: isoWeekday,
+    addDays: addDays, humanDate: humanDate, lessonTime: lessonTime, CANCEL: CANCEL };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.Agenda = api;
+})(this);

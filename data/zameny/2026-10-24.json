@@ -1,0 +1,59 @@
+{
+ "date": "2026-10-24",
+ "group": "11-А",
+ "source": "https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html",
+ "fetched_at": "2026-10-26T22:54+03:00",
+ "images": [
+  {
+   "url": "https://utgt-pgups.ru/images/24.10.2026.png",
+   "file": "2026-10-24-1.png",
+   "sha1": "de0fa40d246391c22e87e548f7e07abfdba483e5"
+  }
+ ],
+ "title": "Суббота, 1-я неделя",
+ "ocr_ok": true,
+ "ocr_uncertain": false,
+ "groups_in_order": [
+  "11-А",
+  "11-В",
+  "11-Д",
+  "11-Л",
+  "11-С",
+  "21-С",
+  "31-А",
+  "31-С",
+  "41-П"
+ ],
+ "changes": [
+  {
+   "lessons": [
+    1,
+    2
+   ],
+   "time": null,
+   "subject": "Математика",
+   "room": "1-8",
+   "uncertain": false
+  },
+  {
+   "lessons": [
+    5,
+    6
+   ],
+   "time": null,
+   "subject": "Химия",
+   "room": "2-7",
+   "uncertain": false
+  },
+  {
+   "lessons": [
+    7,
+    8
+   ],
+   "time": null,
+   "subject": "Биология",
+   "room": "2-7",
+   "uncertain": false
+  }
+ ]
+}

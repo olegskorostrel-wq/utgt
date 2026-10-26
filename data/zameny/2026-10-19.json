@@ -1,0 +1,54 @@
+{
+ "date": "2026-10-19",
+ "group": "11-А",
+ "source": "https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html",
+ "fetched_at": "2026-10-26T22:54+03:00",
+ "images": [
+  {
+   "url": "https://utgt-pgups.ru/images/19.10.2026.png",
+   "file": "2026-10-19-1.png",
+   "sha1": "9c5f17cabdc40d31684381266fc9e4a25c73c181"
+  }
+ ],
+ "title": "",
+ "ocr_ok": true,
+ "ocr_uncertain": false,
+ "groups_in_order": [
+  "11-А",
+  "11-В",
+  "11-Д",
+  "11-Л",
+  "11-П",
+  "11-С",
+  "21-А",
+  "21-Д",
+  "21-П",
+  "21-С",
+  "31-А",
+  "31-Д",
+  "31-П",
+  "31-С",
+  "41-С"
+ ],
+ "changes": [
+  {
+   "lessons": [
+    0
+   ],
+   "time": "08:30",
+   "subject": "Разговоры о важном",
+   "room": "1-25",
+   "uncertain": false
+  },
+  {
+   "lessons": [
+    7,
+    8
+   ],
+   "time": null,
+   "subject": "Физика",
+   "room": "2-5",
+   "uncertain": false
+  }
+ ]
+}

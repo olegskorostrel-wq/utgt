@@ -1,0 +1,38 @@
+{
+ "date": "2026-10-23",
+ "group": "11-А",
+ "source": "https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html",
+ "fetched_at": "2026-10-26T22:54+03:00",
+ "images": [
+  {
+   "url": "https://utgt-pgups.ru/images/23.10.2026.png",
+   "file": "2026-10-23-1.png",
+   "sha1": "4faf97f7cce9d617d57723a61762aab271c76514"
+  }
+ ],
+ "title": "Пятница, 1-я неделя",
+ "ocr_ok": true,
+ "ocr_uncertain": false,
+ "groups_in_order": [
+  "11-А",
+  "11-П",
+  "11-С",
+  "21-А",
+  "21-Л",
+  "21-С",
+  "31-А",
+  "31-С"
+ ],
+ "changes": [
+  {
+   "lessons": [
+    7,
+    8
+   ],
+   "time": null,
+   "subject": "География",
+   "room": "2-7",
+   "uncertain": false
+  }
+ ]
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>11-А УТЖТ — расписание</title>
+  <meta name="description" content="Расписание группы 11-А УТЖТ на сегодня с учётом замен">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232456c7'/%3E%3Ctext x='16' y='22' font-size='14' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'%3E11А%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <p class="eyebrow">УТЖТ · группа 11-А</p>
+        <h1 id="title">Расписание</h1>
+      </div>
+      <div class="clock" aria-live="polite"><span id="clock">--:--</span><small>Ухта</small></div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-day="0">Сегодня</button>
+      <button type="button" role="tab" data-day="1">Завтра</button>
+    </nav>
+
+    <section id="banner" class="banner" hidden></section>
+    <section id="list" class="list" aria-label="Уроки"></section>
+    <section id="cancelled" class="cancelled" hidden></section>
+
+    <section id="images" class="images" hidden>
+      <h2>Распоряжение о замене</h2>
+      <div id="imageList"></div>
+    </section>
+
+    <footer class="foot">
+      <p id="status">Загрузка…</p>
+      <p>Источники: <a href="https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html">замены</a>,
+        <a href="https://utgt-pgups.ru/raspisaniya-i-grafiki.html">расписание и звонки</a> на сайте УТЖТ.
+        Замены распознаются автоматически — при сомнениях сверяйтесь с картинкой.</p>
+    </footer>
+  </main>
+  <script src="agenda.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

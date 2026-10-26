@@ -1,0 +1,46 @@
+{
+ "date": "2026-10-26",
+ "group": "11-А",
+ "source": "https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html",
+ "fetched_at": "2026-10-26T22:54+03:00",
+ "images": [
+  {
+   "url": "https://utgt-pgups.ru/images/26.10.2026.png",
+   "file": "2026-10-26-1.png",
+   "sha1": "93989a4e6772dc421032d3a3129de8506c73de8c"
+  }
+ ],
+ "title": "Понедельник, 2-я неделя",
+ "ocr_ok": true,
+ "ocr_uncertain": false,
+ "groups_in_order": [
+  "11-А",
+  "11-В",
+  "11-Д",
+  "11-Л",
+  "11-П",
+  "11-С",
+  "21-А",
+  "21-Д",
+  "21-Л",
+  "21-П",
+  "21-С",
+  "31-А",
+  "31-Д",
+  "31-П",
+  "31-С",
+  "41-П",
+  "41-С"
+ ],
+ "changes": [
+  {
+   "lessons": [
+    0
+   ],
+   "time": "08:30",
+   "subject": "Разговоры о важном",
+   "room": "1-25",
+   "uncertain": false
+  }
+ ]
+}
