@@ -52,7 +52,7 @@ EXTRA_SUBJECTS = [CANCEL, "Разговоры о важном", "Химия", "�
                   "Иностранный язык (английский)", "Иностранный язык (немецкий)",
                   "Основы безопасности и защиты Родины", "Индивидуальный проект"]
 
-UA = {"User-Agent": "Mozilla/5.0 (utgt-11A schedule bot; +https://github.com/olegskorostrel-wq/utgt)"}
+UA = {"User-Agent": "Mozilla/5.0 (utgt-11A schedule bot; +https://github.com/utgt-11a/utgt-11a.github.io)"}
 
 
 # ---------- разбор HTML ----------
