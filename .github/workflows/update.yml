@@ -38,7 +38,7 @@ jobs:
       - name: Тесты
         run: |
           python -m pytest tests -q
-          node --test tests/
+          node --test tests/agenda.test.js
 
       - name: Проверить страницу замен
         id: scrape

@@ -37,7 +37,7 @@ pip install -r requirements.txt
 python scraper.py                  # проверить сайт и обновить data/zameny
 python scraper.py --ocr картинка.png   # распознать одну картинку
 python build_site.py && python -m http.server -d _site 8000
-python -m pytest tests -q && node --test tests/
+python -m pytest tests -q && node --test tests/agenda.test.js
 ```
 
 Посмотреть любой день: `index.html?date=2026-10-24`.
