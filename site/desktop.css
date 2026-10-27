@@ -1,0 +1,34 @@
+/* Раскладка для компьютера (включает desktop.js: класс .desk на <html>) */
+.desk .wrap { max-width: 1320px; padding: 28px 32px 48px; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; align-items: start; }
+.desk .desk-side { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+.desk .desk-side .top { flex-direction: column; align-items: flex-start; }
+.desk .desk-side .clock { text-align: left; order: -1; margin-bottom: 6px; }
+.desk .desk-side .clock span { font-size: 44px; line-height: 1; }
+.desk .desk-side h1 { font-size: 26px; }
+.desk .desk-side .calendar { flex-direction: column; align-items: flex-start; }
+.desk .desk-side .switch { margin-top: 14px; }
+.desk .desk-side .news { margin-top: 14px; }
+.desk .desk-side .foot { font-size: 12.5px; }
+
+.desk .desk-main .tabs { margin-top: 0; }
+.desk .tabs button { padding: 10px 14px; font-size: 16px; }
+
+/* день: пары слева, таблица замен справа */
+.desk #dayView:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: 24px; align-items: start; }
+.desk #dayView .images { position: sticky; top: 76px; }
+.desk #dayView .images h2 { margin-top: 0; }
+.desk #dayView .images[hidden] + * , .desk #dayView:has(.images[hidden]) { grid-template-columns: minmax(0, 1fr); }
+.desk #dayView:has(.images[hidden]) .desk-day { max-width: 760px; }
+
+/* неделя: все дни сразу, сеткой 3 × 2 */
+.desk #weekView:not([hidden]) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.desk #weekView > p { grid-column: 1 / -1; margin: 0; }
+
+/* наведение мышью */
+.desk .lesson:hover { border-color: var(--accent); }
+.desk .tabs button:hover:not([aria-selected="true"]) { border-color: var(--accent); }
+.desk .group-chip:hover, .desk .info-btn:hover { filter: brightness(1.08); }
+.desk .course button:hover, .desk .tlist button:hover { border-color: var(--accent); }
+.desk .picker { width: min(760px, calc(100vw - 64px)); }
+.desk .course .grid { grid-template-columns: repeat(6, 1fr); }
+.desk .tlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
