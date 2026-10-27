@@ -70,3 +70,13 @@ python build_site.py --preview && python -m http.server -d _preview 8000
 ```
 
 Обычная сборка (`build_site.py`) прототип и `data/groups` не включает.
+
+## Обратная связь через Telegram-бота → задачи GitHub
+
+`tools/tg_feedback.py` + `.github/workflows/feedback.yml`: каждые 15 минут забирает новые
+сообщения из бота и создаёт по каждому задачу с меткой `telegram`. Явный спам (ссылки,
+реклама, капслок) получает метку `возможно спам`, и бот такому отправителю не отвечает.
+В задачу попадают только текст и имя — без @username и id чата (репозиторий публичный).
+
+Подключение: создать бота у @BotFather и добавить его токен в секрет репозитория
+`TELEGRAM_BOT_TOKEN` (Settings → Secrets and variables → Actions). Без секрета запуск просто пропускается.
