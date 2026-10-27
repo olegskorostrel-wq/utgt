@@ -48,7 +48,8 @@ h1::first-letter { text-transform: uppercase; }
 .clock span { display: block; font-size: 28px; font-weight: 650; }
 .clock small { color: var(--muted); }
 
-.tabs { display: flex; gap: 6px; margin: 18px 0 14px; }
+/* вкладки всегда видны вверху экрана — из длинной недели можно сразу вернуться */
+.tabs { display: flex; gap: 6px; margin: 10px 0 6px; padding: 8px 0; position: sticky; top: 0; z-index: 5; background: var(--bg); }
 .tabs button {
   flex: 1; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--card); color: var(--text); font: inherit; cursor: pointer;

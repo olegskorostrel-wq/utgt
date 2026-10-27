@@ -344,6 +344,8 @@
     b.addEventListener("click", function () {
       state.offset = b.dataset.day === "week" ? "week" : +b.dataset.day;
       render();
+      // переключились снизу длинной страницы — вернуть наверх, к заголовку с датой
+      window.scrollTo(0, 0);
     });
   });
 
