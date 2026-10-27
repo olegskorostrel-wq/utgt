@@ -182,3 +182,4 @@ html.theme-anim, html.theme-anim * { transition: background-color .3s ease, colo
 @keyframes from-left { from { opacity: 0; transform: translateX(-40px); } }
 [data-swipe="next"] #dayView:not([hidden]), [data-swipe="next"] #weekView:not([hidden]) { animation: from-right .28s cubic-bezier(.2, .7, .3, 1) both; }
 [data-swipe="prev"] #dayView:not([hidden]), [data-swipe="prev"] #weekView:not([hidden]) { animation: from-left .28s cubic-bezier(.2, .7, .3, 1) both; }
+.history .hnote { display: block; margin-bottom: 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 13px; }

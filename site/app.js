@@ -417,10 +417,13 @@
     $("historyList").innerHTML = "";
     if (d.showModal) d.showModal(); else d.setAttribute("open", "");
     getJSON("data/history/all.json").then(function (h) {
-      $("historyHint").textContent = h.days.length
-        ? h.days.length + " " + C.plural(h.days.length, "распоряжение", "распоряжения", "распоряжений") +
-          ". Нажмите на день, чтобы раскрыть." + (mine ? " Ваша группа выделена." : "")
-        : "Архив пока пуст.";
+      var first = h.days.length ? h.days[h.days.length - 1].date : null;
+      $("historyHint").innerHTML = '<span class="hnote">История ведётся с начала работы сайта' +
+        (first ? " — первое сохранённое распоряжение на " + esc(C.dayMonth(first)) : "") +
+        ". Более ранних замен здесь нет.</span>" + (h.days.length
+          ? h.days.length + " " + C.plural(h.days.length, "распоряжение", "распоряжения", "распоряжений") +
+            ". Нажмите на день, чтобы раскрыть." + (mine ? " Группа " + esc(mine) + " выделена." : "")
+          : "Архив пока пуст.");
       $("historyList").innerHTML = h.days.map(function (day) {
         var wd = A.isoWeekday(day.date), names = Object.keys(day.groups);
         names.sort(function (a, b) { return (b === mine) - (a === mine) || a.localeCompare(b, "ru"); });
