@@ -5,7 +5,7 @@
 Статический сайт: расписание любой из 19 групп очного отделения на сегодня, завтра и неделю
 с реальным временем звонков, с учётом замен и с картинкой распоряжения о замене.
 При первом заходе открывается выбор группы, выбор запоминается; ссылка `?group=21-С` открывает
-нужную группу сразу. Страница `nagruzka.html` — у каких групп предмет или преподаватель.
+нужную группу сразу. «Я преподаватель» — расписание преподавателя по всем группам (`?teacher=`).
 
 ## Откуда данные
 
@@ -46,7 +46,7 @@ python scraper.py                  # проверить сайт и обнови
 python scraper.py --ocr картинка.png   # распознать одну картинку
 python today_agenda.py             # расписание на сегодня в консоли (или: today_agenda.py 2026-10-24)
 python build_site.py && python -m http.server -d _site 8000
-python -m pytest tests -q && node --test tests/agenda.test.js tests/calendar.test.js tests/teachers.test.js tests/load.test.js
+python -m pytest tests -q && node --test tests/agenda.test.js tests/calendar.test.js tests/teachers.test.js
 ```
 
 Посмотреть любой день: `index.html?group=11-А&date=2026-10-24`.

@@ -180,7 +180,7 @@
 
   // «Изъюрова Н.М.» -> полное ФИО и как обращаться (по имени-отчеству)
   function teacherInfo(teacher) {
-    if (!teacher) return "Преподаватель в замене не указан.";
+    if (!teacher) return "Преподаватель неизвестен — этого предмета нет в расписании группы.";
     var byShort = state.data.teachers.by_short || {};
     return teacher.split(" / ").map(function (t) {
       var full = byShort[t.trim()];
@@ -332,7 +332,6 @@
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
           '<div class="full"><div><div class="in">' + teacherInfo(it.teacher) +
-            (it.guessed ? '<small class="guess">В распоряжении преподаватель не указан — по расписанию группы этот предмет ведёт он(а).</small>' : "") +
             (it.lang ? langPicker() : "") + "</div></div></div>" +
           (it.state === "now" ? '<div class="bar"><i style="width:' +
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
@@ -407,11 +406,10 @@
 
       var banner = $("banner"), cls = "info", html;
       if (d.z && !d.z.po_raspisaniyu) {
-        cls = d.removed.length || d.items.some(function (i) { return i.changed; }) ? "warn" : "ok";
+        var touched = d.removed.length || d.items.some(function (i) { return i.changed; });
+        cls = touched ? "warn" : "ok";
         html = "<strong>Замены на этот день учтены</strong>" +
-          (d.items.some(function (i) { return i.guessed; })
-            ? "В распоряжении преподаватель не указан: пары с меткой «по замене» определены по предмету группы — сверьтесь с картинкой."
-            : d.removed.length ? "Часть пар снята — см. ниже." : "Ваших пар замены не коснулись.");
+          (d.removed.length ? "Часть пар снята — см. ниже." : touched ? "Пары по замене отмечены." : "Ваших пар замены не коснулись.");
       } else if (d.z) {
         cls = "ok";
         html = "<strong>Замен нет</strong>На сайте техникума: занятия по расписанию.";
@@ -433,8 +431,7 @@
         if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + (it.end - now.minutes) + " " +
           C.plural(it.end - now.minutes, "минута", "минуты", "минут") + "</span>";
         if (it.state === "next") tags += '<span class="tag state">далее</span>';
-        if (it.guessed) tags += '<span class="tag" title="преподаватель определён по предмету">по замене</span>';
-        else if (it.changed) tags += '<span class="tag">замена</span>';
+        if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var n = lessonsLabel(it.lessons);
         return '<article class="lesson tlesson ' + (it.state || "") + (it.changed ? " changed" : "") + '" style="--i:' + idx + '">' +
@@ -479,7 +476,7 @@
           var body = d.items.length ? d.items.map(function (it) {
             return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
               '<span class="s">' + esc(nice(it.subject)) + ' <span class="g">' + it.groups.map(esc).join(", ") + "</span>" +
-              (it.guessed ? ' <span class="tag">по замене</span>' : it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
+              (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
               '<span class="r">' + it.rooms.map(esc).join(", ") + "</span></li>";
           }).join("") : '<li class="none">' + (d.holiday ? esc(d.holiday.name) : "Пар нет") + "</li>";
           return '<section class="wday' + (date === now.date ? " today" : "") + '" style="--i:' + i + '"><h3>' + esc(A.humanDate(date)) +
