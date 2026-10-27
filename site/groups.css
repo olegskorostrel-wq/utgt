@@ -210,3 +210,5 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 .install .plus li::before { content: "✓ "; color: var(--ok); font-weight: 700; }
 [data-swipe] .anim .lesson, [data-swipe] .anim .wday, [data-swipe] .anim .banner { animation: none; }
 .tlesson.past .who { display: block; }
+.calendar .cal-fresh::before { background: var(--ok); }
+.calendar .cal-fresh { color: var(--ok); }

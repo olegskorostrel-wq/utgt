@@ -48,6 +48,11 @@
   function getJSON(url) {
     return fetch(url, { cache: "no-cache" }).then(function (r) {
       if (!r.ok) throw new Error(url + ": " + r.status);
+      // ответ из сохранённой копии (нет сети или она слишком медленная) — показать это над расписанием
+      if (r.headers.get("X-Utgt-Saved") && !state.savedHit) {
+        state.savedHit = true;
+        if (state.data) setTimeout(function () { drawCalendar(params.get("date") || A.moscowNow().date); }, 0);
+      }
       return r.json();
     });
   }
@@ -59,6 +64,7 @@
   }
 
   function load() {
+    state.savedHit = false;
     return Promise.all([
       getJSON("data/groups/index.json"),
       getJSON("data/bells.json"),
@@ -72,6 +78,7 @@
       state.data = { groups: r[0].groups, bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5],
         teachers: r[6], info: r[7] };
       state.zamena = {};
+      state.loadedAt = A.moscowNow().time;
     });
   }
 
@@ -206,14 +213,17 @@
   }
 
   function drawCalendar(today) {
-    var key = [today, state.group, navigator.onLine, state.data.status.checked_at].join("|");
+    var key = [today, state.group, navigator.onLine, state.data.status.checked_at, state.savedHit, state.loadedAt].join("|");
     if (drawCalendar.key === key) return;
     drawCalendar.key = key;
     var lines = C.countdown(today, state.data.calendar, state.group);
-    if (!navigator.onLine) {
+    // свежесть данных: только что загружено с сервера или показана сохранённая копия
+    if (!navigator.onLine || state.savedHit) {
       var st = state.data.status.checked_at;
-      lines.unshift({ kind: "offline", text: "Нет интернета — показано сохранённое" +
-        (st ? " (данные от " + st.slice(8, 10) + "." + st.slice(5, 7) + " " + st.slice(11, 16) + ")" : "") });
+      lines.unshift({ kind: "offline", text: (navigator.onLine ? "Медленный интернет" : "Нет интернета") +
+        " — показано сохранённое" + (st ? " (данные от " + st.slice(8, 10) + "." + st.slice(5, 7) + " " + st.slice(11, 16) + ")" : "") });
+    } else if (state.loadedAt) {
+      lines.unshift({ kind: "fresh", text: "Обновлено в " + state.loadedAt });
     }
     var ul = $("calendar");
     ul.hidden = !lines.length;
@@ -532,7 +542,10 @@
     installEvt.prompt();
     installEvt.userChoice.then(function () { installEvt = null; drawUseful(A.moscowNow()); });
   });
-  window.addEventListener("online", function () { if (state.data) render(); });
+  // интернет вернулся — сразу подтянуть свежее
+  window.addEventListener("online", function () {
+    if (state.data) load().then(function () { drawNews(); render(); }).catch(function () { render(); });
+  });
   window.addEventListener("offline", function () { if (state.data) render(); });
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
@@ -719,7 +732,8 @@
       if (now.time === shown) return;
       shown = now.time;
       if (now.date !== day && !params.get("date")) { day = now.date; state.offset = 0; }
-      if (Date.now() - loaded > 10 * 60000) {
+      // свежие данные — раз в 10 минут; если показано сохранённое, а интернет есть — пробуем каждую минуту
+      if (Date.now() - loaded > (state.savedHit && navigator.onLine ? 50000 : 10 * 60000)) {
         loaded = Date.now();
         load().then(function () { drawNews(); if (state.group || state.teacher) render(); }).catch(function () {});
       } else if (state.group || state.teacher) render();
