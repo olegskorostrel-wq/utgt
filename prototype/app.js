@@ -258,7 +258,7 @@
           '<div><div class="subj">' + subjectHTML(it.subject) + tags + "</div>" +
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + (it.room ? "ауд. " + esc(it.room) : "") + "</div>" +
-          '<div class="full">' + teacherInfo(it.teacher) + "</div>" +
+          '<div class="full"><div><div class="in">' + teacherInfo(it.teacher) + "</div></div></div>" +
           (it.state === "now" ? '<div class="bar"><i style="width:' +
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
       }).join("");
