@@ -129,7 +129,10 @@
 
 /* неделя: нажатие на день раскрывает подробности */
 .wday[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: border-color .2s ease; }
-.wday[role="button"] h3::after { content: "▾"; float: right; margin-left: 8px; color: var(--muted); font-size: 13px; transition: transform .2s ease; }
+.wday[role="button"] h3 { display: flex; align-items: baseline; gap: 6px; }
+.wday[role="button"] h3 .cnt { float: none; margin-left: auto; white-space: nowrap; }
+.wday[role="button"] h3::after { content: "▾"; margin-left: 4px; color: var(--muted); font-size: 13px; transition: transform .2s ease; }
+.wday[role="button"] h3:not(:has(.cnt))::after { margin-left: auto; }
 .wday.open h3::after { transform: rotate(180deg); }
 .wday .det { display: none; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .wday.open .det { display: block; animation: fade .25s ease both; }

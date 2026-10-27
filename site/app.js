@@ -173,7 +173,7 @@
     var open = !!state.weekOpen[date];
     return '<section class="wday' + (date === now.date ? " today" : "") + (open ? " open" : "") + '" style="--i:' + i +
       '" data-date="' + date + '"' + (count ? ' tabindex="0" role="button" aria-expanded="' + open + '"' : "") + "><h3>" +
-      headHTML + "</h3><ul>" + body + "</ul></section>";
+      headHTML.charAt(0).toUpperCase() + headHTML.slice(1) + "</h3><ul>" + body + "</ul></section>";
   }
 
   // Расписание дня с учётом праздников, каникул и практики из учебного графика группы

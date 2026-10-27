@@ -32,6 +32,5 @@
 .desk .picker { width: min(760px, calc(100vw - 64px)); }
 .desk .course .grid { grid-template-columns: repeat(6, 1fr); }
 .desk .tlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-/* раскрытый день — на всю ширину сетки */
-.desk #weekView .wday.open { grid-column: 1 / -1; }
+/* раскрытый день остаётся на своём месте и просто становится выше */
 .desk .wday[role="button"]:hover { border-color: var(--accent); }
