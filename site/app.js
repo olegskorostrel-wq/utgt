@@ -1,7 +1,7 @@
 (function () {
   "use strict";
   var A = window.Agenda, C = window.Calendar;
-  var state = { offset: 0, data: null, zamena: {} };
+  var state = { offset: 0, data: null, zamena: {}, open: {} };
   var params = new URLSearchParams(location.search);
 
   function $(id) { return document.getElementById(id); }
@@ -24,9 +24,11 @@
       getJSON("data/zameny/index.json").catch(function () { return { days: [] }; }),
       getJSON("status.json").catch(function () { return {}; }),
       getJSON("data/calendar.json").catch(function () { return {}; }),
-      getJSON("data/news.json").catch(function () { return { items: [] }; })
+      getJSON("data/news.json").catch(function () { return { items: [] }; }),
+      getJSON("data/teachers.json").catch(function () { return { by_short: {} }; })
     ]).then(function (r) {
-      state.data = { schedule: r[0], bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5] };
+      state.data = { schedule: r[0], bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5],
+        teachers: r[6] };
       state.zamena = {};
     });
   }
@@ -74,6 +76,18 @@
     ul.innerHTML = lines.map(function (l) {
       return '<li class="cal-' + l.kind + '">' + esc(l.text) +
         (l.exams ? "<small>Экзамены: " + l.exams.map(esc).join(", ") + "</small>" : "") + "</li>";
+    }).join("");
+  }
+
+  // «Изъюрова Н.М.» -> полное ФИО и как обращаться (по имени-отчеству)
+  function teacherInfo(teacher) {
+    if (!teacher) return "Преподаватель в замене не указан.";
+    var byShort = state.data.teachers.by_short || {};
+    return teacher.split(" / ").map(function (t) {
+      var full = byShort[t.trim()];
+      if (!full) return esc(t) + " — полного имени нет в списке преподавателей на сайте техникума.";
+      var p = full.split(" ");
+      return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>";
     }).join("");
   }
 
@@ -140,11 +154,15 @@
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
-        return '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") + '">' +
+        var key = it.startText + " " + it.subject;
+        return '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") +
+          (state.open[key] ? " open" : "") + '" data-key="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' +
+          !!state.open[key] + '">' +
           '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
           '<div><div class="subj">' + esc(it.subject) + tags + "</div>" +
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
-          '<div class="room">' + (it.room ? "ауд. " + esc(it.room) : "") + "</div></article>";
+          '<div class="room">' + (it.room ? "ауд. " + esc(it.room) : "") + "</div>" +
+          '<div class="full">' + teacherInfo(it.teacher) + "</div></article>";
       }).join("");
     }
 
@@ -168,6 +186,20 @@
         (st.ok === false ? " — последняя проверка завершилась ошибкой" : "")
       : "";
   }
+
+  // Нажатие на урок — показать/скрыть полное ФИО преподавателя
+  function toggleLesson(e) {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    var card = e.target.closest(".lesson");
+    if (!card) return;
+    e.preventDefault();
+    var key = card.dataset.key;
+    state.open[key] = !state.open[key];
+    card.classList.toggle("open", state.open[key]);
+    card.setAttribute("aria-expanded", String(state.open[key]));
+  }
+  $("list").addEventListener("click", toggleLesson);
+  $("list").addEventListener("keydown", toggleLesson);
 
   document.querySelectorAll(".tabs button").forEach(function (b) {
     b.addEventListener("click", function () { state.offset = +b.dataset.day; render(); });

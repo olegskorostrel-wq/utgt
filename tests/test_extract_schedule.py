@@ -57,3 +57,17 @@ def test_white_fill_is_not_a_week_split(sheet):
     days, _ = sheet.group("21-П")
     assert [e for e in days["2"] if e["lessons"] == [3, 4]] == [
         {"lessons": [3, 4], "subject": "Электротехника и электроника", "teacher": "Абрамова Т.Ю.", "room": "1-14"}]
+
+
+def test_teacher_names_are_clean(sheet):
+    """Фамилия не прилипает к предмету и не теряется при переносе инициалов на новую строку."""
+    import re
+    name = re.compile(r"^[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?\s[А-ЯЁ]\.\s?[А-ЯЁ]\.?$")
+    for g in sheet.groups:
+        days, _ = sheet.group(g)
+        for v in days.values():
+            for e in v:
+                for t in filter(None, e["teacher"].split(" / ")):
+                    assert name.match(t), (g, t, e["subject"])
+    days, _ = sheet.group("41-А")
+    assert any(e["teacher"] == "Добряков Ю.В." and e["subject"].endswith("жд автом.") for e in days["4"])

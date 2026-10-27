@@ -21,6 +21,8 @@ SOURCE = "https://utgt-pgups.ru/images/Raspisanie%20ucebnyh%20zanatij%201%20seme
 GROUP_RE = re.compile(r"^[1-4]1-[А-ЯЁ]$")
 NAME_RE = re.compile(r"^[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?\s+[А-ЯЁ]\.\s?[А-ЯЁ]\.?$")
 TAIL_NAME_RE = re.compile(r"\s([А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?\s[А-ЯЁ]\.\s?[А-ЯЁ]\.?)$")
+INITIALS_RE = re.compile(r"^[А-ЯЁ]\.\s?[А-ЯЁ]\.?$")
+SURNAME_END_RE = re.compile(r"\s([А-ЯЁ][а-яё]{2,}(?:-[А-ЯЁ][а-яё]+)?)$")
 ROOM_RE = re.compile(r"\d-\d{1,2}")
 DAYS = 6
 # Группы, которые человек сверил с PDF целиком
@@ -66,11 +68,19 @@ def parse_cell(lines):
         if set(text) <= set("_- "):
             continue
         tail = TAIL_NAME_RE.search(text)
-        if NAME_RE.match(text) or (bold > 0.6 and subj and len(text) < 30):
+        initials = INITIALS_RE.match(text)
+        if NAME_RE.match(text):
             teachers.append(text)
-        elif tail and subj:  # «... телемеханики Добряков Ю.В.» в одной строке
+        elif tail and subj:  # «... телемеханики Добряков Ю.В.» или «тр.-та) Марчак А.В.» в одной строке
             subj.append(text[:tail.start()].strip())
             teachers.append(tail.group(1))
+        elif initials and subj and SURNAME_END_RE.search(subj[-1]):
+            # фамилия в конце строки, инициалы перенеслись: «... автом. Добряков» + «Ю.В.»
+            m = SURNAME_END_RE.search(subj[-1])
+            subj[-1] = subj[-1][:m.start()].strip()
+            teachers.append(f"{m.group(1)} {text}")
+        elif bold > 0.6 and subj and len(text) < 30:
+            teachers.append(text)
         else:
             subj.append(text)
     if not subj:

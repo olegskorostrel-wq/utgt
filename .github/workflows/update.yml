@@ -49,10 +49,14 @@ jobs:
         continue-on-error: true
         run: python tools/news.py
 
+      - name: Полные ФИО преподавателей
+        continue-on-error: true
+        run: python tools/teachers.py
+
       - name: Сохранить новые замены и новости в репозиторий
         if: github.ref == 'refs/heads/main'
         run: |
-          git add data/zameny data/news.json
+          git add data/zameny data/news.json data/teachers.json
           if git diff --cached --quiet; then
             echo "Новых замен и новостей нет"
           else
