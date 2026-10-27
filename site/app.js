@@ -3,7 +3,7 @@
   "use strict";
   var A = window.Agenda, C = window.Calendar;
   var STORE_KEY = "utgt-group", WHO_KEY = "utgt-who", TEACHER_KEY = "utgt-teacher", LANG_KEY = "utgt-lang";
-  var state = { infoOpen: false, offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
+  var state = { weekOpen: {}, infoOpen: false, offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
   var params = new URLSearchParams(location.search);
 
   function $(id) { return document.getElementById(id); }
@@ -150,14 +150,30 @@
       $("weekView").innerHTML = days.map(function (ag, i) {
         var d = dates[i];
         var body = ag.items.length ? ag.items.map(function (it) {
+          var by = state.data.teachers.by_short || {};
+          var who = String(it.teacher || "").split(" / ").map(function (t) { return by[t.trim()] || t.trim(); }).filter(Boolean).join(" / ");
           return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
             '<span class="s">' + esc(nice(it.subject)) + (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
-            '<span class="r">' + esc(it.room || "") + "</span></li>";
+            '<span class="r">' + esc(it.room || "") + "</span>" +
+            detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who, it.was ? "Было по расписанию: " + nice(it.was) : ""]) + "</li>";
         }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
-        return '<section class="wday' + (d === now.date ? " today" : "") + '" style="--i:' + i + '"><h3>' + esc(A.humanDate(d)) +
-          (d === now.date ? ' <span class="tag state">сегодня</span>' : "") + "</h3><ul>" + body + "</ul></section>";
+        return weekDayHTML(d, i, now, A.humanDate(d) + (d === now.date ? ' <span class="tag state">сегодня</span>' : ""), body, ag.items.length);
       }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
     });
+  }
+
+  // Неделя: нажатие на день раскрывает его — время до, номера уроков, полные названия и ФИО
+  function detHTML(it, lines) {
+    var n = it.lessons && it.lessons.length ? (it.lessons[0] === 0 ? "классный час"
+      : it.lessons.length > 1 ? "уроки " + it.lessons[0] + "–" + it.lessons[it.lessons.length - 1] : "урок " + it.lessons[0]) : "";
+    var parts = [it.startText + "–" + it.endText + (n ? " · " + n : "")].concat(lines.filter(Boolean));
+    return '<span class="det">' + parts.map(esc).join("<br>") + "</span>";
+  }
+  function weekDayHTML(date, i, now, headHTML, body, count) {
+    var open = !!state.weekOpen[date];
+    return '<section class="wday' + (date === now.date ? " today" : "") + (open ? " open" : "") + '" style="--i:' + i +
+      '" data-date="' + date + '"' + (count ? ' tabindex="0" role="button" aria-expanded="' + open + '"' : "") + "><h3>" +
+      headHTML + "</h3><ul>" + body + "</ul></section>";
   }
 
   // Расписание дня с учётом праздников, каникул и практики из учебного графика группы
@@ -500,12 +516,13 @@
             return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
               '<span class="s">' + esc(nice(it.subject)) + ' <span class="g">' + it.groups.map(esc).join(", ") + "</span>" +
               (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
-              '<span class="r">' + it.rooms.map(esc).join(", ") + "</span></li>";
+              '<span class="r">' + it.rooms.map(esc).join(", ") + "</span>" +
+              detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "",
+                (it.groups.length > 1 ? "Поток: " : "Группа: ") + it.groups.join(", ")]) + "</li>";
           }).join("") : '<li class="none">' + (d.holiday ? esc(d.holiday.name) : "Пар нет") + "</li>";
-          return '<section class="wday' + (date === now.date ? " today" : "") + '" style="--i:' + i + '"><h3>' + esc(A.humanDate(date)) +
-            (date === now.date ? ' <span class="tag state">сегодня</span>' : "") +
-            (d.items.length ? ' <span class="cnt">' + d.items.length + " " + C.plural(d.items.length, "пара", "пары", "пар") + "</span>" : "") +
-            "</h3><ul>" + body + "</ul></section>";
+          return weekDayHTML(date, i, now, A.humanDate(date) + (date === now.date ? ' <span class="tag state">сегодня</span>' : "") +
+            (d.items.length ? ' <span class="cnt">' + d.items.length + " " + C.plural(d.items.length, "пара", "пары", "пар") + "</span>" : ""),
+            body, d.items.length);
         }).join("") + '<p class="hint">Замены учтены на дни, на которые их уже опубликовали.</p>';
     });
   }
@@ -647,6 +664,19 @@
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
+
+  function toggleWeekDay(e) {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    var card = e.target.closest(".wday[role=button]");
+    if (!card || e.target.closest("a")) return;
+    e.preventDefault();
+    var d = card.dataset.date;
+    state.weekOpen[d] = !state.weekOpen[d];
+    card.classList.toggle("open", state.weekOpen[d]);
+    card.setAttribute("aria-expanded", String(state.weekOpen[d]));
+  }
+  $("weekView").addEventListener("click", toggleWeekDay);
+  $("weekView").addEventListener("keydown", toggleWeekDay);
 
   $("infoBtn").addEventListener("click", function () {
     state.infoOpen = !state.infoOpen;
