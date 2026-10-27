@@ -50,16 +50,43 @@
   }
   function groupsText(n) { return n + " " + (n % 10 === 1 && n % 100 !== 11 ? "группа" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "группы" : "групп"); }
 
+  // Избранное (звёздочка) — хранится только в этом браузере, отдельно для предметов и преподавателей
+  var FAV_KEY = "utgt-nagruzka-fav";
+  function favs() {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY)) || { s: [], t: [] }; } catch (e) { return { s: [], t: [] }; }
+  }
+  function isFav(value) { return favs()[state.mode].indexOf(value) >= 0; }
+  function toggleFav(value) {
+    var f = favs(), list = f[state.mode], i = list.indexOf(value);
+    if (i >= 0) list.splice(i, 1); else list.push(value);
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(f)); } catch (e) { /* приватный режим — без избранного */ }
+  }
+  function starHTML(value) {
+    var on = isFav(value);
+    return '<button type="button" class="star' + (on ? " on" : "") + '" data-star="' + esc(value) + '" aria-pressed="' + on +
+      '" aria-label="' + (on ? "Убрать из избранного" : "В избранное") + '">' + (on ? "★" : "☆") + "</button>";
+  }
+  function optHTML(it) {
+    return '<div class="row"><button type="button" class="opt" data-value="' + esc(it.value) + '">' +
+      (it.code ? '<span class="code">' + esc(it.code) + "</span>" : "") +
+      '<span class="name">' + esc(it.title) + "</span><small>" + esc(it.sub) +
+      (it.fav && it.section ? " · " + esc(it.section) : "") + "</small></button>" + starHTML(it.value) + "</div>";
+  }
+
   function drawOptions() {
     var q = norm($("q").value.trim()), last = null, html = "";
     var list = state.items.filter(function (it) {
       return !q || norm(it.code + " " + it.title + " " + it.value).indexOf(q) >= 0;
     });
+    var top = list.filter(function (it) { return isFav(it.value); });
+    if (top.length) {
+      html += "<h4>★ Избранное</h4>" + top.map(function (it) { return optHTML(Object.assign({ fav: true }, it)); }).join("");
+      last = "★";
+    }
     list.forEach(function (it) {
-      if (it.section && it.section !== last) { html += '<h4>' + esc(it.section) + "</h4>"; last = it.section; }
-      html += '<button type="button" class="opt" data-value="' + esc(it.value) + '">' +
-        (it.code ? '<span class="code">' + esc(it.code) + "</span>" : "") +
-        '<span class="name">' + esc(it.title) + "</span><small>" + esc(it.sub) + "</small></button>";
+      var sec = it.section || (top.length ? "Все" : "");
+      if (sec && sec !== last) { html += "<h4>" + esc(sec) + "</h4>"; last = sec; }
+      html += optHTML(it);
     });
     $("options").innerHTML = html || '<p class="none">Ничего не найдено</p>';
   }
@@ -67,13 +94,14 @@
   // value пустой — показать список выбора; иначе — выбранное и результат
   function choose(value, animate) {
     var it = state.items.filter(function (x) { return x.value === value; })[0];
-    $("chosen").hidden = !it;
+    $("chosenRow").hidden = !it;
     $("q").hidden = !!it;
     $("options").hidden = !!it;
     if (it) {
       $("chosen").innerHTML = (it.code ? '<span class="code">' + esc(it.code) + "</span>" : "") +
         '<span class="name">' + esc(it.full || it.title) + "</span><small>" + (it.section ? esc(it.section) + " · " : "") +
         "нажмите, чтобы выбрать другое</small>";
+      $("chosenStar").outerHTML = starHTML(value).replace('class="star', 'id="chosenStar" class="star');
     } else {
       $("q").placeholder = state.mode === "s" ? "Найти предмет…" : "Найти преподавателя…";
       drawOptions();
@@ -126,6 +154,19 @@
     });
   });
   $("q").addEventListener("input", drawOptions);
+  // звёздочка: в списке — перерисовать (пункт переедет наверх), у выбранного — только сама звёздочка
+  document.querySelector(".picker").addEventListener("click", function (e) {
+    var st = e.target.closest(".star");
+    if (!st) return;
+    toggleFav(st.dataset.star);
+    var v = st.dataset.star;
+    if (st.id === "chosenStar") st.outerHTML = starHTML(v).replace('class="star', 'id="chosenStar" class="star');
+    else drawOptions();
+    // «подпрыгивает» только нажатая звёздочка
+    document.querySelectorAll(".picker .star").forEach(function (x) {
+      if (x.dataset.star === v && x.classList.contains("on")) x.classList.add("pop");
+    });
+  });
   $("options").addEventListener("click", function (e) {
     var b = e.target.closest(".opt");
     if (b) { choose(b.dataset.value, true); window.scrollTo(0, 0); }

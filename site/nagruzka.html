@@ -23,7 +23,10 @@
     </nav>
 
     <div class="picker">
-      <button type="button" id="chosen" class="chosen" hidden></button>
+      <div id="chosenRow" class="row chosen-row" hidden>
+        <button type="button" id="chosen" class="chosen"></button>
+        <button type="button" id="chosenStar" class="star" aria-label="В избранное"></button>
+      </div>
       <input id="q" type="search" autocomplete="off" placeholder="Найти предмет…">
       <div id="options" class="options"></div>
     </div>
