@@ -90,3 +90,5 @@ h1::first-letter { text-transform: uppercase; }
 .images h2 { font-size: 17px; margin: 26px 0 10px; }
 .images img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
 .foot { margin-top: 28px; color: var(--muted); font-size: 13px; }
+.foot .contact { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; color: var(--text); }
+.foot .contact a { font-weight: 600; white-space: nowrap; }
