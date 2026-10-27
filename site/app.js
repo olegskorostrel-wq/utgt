@@ -187,41 +187,20 @@
     var byShort = state.data.teachers.by_short || {};
     return teacher.split(" / ").map(function (t) {
       var full = byShort[t.trim()];
-      var where = '<small class="where" data-teacher="' + esc(t.trim()) + '"></small>';
-      if (!full) return esc(t) + " — полного имени нет в списке преподавателей на сайте техникума." + where;
+      if (!full) return esc(t) + " — полного имени нет в списке преподавателей на сайте техникума.";
       var p = full.split(" ");
-      return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>" + where;
+      return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>";
     }).join("");
   }
 
   // Языковая подгруппа: по умолчанию английский (обычное расписание), тумблер — немецкий
   function lang() { return store(LANG_KEY) === "немецкий" ? "немецкий" : "английский"; }
 
-  // Расписания всех групп — грузятся только при первом нажатии на урок
+  // Расписания всех групп — для режима преподавателя, грузятся при первом выборе
   function allGroups() {
     return Promise.all(state.data.groups.map(function (g) {
       return scheduleFor(g.group).then(function (s) { return { group: g.group, schedule: s }; });
     }));
-  }
-
-  // «Где сейчас»: по расписаниям всех групп и сегодняшним заменам (только для сегодняшнего дня)
-  function fillWhere(card) {
-    var now = A.moscowNow(), date = params.get("date") || now.date;
-    var spots = card.querySelectorAll(".where");
-    if (!spots.length || state.offset !== 0 || date !== now.date) return;
-    Promise.all([allGroups(), zamenaFor(date)]).then(function (r) {
-      spots.forEach(function (el) {
-        var w = Teachers.whereIs(el.dataset.teacher, date, now.minutes, r[0], state.data.bells, state.data.calendar,
-          function (g) { return zamenaForGroup(r[1], g); });
-        var room = function (l) { return l.room ? "каб. " + l.room : "кабинет не указан"; };
-        var parts = [];
-        if (w.now) parts.push("Сейчас: " + room(w.now) + ", " + w.now.group + " (до " + w.now.endText + ")");
-        if (w.next) parts.push("Дальше: " + w.next.startText + " — " + room(w.next) + ", " + w.next.group);
-        if (!w.lessons.length) parts.push("Сегодня по расписанию пар нет");
-        else if (!parts.length) parts.push("Пары на сегодня закончились");
-        el.textContent = parts.join(" · ");
-      });
-    }).catch(function () {});
   }
 
   // «Полезное» для выбранной группы: учебная часть, ссылки, документы курса, курсовые, программа ГИА
@@ -333,9 +312,6 @@
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
       }).join("");
     }
-
-    // открытые карточки после ежеминутного обновления — заново «где сейчас преподаватель»
-    list.querySelectorAll(".lesson.open").forEach(fillWhere);
 
     var c = $("cancelled");
     c.hidden = !ag.cancelled.length;
@@ -647,7 +623,6 @@
     state.open[key] = !state.open[key];
     card.classList.toggle("open", state.open[key]);
     card.setAttribute("aria-expanded", String(state.open[key]));
-    if (state.open[key]) fillWhere(card);
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
