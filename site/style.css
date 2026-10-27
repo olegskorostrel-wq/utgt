@@ -183,11 +183,6 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
 .lesson:focus:not(:focus-visible) { outline: none; }
 
 /* Страница «Нагрузка» */
-.pick { display: block; margin: 4px 0 12px; font-size: 14px; color: var(--muted); }
-.pick select {
-  display: block; width: 100%; margin-top: 4px; padding: 10px 12px; font: inherit; font-size: 16px;
-  color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-}
 .total { margin: 0 0 10px; font-size: 15px; }
 #result .wday li { grid-template-columns: 104px 1fr auto; }
 #result .wday li .t small { display: block; font-size: 12px; }
@@ -197,3 +192,34 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
   background: var(--accent-soft); color: var(--accent); vertical-align: 1px;
 }
 #result .tag:not(.state) { background: var(--warn-soft); color: var(--warn); font-size: 11px; }
+.picker { margin: 4px 0 14px; }
+.picker input {
+  width: 100%; padding: 11px 14px; font: inherit; font-size: 16px; color: var(--text);
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+}
+.options { margin-top: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px 0; }
+.options h4 {
+  margin: 0; padding: 12px 14px 4px; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted);
+}
+.opt, .chosen {
+  display: grid; grid-template-columns: 74px 1fr; column-gap: 10px; width: 100%; text-align: left;
+  padding: 8px 14px; font: inherit; color: var(--text); background: none; border: 0;
+  border-top: 1px solid var(--line); cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s ease;
+}
+.options h4 + .opt, .options .opt:first-child { border-top: 0; }
+.opt:active { background: var(--accent-soft); }
+.opt .name, .chosen .name {
+  grid-column: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 14.5px; line-height: 1.3;
+}
+.opt small, .chosen small { grid-column: 2; color: var(--muted); font-size: 12px; margin-top: 1px; }
+.opt .code, .chosen .code {
+  grid-row: 1 / 3; align-self: start; justify-self: start; margin-top: 1px; padding: 1px 6px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; white-space: nowrap; background: var(--accent-soft); color: var(--accent);
+}
+.opt:not(:has(.code)) .name, .opt:not(:has(.code)) small, .chosen:not(:has(.code)) .name, .chosen:not(:has(.code)) small { grid-column: 1 / -1; }
+.options .none { margin: 0; padding: 14px; color: var(--muted); }
+.chosen { border: 1px solid var(--accent); border-radius: 12px; background: var(--card); padding: 11px 14px; }
+.chosen .name { -webkit-line-clamp: 3; font-weight: 600; }

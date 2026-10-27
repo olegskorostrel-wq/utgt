@@ -25,14 +25,66 @@
     return r.w1 === r.w2 ? pairs(r.w1) + " в неделю" : pairs(r.w1) + " в 1-ю неделю, " + r.w2 + " во 2-ю";
   }
 
+  function norm(t) { return String(t).toLowerCase().replace(/ё/g, "е"); }
+
+  // Варианты для списка: { value, title, code, sub, section }
+  function items() {
+    if (state.mode === "s") {
+      return L.subjects(state.list).map(function (x) {
+        var n = L.bySubject(state.list, x.key).rows.length;
+        return { value: x.key, title: shortTitle(x.title), full: x.title, code: x.code, sub: groupsText(n),
+          section: x.letter ? L.SPECIALTY[x.letter] || "Группы …-" + x.letter : "Общие предметы" };
+      }).sort(function (a, b) {
+        var sa = a.section === "Общие предметы" ? "" : a.section, sb = b.section === "Общие предметы" ? "" : b.section;
+        return sa.localeCompare(sb, "ru") || (a.code + a.title).localeCompare(b.code + b.title, "ru");
+      });
+    }
+    return L.teachers(state.list).map(function (t) {
+      var n = L.byTeacher(state.list, t).rows.length;
+      return { value: t, title: state.full[t] || t, code: "", sub: groupsText(n), section: "" };
+    });
+  }
+  // В списке — без хвостов «(по видам транспорта)», «(железнодорожном транспорте)» и т. п.
+  function shortTitle(t) {
+    return t.replace(/\s*\((?:по видам|на ж|железнодорож|жд)[^)]*\)/gi, "").replace(/\s+/g, " ").trim() || t;
+  }
+  function groupsText(n) { return n + " " + (n % 10 === 1 && n % 100 !== 11 ? "группа" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "группы" : "групп"); }
+
+  function drawOptions() {
+    var q = norm($("q").value.trim()), last = null, html = "";
+    var list = state.items.filter(function (it) {
+      return !q || norm(it.code + " " + it.title + " " + it.value).indexOf(q) >= 0;
+    });
+    list.forEach(function (it) {
+      if (it.section && it.section !== last) { html += '<h4>' + esc(it.section) + "</h4>"; last = it.section; }
+      html += '<button type="button" class="opt" data-value="' + esc(it.value) + '">' +
+        (it.code ? '<span class="code">' + esc(it.code) + "</span>" : "") +
+        '<span class="name">' + esc(it.title) + "</span><small>" + esc(it.sub) + "</small></button>";
+    });
+    $("options").innerHTML = html || '<p class="none">Ничего не найдено</p>';
+  }
+
+  // value пустой — показать список выбора; иначе — выбранное и результат
+  function choose(value, animate) {
+    var it = state.items.filter(function (x) { return x.value === value; })[0];
+    $("chosen").hidden = !it;
+    $("q").hidden = !!it;
+    $("options").hidden = !!it;
+    if (it) {
+      $("chosen").innerHTML = (it.code ? '<span class="code">' + esc(it.code) + "</span>" : "") +
+        '<span class="name">' + esc(it.full || it.title) + "</span><small>" + (it.section ? esc(it.section) + " · " : "") +
+        "нажмите, чтобы выбрать другое</small>";
+    } else {
+      $("q").placeholder = state.mode === "s" ? "Найти предмет…" : "Найти преподавателя…";
+      drawOptions();
+    }
+    show(it ? value : "", animate);
+    remember(it ? value : "");
+  }
+
   function fillPick() {
-    var opts = state.mode === "s"
-      ? L.subjects(state.list).map(function (s) { return [s.key, s.name]; })
-      : L.teachers(state.list).map(function (t) { return [t, state.full[t] || t]; });
-    $("pickLabel").textContent = state.mode === "s" ? "Предмет" : "Преподаватель";
-    $("pick").innerHTML = '<option value="">— выберите —</option>' + opts.map(function (o) {
-      return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + "</option>";
-    }).join("");
+    state.items = items();
+    $("q").value = "";
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(b.dataset.mode === state.mode));
     });
@@ -70,14 +122,15 @@
       if (state.mode === b.dataset.mode) return;
       state.mode = b.dataset.mode;
       fillPick();
-      show("", false);
-      remember("");
+      choose("", false);
     });
   });
-  $("pick").addEventListener("change", function (e) {
-    show(e.target.value, true);
-    remember(e.target.value);
+  $("q").addEventListener("input", drawOptions);
+  $("options").addEventListener("click", function (e) {
+    var b = e.target.closest(".opt");
+    if (b) { choose(b.dataset.value, true); window.scrollTo(0, 0); }
   });
+  $("chosen").addEventListener("click", function () { choose("", false); $("q").focus(); });
 
   Promise.all([getJSON("data/groups/index.json"), getJSON("data/bells.json"),
     getJSON("data/teachers.json").catch(function () { return { by_short: {} }; })]).then(function (r) {
@@ -90,8 +143,7 @@
     state.list = L.entries(schedules);
     state.mode = params.get("t") ? "t" : "s";
     fillPick();
-    var v = params.get(state.mode);
-    if (v) { $("pick").value = v; show($("pick").value, true); }
+    choose(params.get(state.mode) || "", true);
   }).catch(function (e) {
     $("status").textContent = "Не удалось загрузить данные: " + e.message;
   });

@@ -6,6 +6,10 @@
   var DAYS = ["", "пн", "вт", "ср", "чт", "пт", "сб"];
   var CODE_RE = /^((?:МДК|ОП|ПМ|ОГСЭ|ЕН|УП|ПП)\.\d+(?:\.\d+)?)\.?\s*/;
 
+  // Короткие названия специальностей по букве группы
+  var SPECIALTY = { "А": "Автоматика и телемеханика", "В": "Вагоны", "Д": "Перевозки",
+    "Л": "Локомотивы", "П": "Путь и путевое хозяйство", "С": "Связь и радиоэлектроника" };
+
   // Буква группы = специальность: «21-С» -> «С»
   function letter(group) { return String(group).split("-")[1] || ""; }
 
@@ -45,8 +49,9 @@
       if (!by[e.key] || e.subject.length > by[e.key].length) by[e.key] = e.subject;
     });
     return Object.keys(by).map(function (k) {
-      var code = k.split("|");
-      return { key: k, name: code.length > 1 ? by[k] + " (группы …-" + code[1] + ")" : by[k] };
+      var parts = k.split("|"), m = by[k].match(CODE_RE);
+      return { key: k, name: by[k], code: m ? m[1] : "", title: m ? by[k].slice(m[0].length) : by[k],
+        letter: parts[1] || "" };
     })
       .sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); });
   }
@@ -83,7 +88,7 @@
     return DAYS[e.day] + ", " + (p ? p + "-я пара" : e.lessons[0] + "-й урок");
   }
 
-  var api = { subjectKey: subjectKey, entries: entries, subjects: subjects, teachers: teachers,
+  var api = { SPECIALTY: SPECIALTY, subjectKey: subjectKey, entries: entries, subjects: subjects, teachers: teachers,
     bySubject: bySubject, byTeacher: byTeacher, slotText: slotText };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Load = api;

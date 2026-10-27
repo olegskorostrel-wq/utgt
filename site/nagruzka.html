@@ -22,9 +22,11 @@
       <button type="button" role="tab" data-mode="t">Преподаватель</button>
     </nav>
 
-    <label class="pick"><span id="pickLabel">Предмет</span>
-      <select id="pick"></select>
-    </label>
+    <div class="picker">
+      <button type="button" id="chosen" class="chosen" hidden></button>
+      <input id="q" type="search" autocomplete="off" placeholder="Найти предмет…">
+      <div id="options" class="options"></div>
+    </div>
 
     <p id="total" class="total" hidden></p>
     <section id="result" class="week"></section>
