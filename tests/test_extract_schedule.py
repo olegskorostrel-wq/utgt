@@ -71,3 +71,11 @@ def test_teacher_names_are_clean(sheet):
                     assert name.match(t), (g, t, e["subject"])
     days, _ = sheet.group("41-А")
     assert any(e["teacher"] == "Добряков Ю.В." and e["subject"].endswith("жд автом.") for e in days["4"])
+
+
+def test_subgroups_split(sheet):
+    """21-С, вторник, 1 пара: подгруппы английский / немецкий — не склеиваются в одну строку."""
+    days, _ = sheet.group("21-С")
+    e = [x for x in days["2"] if x["lessons"] == [1, 2]][0]
+    assert e == {"lessons": [1, 2], "subject": "Иностранный язык (английский) / Иностранный язык (немецкий)",
+                 "teacher": "Баякчан Л.А. / Хаменева И.И.", "room": "2-15 / 1-14"}

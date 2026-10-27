@@ -25,8 +25,9 @@ INITIALS_RE = re.compile(r"^[А-ЯЁ]\.\s?[А-ЯЁ]\.?$")
 SURNAME_END_RE = re.compile(r"\s([А-ЯЁ][а-яё]{2,}(?:-[А-ЯЁ][а-яё]+)?)$")
 ROOM_RE = re.compile(r"\d-\d{1,2}")
 DAYS = 6
-# Группы, которые человек сверил с PDF целиком
-VERIFIED = {"11-А", "21-П"}
+# Группы, которые человек сверил с PDF целиком (все 19 — 27.10.2026, расписание 1 семестра 2026/27)
+VERIFIED = {"11-П", "11-Д", "11-А", "11-С", "11-В", "11-Л", "21-П", "21-Д", "21-А", "21-С", "21-Л",
+            "31-П", "31-Д", "31-А", "31-С", "41-П", "41-Д", "41-А", "41-С"}
 
 
 def _dark(color):
@@ -85,7 +86,20 @@ def parse_cell(lines):
             subj.append(text)
     if not subj:
         return None
-    subject = re.sub(r"(\w\.?)- (\w)", r"\1-\2", " ".join(subj))  # перенос «рем.- регулир...»
+    # подгруппы: «предмет, преподаватель, предмет, преподаватель» в одной ячейке (англ. / нем.)
+    parts = [" ".join(subj)]
+    if len(teachers) > 1:
+        groups, cur = [], []
+        for _, text, _ in lines:
+            if text in teachers:
+                if cur:
+                    groups.append(" ".join(cur))
+                cur = []
+            elif text in subj:
+                cur.append(text)
+        if len(groups) == len(teachers):
+            parts = groups
+    subject = " / ".join(re.sub(r"(\w\.?)- (\w)", r"\1-\2", p) for p in parts)  # перенос «рем.- регулир...»
     return subject, " / ".join(teachers)
 
 
@@ -178,7 +192,7 @@ class Sheet:
                 entry = {"lessons": lessons}
                 if week:
                     entry["week"] = week
-                entry.update(subject=subject, teacher=teacher, room=" ".join(ROOM_RE.findall(rooms)) or rooms.strip())
+                entry.update(subject=subject, teacher=teacher, room=" / ".join(ROOM_RE.findall(rooms)) or rooms.strip())
                 if not teacher:
                     warnings.append(f"день {d}, пара {k}: не найден преподаватель ({subject})")
                 days[str(d)].append(entry)
