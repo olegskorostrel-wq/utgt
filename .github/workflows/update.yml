@@ -38,23 +38,27 @@ jobs:
       - name: Тесты
         run: |
           python -m pytest tests -q
-          node --test tests/agenda.test.js
+          node --test tests/agenda.test.js tests/calendar.test.js
 
       - name: Проверить страницу замен
         id: scrape
         continue-on-error: true
         run: python scraper.py
 
-      - name: Сохранить новые замены в репозиторий
+      - name: Новости техникума
+        continue-on-error: true
+        run: python tools/news.py
+
+      - name: Сохранить новые замены и новости в репозиторий
         if: github.ref == 'refs/heads/main'
         run: |
-          git add data/zameny
+          git add data/zameny data/news.json
           if git diff --cached --quiet; then
-            echo "Новых замен нет"
+            echo "Новых замен и новостей нет"
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Замены: обновление $(TZ=Europe/Moscow date '+%Y-%m-%d %H:%M')"
+            git commit -m "Замены и новости: обновление $(TZ=Europe/Moscow date '+%Y-%m-%d %H:%M')"
             git push
           fi
 

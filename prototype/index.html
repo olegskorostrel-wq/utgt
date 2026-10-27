@@ -22,6 +22,8 @@
       <div class="clock" aria-live="polite"><span id="clock">--:--</span><small>Ухта</small></div>
     </header>
 
+    <ul id="calendar" class="calendar" hidden></ul>
+
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" data-day="0">Сегодня</button>
       <button type="button" role="tab" data-day="1">Завтра</button>
@@ -37,6 +39,12 @@
       <h2>Распоряжение о замене</h2>
       <div id="imageList"></div>
     </section>
+
+    <details id="news" class="news" hidden>
+      <summary>Новости техникума</summary>
+      <ul id="newsList"></ul>
+      <p class="news-more"><a href="https://utgt-pgups.ru/novosti.html" target="_blank" rel="noopener">Все новости на сайте УТЖТ</a></p>
+    </details>
 
     <footer class="foot">
       <p id="status">Загрузка…</p>
@@ -61,6 +69,7 @@
   </dialog>
 
   <script src="agenda.js"></script>
+  <script src="calendar.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

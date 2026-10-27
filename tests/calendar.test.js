@@ -1,0 +1,50 @@
+// node --test tests/calendar.test.js
+const test = require("node:test");
+const assert = require("node:assert");
+const path = require("node:path");
+const fs = require("node:fs");
+const C = require("../site/calendar.js");
+
+const cal = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data/calendar.json"), "utf8"));
+const G = "11-А";
+const texts = (d) => C.countdown(d, cal, G).map((l) => l.text);
+
+test("склонение дней", () => {
+  assert.deepStrictEqual([1, 2, 5, 11, 21, 22, 63, 112].map(C.daysText),
+    ["1 день", "2 дня", "5 дней", "11 дней", "21 день", "22 дня", "63 дня", "112 дней"]);
+});
+
+test("27 октября: до зимних каникул и ближайший праздник", () => {
+  assert.deepStrictEqual(texts("2026-10-27"), [
+    "До каникул 63 дня (с 29 декабря)",
+    "4 ноября выходной — День народного единства",
+  ]);
+  assert.deepStrictEqual(texts("2026-11-03"), ["До каникул 56 дней (с 29 декабря)", "Завтра выходной — День народного единства"]);
+});
+
+test("праздники и каникулы — занятий нет", () => {
+  assert.deepStrictEqual(C.dayOff("2026-11-04", cal, G), { kind: "holiday", reason: "День народного единства" });
+  assert.strictEqual(C.dayOff("2027-01-05", cal, G).reason, "Зимние каникулы");
+  assert.strictEqual(C.dayOff("2027-01-05", cal, G).until, "2027-01-11");
+  assert.strictEqual(C.dayOff("2026-12-28", cal, G), null);
+  assert.strictEqual(C.dayOff("2027-01-12", cal, G), null);
+});
+
+test("во время каникул — сколько осталось, без «до каникул»", () => {
+  assert.deepStrictEqual(texts("2027-01-05")[0], "Зимние каникулы до 11 января — ещё 6 дней");
+  assert.deepStrictEqual(texts("2027-01-11")[0], "Зимние каникулы до 11 января — последний день");
+  assert.ok(!texts("2027-01-05").some((t) => t.startsWith("До каникул")));
+});
+
+test("за 45 дней до сессии — отсчёт и экзамены", () => {
+  assert.ok(!texts("2027-05-01").some((t) => t.startsWith("До сессии")));
+  const lines = C.countdown("2027-05-20", cal, G);
+  const s = lines.find((l) => l.kind === "sessiya");
+  assert.strictEqual(s.text, "До сессии 35 дней (с 24 июня)");
+  assert.strictEqual(s.exams.length, 4);
+});
+
+test("другая группа без данных — пусто, без ошибок", () => {
+  assert.deepStrictEqual(C.countdown("2026-10-27", { holidays: [] }, "99-Я"), []);
+  assert.strictEqual(C.dayOff("2026-10-27", {}, "99-Я"), null);
+});

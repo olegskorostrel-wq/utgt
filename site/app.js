@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  var A = window.Agenda;
+  var A = window.Agenda, C = window.Calendar;
   var state = { offset: 0, data: null, zamena: {} };
   var params = new URLSearchParams(location.search);
 
@@ -22,9 +22,11 @@
       getJSON("data/schedule_11A.json"),
       getJSON("data/bells.json"),
       getJSON("data/zameny/index.json").catch(function () { return { days: [] }; }),
-      getJSON("status.json").catch(function () { return {}; })
+      getJSON("status.json").catch(function () { return {}; }),
+      getJSON("data/calendar.json").catch(function () { return {}; }),
+      getJSON("data/news.json").catch(function () { return { items: [] }; })
     ]).then(function (r) {
-      state.data = { schedule: r[0], bells: r[1], index: r[2], status: r[3] };
+      state.data = { schedule: r[0], bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5] };
       state.zamena = {};
     });
   }
@@ -45,11 +47,43 @@
     var now = A.moscowNow();
     $("clock").textContent = now.time;
     var date = A.addDays(baseDate(now), state.offset);
+    drawCalendar(params.get("date") || now.date);
     zamenaFor(date).then(function (z) {
-      var ag = A.build(date, state.data.schedule, state.data.bells, z);
+      var ag = build(date, z);
       if (date === now.date) A.markNow(ag, now.minutes);
       draw(ag, z, date, now);
     });
+  }
+
+  // Расписание дня с учётом праздников и каникул из учебного графика
+  function build(date, z) {
+    var ag = A.build(date, state.data.schedule, state.data.bells, z);
+    ag.off = C.dayOff(date, state.data.calendar, state.data.schedule.group);
+    if (ag.off && !(z && z.changes.length)) {
+      ag.items = [];
+      ag.cancelled = [];
+    }
+    return ag;
+  }
+
+  // Строка вверху: каникулы, сессия, ближайший праздник
+  function drawCalendar(today) {
+    var lines = C.countdown(today, state.data.calendar, state.data.schedule.group);
+    var ul = $("calendar");
+    ul.hidden = !lines.length;
+    ul.innerHTML = lines.map(function (l) {
+      return '<li class="cal-' + l.kind + '">' + esc(l.text) +
+        (l.exams ? "<small>Экзамены: " + l.exams.map(esc).join(", ") + "</small>" : "") + "</li>";
+    }).join("");
+  }
+
+  function drawNews() {
+    var items = (state.data.news.items || []).slice(0, 5);
+    $("news").hidden = !items.length;
+    $("newsList").innerHTML = items.map(function (n) {
+      return '<li><a href="' + esc(n.url) + '" target="_blank" rel="noopener">' + esc(n.title) + "</a>" +
+        (n.date ? "<small>" + esc(n.date) + "</small>" : "") + "</li>";
+    }).join("");
   }
 
   function draw(ag, z, date, now) {
@@ -78,6 +112,11 @@
         html = "<strong>Замены опубликованы — 11-А в них нет</strong>" +
           (z.ocr_uncertain ? "Но часть строк распознана неуверенно — проверьте картинку." : "Занятия по обычному расписанию.");
       }
+    } else if (ag.off) {
+      cls = "ok";
+      html = ag.off.kind === "holiday"
+        ? "<strong>Выходной — " + esc(ag.off.reason) + "</strong>Занятий нет."
+        : "<strong>" + esc(ag.off.reason) + "</strong>Занятий нет до " + C.dayMonth(ag.off.until) + " включительно.";
     } else if (ag.weekday === 7) {
       html = "<strong>Воскресенье</strong>Занятий нет.";
     } else {
@@ -90,7 +129,7 @@
     // Уроки
     var list = $("list");
     if (!ag.items.length) {
-      list.innerHTML = '<div class="empty">' + (ag.weekday === 7 ? "Выходной" : "Занятий нет") + "</div>";
+      list.innerHTML = '<div class="empty">' + (ag.off ? esc(ag.off.reason) : ag.weekday === 7 ? "Выходной" : "Занятий нет") + "</div>";
     } else {
       list.innerHTML = ag.items.map(function (it) {
         var n = it.lessons.length ? (it.lessons[0] === 0 ? "классный час"
@@ -138,13 +177,14 @@
     // После окончания занятий или в воскресенье сразу показываем завтра
     var now = A.moscowNow();
     if (!params.get("date")) {
-      var today = A.build(now.date, state.data.schedule, state.data.bells, null);
+      var today = build(now.date, null);
       var last = today.items[today.items.length - 1];
       if (today.weekday === 7 || !last || now.minutes >= last.end) state.offset = 1;
     }
     render();
+    drawNews();
     setInterval(render, 30000);
-    setInterval(function () { load().then(render); }, 10 * 60000);
+    setInterval(function () { load().then(function () { render(); drawNews(); }); }, 10 * 60000);
   }).catch(function (e) {
     $("status").textContent = "Не удалось загрузить данные: " + e.message;
   });
