@@ -126,6 +126,8 @@ h1::first-letter { text-transform: uppercase; }
 .office .status.on { background: var(--ok-soft); color: var(--ok); }
 .office .status.off { background: var(--bg); color: var(--muted); }
 
+.disclaimer { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 13px; line-height: 1.45; }
+.disclaimer strong { color: var(--text); }
 .foot { margin-top: 28px; color: var(--muted); font-size: 13px; }
 .foot .contact { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; color: var(--text); }
 .foot .contact a { font-weight: 600; white-space: nowrap; }
