@@ -292,6 +292,12 @@
         : "<strong>" + esc(ag.off.reason) + "</strong>Занятий по расписанию нет до " + C.dayMonth(ag.off.until) + " включительно.";
     } else if (ag.weekday === 7) {
       html = "<strong>Воскресенье</strong>Занятий нет.";
+    } else if ((C.current(date, state.data.calendar, g) || {}).type === "sessiya") {
+      var ses = C.current(date, state.data.calendar, g);
+      cls = "warn";
+      html = "<strong>Сессия до " + C.dayMonth(ses.to) + "</strong>" +
+        (ses.exams && ses.exams.length ? "Экзамены: " + ses.exams.map(esc).join(", ") + ". " : "") +
+        "В дни сессии пары по расписанию могут не идти — расписание экзаменов уточняйте у куратора.";
     } else {
       html = "<strong>Замен на этот день пока нет</strong>Обычно их публикуют накануне. Сайт проверяет страницу замен несколько раз в день.";
     }

@@ -228,6 +228,52 @@ def teacher_fixer(full_names):
     return fix_days
 
 
+WORD_RE = re.compile(r"[А-ЯЁа-яё]{6,}")
+CODE_DOT_RE = re.compile(r"^((?:МДК|ПМ|ОП|ОГСЭ|ЕН)\.\d+(?:\.\d+)?)\.(?=\s)")
+
+
+def subject_fixer(all_days):
+    """Опечатки-перестановки в названиях предметов («безопансость», «устрйоств»): слово, которое
+    встречается один раз и состоит из тех же букв, что и более частое слово, заменяется им.
+    И «МДК.02.02. Название» -> «МДК.02.02 Название» (точка после кода то есть, то нет)."""
+    count = {}  # слово в нижнем регистре -> сколько раз встречается
+    for days in all_days:
+        for entries in days.values():
+            for e in entries:
+                for w in WORD_RE.findall(e["subject"]):
+                    count[w.lower()] = count.get(w.lower(), 0) + 1
+    by_letters = {}
+    for w, n in count.items():
+        by_letters.setdefault("".join(sorted(w)), []).append((n, w))
+    fix = {}  # опечатка (нижний регистр) -> верное слово (нижний регистр)
+    for words in by_letters.values():
+        if len(words) < 2:
+            continue
+        words.sort(reverse=True)
+        for n, w in words[1:]:
+            if n < words[0][0]:
+                fix[w] = words[0][1]
+
+    def repl(m):
+        w = m.group(0)
+        good = fix.get(w.lower())
+        if not good:
+            return w
+        return good[0].upper() + good[1:] if w[0].isupper() else good
+
+    def fix_days(days):
+        fixed = []
+        for entries in days.values():
+            for e in entries:
+                new = WORD_RE.sub(repl, e["subject"])
+                new = " / ".join(CODE_DOT_RE.sub(r"\1", x) for x in new.split(" / "))
+                if new != e["subject"]:
+                    fixed.append(f"{e['subject']} -> {new}")
+                    e["subject"] = new
+        return fixed
+    return fix_days
+
+
 def group_slug(name):
     """«11-А» -> «11a» (латиница для имён файлов и ссылок)."""
     return name[:2] + LATIN.get(name[-1], name[-1].lower())
@@ -260,10 +306,14 @@ def main():
     teachers = ROOT / "data" / "teachers.json"
     fix_days = teacher_fixer(json.loads(teachers.read_text(encoding="utf-8"))["teachers"] if teachers.exists() else [])
     index = []
+    parsed = {name: sheet.group(name) for name in sheet.groups}
+    fix_subjects = subject_fixer([days for days, _ in parsed.values()])
     for name in sheet.groups:
-        days, warnings = sheet.group(name)
+        days, warnings = parsed[name]
         for f in fix_days(days):
             print(f"{name}: исправлены инициалы {f}")
+        for f in fix_subjects(days):
+            print(f"{name}: исправлен предмет {f}")
         slug = group_slug(name)
         data = build_group_file(name, days, warnings)
         (OUT / f"{slug}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")

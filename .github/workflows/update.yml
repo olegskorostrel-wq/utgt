@@ -59,6 +59,10 @@ jobs:
         continue-on-error: true
         run: python tools/teachers.py
 
+      - name: Проверка данных (опечатки, накладки, сомнительные замены — отчёт в логе)
+        continue-on-error: true
+        run: python tools/check_data.py
+
       - name: Сигнал о сбое (3 неудачи подряд -> задача и пуш)
         if: github.ref == 'refs/heads/main'
         env:

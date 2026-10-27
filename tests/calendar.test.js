@@ -61,3 +61,9 @@ test("учебная часть: открыто, обед, закрыто, пр�
   assert.strictEqual(st("2026-11-03", "18:00"), "Закрыто, откроется 5 ноября в 08:30"); // 4 ноября праздник
   assert.strictEqual(C.officeStatus("2026-10-27", 600, office, cal).open, true);
 });
+
+test("текущий период графика: сессия 31-Д 25.12", () => {
+  const cal = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "data", "calendar.json"), "utf8"));
+  assert.strictEqual(C.current("2026-12-25", cal, "31-Д").type, "sessiya");
+  assert.strictEqual(C.current("2026-10-27", cal, "31-Д"), null);
+});

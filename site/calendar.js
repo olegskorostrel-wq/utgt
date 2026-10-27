@@ -110,7 +110,12 @@
     return { open: false, text: "Закрыто" };
   }
 
-  var api = { dayOff: dayOff, countdown: countdown, officeStatus: officeStatus, plural: plural, daysText: daysText,
+  // Период учебного графика, в который попадает дата (сессия, практика, каникулы…), или null
+  function current(date, cal, group) {
+    return periods(cal, group).filter(function (p) { return p.from <= date && date <= p.to; })[0] || null;
+  }
+
+  var api = { current: current, dayOff: dayOff, countdown: countdown, officeStatus: officeStatus, plural: plural, daysText: daysText,
     dayMonth: dayMonth };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Calendar = api;
