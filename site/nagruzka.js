@@ -61,10 +61,12 @@
     if (i >= 0) list.splice(i, 1); else list.push(value);
     try { localStorage.setItem(FAV_KEY, JSON.stringify(f)); } catch (e) { /* приватный режим — без избранного */ }
   }
+  // Звёздочка со скруглёнными углами (заливка — только у избранного, через CSS)
+  var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.1 5.6.8-4.05 3.95.95 5.6L12 16.4l-5 2.65.95-5.6L3.9 9.5l5.6-.8z"/></svg>';
   function starHTML(value) {
     var on = isFav(value);
     return '<button type="button" class="star' + (on ? " on" : "") + '" data-star="' + esc(value) + '" aria-pressed="' + on +
-      '" aria-label="' + (on ? "Убрать из избранного" : "В избранное") + '">' + (on ? "★" : "☆") + "</button>";
+      '" aria-label="' + (on ? "Убрать из избранного" : "В избранное") + '">' + STAR + "</button>";
   }
   function optHTML(it) {
     return '<div class="row"><button type="button" class="opt" data-value="' + esc(it.value) + '">' +
@@ -80,7 +82,7 @@
     });
     var top = list.filter(function (it) { return isFav(it.value); });
     if (top.length) {
-      html += "<h4>★ Избранное</h4>" + top.map(function (it) { return optHTML(Object.assign({ fav: true }, it)); }).join("");
+      html += "<h4>Избранное</h4>" + top.map(function (it) { return optHTML(Object.assign({ fav: true }, it)); }).join("");
       last = "★";
     }
     list.forEach(function (it) {

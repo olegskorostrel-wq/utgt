@@ -229,11 +229,16 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
 .options h4 + .row, .options .row:first-child { border-top: 0; }
 .options .row .opt { flex: 1; min-width: 0; border-top: 0; }
 .star {
-  flex: none; width: 46px; border: 0; background: none; cursor: pointer; font-size: 21px; line-height: 1;
+  flex: none; display: grid; place-items: center; width: 46px; border: 0; background: none; cursor: pointer; line-height: 1;
   color: var(--muted); opacity: .55; -webkit-tap-highlight-color: transparent;
   transition: color .2s ease, opacity .2s ease, transform .15s ease;
 }
+.star svg {
+  width: 24px; height: 24px; fill: transparent; stroke: currentColor; stroke-width: 1.8;
+  stroke-linejoin: round; stroke-linecap: round; transition: fill .2s ease;
+}
 .star.on { color: #e3a008; opacity: 1; }
+.star.on svg { fill: currentColor; }
 .star.pop { animation: pop .3s ease; }
 .star:active { transform: scale(.85); }
 @keyframes pop { 50% { transform: scale(1.3); } }
