@@ -128,14 +128,16 @@ class Repo:
                         json={"body": text}, timeout=30)
         r.raise_for_status()
 
-    def create_issue(self, title, body, labels):
-        r = self.s.post(f"https://api.github.com/repos/{self.repo}/issues", headers=self.h,
-                        json={"title": title, "body": body, "labels": labels}, timeout=30)
+    def create_issue(self, title, body, labels, assignees=()):
+        data = {"title": title, "body": body, "labels": labels}
+        if assignees:
+            data["assignees"] = list(assignees)
+        r = self.s.post(f"https://api.github.com/repos/{self.repo}/issues", headers=self.h, json=data, timeout=30)
         r.raise_for_status()
         return r.json()["number"]
 
 
-def run(bot, repo, log=print, sealer=None):
+def run(bot, repo, log=print, sealer=None, assignee=None):
     updates = bot.call("getUpdates", timeout=0, allowed_updates=["message"])
     if not updates:
         log("новых сообщений нет")
@@ -144,7 +146,7 @@ def run(bot, repo, log=print, sealer=None):
     created, done = 0, None
     try:
         for u in updates:
-            created += handle(u.get("message"), bot, repo, log, sealer)
+            created += handle(u.get("message"), bot, repo, log, sealer, assignee)
             done = u["update_id"]
     finally:
         # подтверждаем Telegram только то, что уже обработано, — без дублей при сбое
@@ -154,7 +156,7 @@ def run(bot, repo, log=print, sealer=None):
     return created
 
 
-def handle(msg, bot, repo, log, sealer=None):
+def handle(msg, bot, repo, log, sealer=None, assignee=None):
     """Одно сообщение. True, если создана задача."""
     if not msg or msg.get("chat", {}).get("type") != "private":
         return False
@@ -166,7 +168,9 @@ def handle(msg, bot, repo, log, sealer=None):
     if issue is None:
         bot.call("sendMessage", chat_id=chat, text=NOT_TEXT)
         return False
-    number = repo.create_issue(*issue)
+    # назначение на человека -> пуш «Assigned» в приложении GitHub; спам никому не назначаем
+    spam = SPAM_LABEL in issue[2]
+    number = repo.create_issue(*issue, assignees=[assignee] if assignee and not spam else [])
     log(f"задача #{number}: {issue[0]}" + (" [спам?]" if SPAM_LABEL in issue[2] else ""))
     if SPAM_LABEL not in issue[2]:
         bot.call("sendMessage", chat_id=chat, text=THANKS)
@@ -222,7 +226,7 @@ def main():
           + (", ВНИМАНИЕ: установлен вебхук — getUpdates не работает" if hook.get("url") else ""))
     if hook.get("url"):
         bot.call("deleteWebhook")  # сообщения забираем сами, вебхук мешает
-    run(bot, repo, sealer=sealer)
+    run(bot, repo, sealer=sealer, assignee=os.environ.get("FEEDBACK_ASSIGNEE") or None)
     return 0
 
 

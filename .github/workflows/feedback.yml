@@ -35,4 +35,6 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # кому назначать новые сообщения (приходит пуш «Assigned» в приложении GitHub)
+          FEEDBACK_ASSIGNEE: olegskorostrel-wq
         run: python tools/tg_feedback.py
