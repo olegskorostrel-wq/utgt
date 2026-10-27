@@ -209,7 +209,7 @@ h1::first-letter { text-transform: uppercase; }
 
 /* Анимации: карточки мягко «всплывают» по очереди при открытии и смене вкладки
    (при ежеминутном обновлении — без анимации) */
-@keyframes rise { from { opacity: 0; transform: translateY(8px) scale(.99); } }
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
 @keyframes fade { from { opacity: 0; } }
 .anim .lesson, .anim .wday, .anim .banner, .anim .empty {
   animation: rise .55s var(--ease) both;
@@ -224,8 +224,8 @@ details[open] > :not(summary) { animation: rise .45s var(--ease) both; }
 /* Полоска прогресса у идущей пары */
 .lesson .bar { grid-column: 1 / -1; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--accent-soft); overflow: hidden; }
 .lesson .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
-.anim .lesson .bar i { animation: grow 1s .25s var(--ease) both; }
-@keyframes grow { from { width: 0; } }
+.anim .lesson .bar i { transform-origin: left center; animation: grow 1s .25s var(--ease) both; }
+@keyframes grow { from { transform: scaleX(0); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

@@ -111,8 +111,7 @@
   function render(animate) {
     var now = A.moscowNow();
     $("clock").textContent = now.time;
-    $("dayView").classList.toggle("anim", !!animate);
-    $("weekView").classList.toggle("anim", !!animate);
+    state.animNext = !!animate;
     var g = state.group;
     drawCalendar(params.get("date") || now.date);
     drawUseful(now);
@@ -133,6 +132,14 @@
       if (date === now.date) A.markNow(ag, now.minutes);
       draw(ag, z, date, schedule, now);
     });
+  }
+
+  // Плавное появление карточек — только для нового содержимого и только когда его просили
+  function animIn(el) {
+    el.classList.remove("anim");
+    if (!state.animNext) return;
+    void el.offsetWidth; // перезапуск анимации
+    el.classList.add("anim");
   }
 
   // Неделя (пн–сб), в которой сегодняшний день; в воскресенье — следующая
@@ -159,6 +166,7 @@
         }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
         return weekDayHTML(d, i, now, A.humanDate(d) + (d === now.date ? ' <span class="tag state">сегодня</span>' : ""), body, ag.items.length);
       }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
+      animIn($("weekView"));
     });
   }
 
@@ -198,6 +206,9 @@
   }
 
   function drawCalendar(today) {
+    var key = [today, state.group, navigator.onLine, state.data.status.checked_at].join("|");
+    if (drawCalendar.key === key) return;
+    drawCalendar.key = key;
     var lines = C.countdown(today, state.data.calendar, state.group);
     if (!navigator.onLine) {
       var st = state.data.status.checked_at;
@@ -236,6 +247,9 @@
 
   // «Полезное» для выбранной группы: учебная часть, ссылки, документы курса, курсовые, программа ГИА
   function drawUseful(now) {
+    var key = [state.group, state.teacher, now.date, now.minutes, !!installEvt, standalone()].join("|");
+    if (drawUseful.key === key) return;
+    drawUseful.key = key;
     var info = state.data.info;
     $("useful").hidden = !info;
     if (!info) return;
@@ -346,6 +360,7 @@
       }).join("");
     }
 
+    animIn($("dayView"));
     var c = $("cancelled");
     c.hidden = !ag.cancelled.length;
     c.innerHTML = ag.cancelled.length ? "Отменено: " + ag.cancelled.map(function (x) {
@@ -603,6 +618,7 @@
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
       }).join("") : '<div class="empty">' + (d.holiday ? esc(d.holiday.name) : d.weekday === 7 ? "Выходной" : "Пар нет") + "</div>";
 
+      animIn($("dayView"));
       var c = $("cancelled");
       c.hidden = !d.removed.length;
       c.innerHTML = d.removed.length ? "Снято заменой: " + d.removed.map(function (x) {
@@ -641,6 +657,7 @@
             (d.items.length ? ' <span class="cnt">' + d.items.length + " " + C.plural(d.items.length, "пара", "пары", "пар") + "</span>" : ""),
             body, d.items.length);
         }).join("") + '<p class="hint">Замены учтены на дни, на которые их уже опубликовали.</p>';
+      animIn($("weekView"));
     });
   }
 

@@ -151,7 +151,11 @@
 .theme-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .theme-btn .lbl { max-width: 0; overflow: hidden; white-space: nowrap; transition: max-width .45s var(--ease); }
 .theme-btn.show .lbl { max-width: 120px; }
-html.theme-anim, html.theme-anim * { transition: background-color .5s var(--ease-io), color .5s var(--ease-io), border-color .5s var(--ease-io) !important; }
+/* смена темы: плавно меняются только фон и карточки (а не каждый элемент — так не тормозит) */
+html.theme-anim body, html.theme-anim .lesson, html.theme-anim .wday, html.theme-anim .list, html.theme-anim .tabs,
+html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html.theme-anim .switch, html.theme-anim .calendar li {
+  transition: background-color .45s var(--ease-io), color .45s var(--ease-io), border-color .45s var(--ease-io) !important;
+}
 .theme-btn .ico { display: inline-flex; }
 .hint.small { font-size: 11px; line-height: 1.35; margin: 6px 4px 12px; opacity: .85; }
 
@@ -204,3 +208,5 @@ html.theme-anim, html.theme-anim * { transition: background-color .5s var(--ease
 .install .plus { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 8px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
 .install .plus li { border: 0; padding: 0; }
 .install .plus li::before { content: "✓ "; color: var(--ok); font-weight: 700; }
+[data-swipe] .anim .lesson, [data-swipe] .anim .wday, [data-swipe] .anim .banner { animation: none; }
+.tlesson.past .who { display: block; }
