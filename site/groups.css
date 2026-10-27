@@ -188,3 +188,16 @@ html.theme-anim, html.theme-anim * { transition: background-color .5s var(--ease
 [data-swipe="prev"] #dayView:not([hidden]), [data-swipe="prev"] #weekView:not([hidden]) { animation: from-left .45s var(--ease) both; }
 .history .hnote { display: block; margin-bottom: 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
 .wday li { row-gap: 0; }
+
+/* установка приложения */
+.install { margin: 4px 0 12px; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--accent); }
+.install strong { display: block; }
+.install small { display: block; color: var(--muted); font-size: 12.5px; margin: 2px 0 6px; }
+.install p { margin: 0; font-size: 13.5px; }
+.install button {
+  padding: 8px 16px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent);
+  font: inherit; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .22s var(--ease);
+}
+.install button:active { transform: scale(.95); }
+.calendar .cal-offline::before { background: var(--warn); }
+.calendar .cal-offline { color: var(--warn); border-color: var(--warn); }

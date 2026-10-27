@@ -199,6 +199,11 @@
 
   function drawCalendar(today) {
     var lines = C.countdown(today, state.data.calendar, state.group);
+    if (!navigator.onLine) {
+      var st = state.data.status.checked_at;
+      lines.unshift({ kind: "offline", text: "Нет интернета — показано сохранённое" +
+        (st ? " (данные от " + st.slice(8, 10) + "." + st.slice(5, 7) + " " + st.slice(11, 16) + ")" : "") });
+    }
     var ul = $("calendar");
     ul.hidden = !lines.length;
     ul.innerHTML = lines.map(function (l) {
@@ -244,6 +249,7 @@
       return "<li>" + sem + " семестр: " + cw[sem].map(esc).join("; ") + "</li>";
     }).join("");
     $("usefulBody").innerHTML =
+      installHTML() +
       '<button type="button" class="history-btn" id="historyBtn">История замен' +
         "<small>все распоряжения о заменах по дням, начиная с 19 октября</small></button>" +
       '<div class="office"><strong>' + esc(o.name) + "</strong>" +
@@ -453,6 +459,68 @@
   }
   function fromMinutes(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
   $("usefulBody").addEventListener("click", function (e) { if (e.target.closest("#historyBtn")) openHistory(); });
+
+  // ---------- приложение (PWA): установка с учётом браузера, работа без интернета ----------
+
+  var installEvt = null;
+  function standalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  }
+  // Как установить в этом браузере: { button: true } или { text: "…" }; null — уже установлено
+  function installWay() {
+    if (standalone()) return null;
+    if (installEvt) return { button: true };
+    var ua = navigator.userAgent;
+    var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var android = /Android/.test(ua);
+    var inApp = /Telegram|VKAndroidApp|VKClient|vkontakte|Instagram|FBAN|FBAV|OKApp/i.test(ua) || (android && /; wv\)/.test(ua));
+    if (inApp) return { text: "Сайт открыт внутри другого приложения (Телеграм, ВК…) — отсюда установить нельзя. " +
+      "Откройте его в браузере: меню ⋮ или ⋯ → «Открыть в браузере», и установите там." };
+    if (ios) {
+      if (/CriOS|EdgiOS/.test(ua)) return { text: "Нажмите «Поделиться» (квадрат со стрелкой в адресной строке) → " +
+        "«На экран „Домой“» → «Добавить». Нужен iOS 16.4 или новее; если пункта нет — откройте сайт в Safari." };
+      if (/FxiOS|YaBrowser|OPiOS/.test(ua)) return { text: "В этом браузере на iPhone установить нельзя. " +
+        "Откройте сайт в Safari → «Поделиться» (квадрат со стрелкой) → «На экран „Домой“» → «Добавить»." };
+      return { text: "Нажмите «Поделиться» (квадрат со стрелкой внизу экрана) → прокрутите вниз → " +
+        "«На экран „Домой“» → «Добавить»." };
+    }
+    if (android) {
+      if (/SamsungBrowser/.test(ua)) return { text: "Меню ☰ (внизу справа) → «Добавить страницу на» → «Главный экран»." };
+      if (/YaBrowser/.test(ua)) return { text: "Меню ⋮ → «Добавить ярлык» (или «Установить приложение»)." };
+      if (/Firefox/.test(ua)) return { text: "Меню ⋮ → «Установить» (или «Добавить на главный экран»)." };
+      if (/OPR|Opera/.test(ua)) return { text: "Меню ⋮ → «Главный экран» (или «Установить приложение»)." };
+      return { text: "Меню ⋮ (вверху справа) → «Установить приложение» или «Добавить на главный экран»." };
+    }
+    if (/Firefox/.test(ua)) return { text: "Firefox на компьютере не устанавливает сайты как приложения — откройте сайт в Chrome, Edge или Яндекс Браузере." };
+    if (/Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua)) return { text: "Safari на Mac: меню «Файл» → «Добавить в Dock»." };
+    return { text: "Значок установки ⊕ в правой части адресной строки, или меню ⋮ → «Установить приложение»." };
+  }
+  function installHTML() {
+    var w = installWay();
+    if (!w) return "";
+    return '<div class="install"><strong>Установить как приложение</strong>' +
+      "<small>Иконка на рабочем столе, открывается без браузера, последнее расписание видно и без интернета.</small>" +
+      (w.button ? '<button type="button" id="installBtn">Установить</button>' : "<p>" + esc(w.text) + "</p>") + "</div>";
+  }
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    installEvt = e;
+    if (state.data) drawUseful(A.moscowNow());
+  });
+  window.addEventListener("appinstalled", function () {
+    installEvt = null;
+    if (state.data) drawUseful(A.moscowNow());
+  });
+  $("usefulBody").addEventListener("click", function (e) {
+    if (!e.target.closest("#installBtn") || !installEvt) return;
+    installEvt.prompt();
+    installEvt.userChoice.then(function () { installEvt = null; drawUseful(A.moscowNow()); });
+  });
+  window.addEventListener("online", function () { if (state.data) render(); });
+  window.addEventListener("offline", function () { if (state.data) render(); });
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
 
   // ---------- режим преподавателя ----------
 

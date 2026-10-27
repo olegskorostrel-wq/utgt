@@ -63,6 +63,13 @@ def build(out=ROOT / "_site", scrape_ok=True):
         (zameny / "index.json").write_text('{"days": []}', encoding="utf-8")
     write_history(out / "data" / "history")
     bust_cache(out)
+    # версия кэша для работы без интернета: меняется при любом изменении сайта или данных
+    digest = hashlib.sha1()
+    for f in sorted(out.rglob("*")):
+        if f.is_file() and f.name != "sw.js":
+            digest.update(f.name.encode()); digest.update(f.read_bytes())
+    sw = out / "sw.js"
+    sw.write_text(sw.read_text(encoding="utf-8").replace("__BUILD__", digest.hexdigest()[:10]), encoding="utf-8")
     status = {"checked_at": dt.datetime.now(ZoneInfo("Europe/Moscow")).isoformat(timespec="minutes"),
               "ok": scrape_ok}
     (out / "status.json").write_text(json.dumps(status), encoding="utf-8")
