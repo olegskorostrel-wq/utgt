@@ -202,6 +202,32 @@ class Sheet:
 LATIN = {"П": "p", "Д": "d", "А": "a", "С": "s", "В": "v", "Л": "l"}
 
 
+def teacher_fixer(full_names):
+    """Опечатки в инициалах (в PDF у 21-Л «Канева О.В.», а в педсоставе одна Канева — Ольга Петровна):
+    если фамилия встречается в списке педсостава ровно один раз, инициалы берём оттуда."""
+    by_surname = {}
+    for full in full_names:
+        parts = full.split()
+        if len(parts) >= 3:
+            by_surname.setdefault(parts[0], []).append(f"{parts[0]} {parts[1][0]}.{parts[2][0]}.")
+
+    def fix(short):
+        surname = short.split(" ")[0]
+        found = by_surname.get(surname, [])
+        return found[0] if len(found) == 1 else short
+
+    def fix_days(days):
+        fixed = []
+        for entries in days.values():
+            for e in entries:
+                new = " / ".join(fix(t) for t in e["teacher"].split(" / ")) if e["teacher"] else ""
+                if new != e["teacher"]:
+                    fixed.append(f"{e['teacher']} -> {new}")
+                    e["teacher"] = new
+        return fixed
+    return fix_days
+
+
 def group_slug(name):
     """«11-А» -> «11a» (латиница для имён файлов и ссылок)."""
     return name[:2] + LATIN.get(name[-1], name[-1].lower())
@@ -231,9 +257,13 @@ def main():
         print(json.dumps({"days": days, "warnings": warnings}, ensure_ascii=False, indent=1))
         return 0
     OUT.mkdir(parents=True, exist_ok=True)
+    teachers = ROOT / "data" / "teachers.json"
+    fix_days = teacher_fixer(json.loads(teachers.read_text(encoding="utf-8"))["teachers"] if teachers.exists() else [])
     index = []
     for name in sheet.groups:
         days, warnings = sheet.group(name)
+        for f in fix_days(days):
+            print(f"{name}: исправлены инициалы {f}")
         slug = group_slug(name)
         data = build_group_file(name, days, warnings)
         (OUT / f"{slug}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")

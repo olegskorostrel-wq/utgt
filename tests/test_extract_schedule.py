@@ -79,3 +79,12 @@ def test_subgroups_split(sheet):
     e = [x for x in days["2"] if x["lessons"] == [1, 2]][0]
     assert e == {"lessons": [1, 2], "subject": "Иностранный язык (английский) / Иностранный язык (немецкий)",
                  "teacher": "Баякчан Л.А. / Хаменева И.И.", "room": "2-15 / 1-14"}
+
+
+def test_teacher_initials_typo_fixed_by_staff_list():
+    from extract_schedule import teacher_fixer
+    fix = teacher_fixer(["Канева Ольга Петровна", "Иванов Иван Иванович", "Иванова Анна Петровна"])
+    days = {"2": [{"teacher": "Канева О.В.", "subject": "Информатика"}],
+            "3": [{"teacher": "Баякчан Л.А. / Канева О.В.", "subject": "А / Б"}, {"teacher": "", "subject": "РоВ"}]}
+    assert fix(days) == ["Канева О.В. -> Канева О.П.", "Баякчан Л.А. / Канева О.В. -> Баякчан Л.А. / Канева О.П."]
+    assert days["2"][0]["teacher"] == "Канева О.П."
