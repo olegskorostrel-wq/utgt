@@ -2,7 +2,6 @@
 
     python build_site.py                  # обычная сборка
     python build_site.py --scrape-failed  # отметить, что проверка замен упала
-    python build_site.py --preview        # прототип для всех групп в _preview (не публикуется)
 """
 import argparse
 import datetime as dt
@@ -29,15 +28,13 @@ def bust_cache(out):
         page.write_text(html, encoding="utf-8")
 
 
-def build(out=ROOT / "_site", scrape_ok=True, preview=False):
+def build(out=ROOT / "_site", scrape_ok=True):
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(ROOT / "site", out)
     # расписания всех групп: на сайте 11-А нужны для «где сейчас преподаватель»
     # архив замен сайту не нужен — он для запросов «что было тогда-то»
     shutil.copytree(ROOT / "data", out / "data", ignore=shutil.ignore_patterns("archive"))
-    if preview:
-        shutil.copytree(ROOT / "prototype", out, dirs_exist_ok=True)
     zameny = out / "data" / "zameny"
     zameny.mkdir(exist_ok=True)
     if not (zameny / "index.json").exists():
@@ -53,7 +50,5 @@ def build(out=ROOT / "_site", scrape_ok=True, preview=False):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--scrape-failed", action="store_true")
-    ap.add_argument("--preview", action="store_true")
     args = ap.parse_args()
-    out = ROOT / ("_preview" if args.preview else "_site")
-    print("собрано в", build(out, scrape_ok=not args.scrape_failed, preview=args.preview))
+    print("собрано в", build(scrape_ok=not args.scrape_failed))

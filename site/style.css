@@ -192,8 +192,8 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
   background: var(--accent-soft); color: var(--accent); vertical-align: 1px;
 }
 #result .tag:not(.state) { background: var(--warn-soft); color: var(--warn); font-size: 11px; }
-.picker { margin: 4px 0 14px; }
-.picker input {
+.finder { margin: 4px 0 14px; }
+.finder input {
   width: 100%; padding: 11px 14px; font: inherit; font-size: 16px; color: var(--text);
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;
 }
@@ -246,4 +246,4 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
 .chosen-row .chosen { flex: 1; min-width: 0; }
 .chosen-row .star { border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
 .chosen-row[hidden] { display: none; }
-.picker input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.finder input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }

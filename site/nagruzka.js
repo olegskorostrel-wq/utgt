@@ -157,7 +157,7 @@
   });
   $("q").addEventListener("input", drawOptions);
   // звёздочка: в списке — перерисовать (пункт переедет наверх), у выбранного — только сама звёздочка
-  document.querySelector(".picker").addEventListener("click", function (e) {
+  document.querySelector(".finder").addEventListener("click", function (e) {
     var st = e.target.closest(".star");
     if (!st) return;
     toggleFav(st.dataset.star);
@@ -165,7 +165,7 @@
     if (st.id === "chosenStar") st.outerHTML = starHTML(v).replace('class="star', 'id="chosenStar" class="star');
     else drawOptions();
     // «подпрыгивает» только нажатая звёздочка
-    document.querySelectorAll(".picker .star").forEach(function (x) {
+    document.querySelectorAll(".finder .star").forEach(function (x) {
       if (x.dataset.star === v && x.classList.contains("on")) x.classList.add("pop");
     });
   });
