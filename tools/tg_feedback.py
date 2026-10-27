@@ -136,7 +136,14 @@ def main():
     if not token:
         print("TELEGRAM_BOT_TOKEN не задан — бот обратной связи ещё не настроен, пропускаю")
         return 0
-    run(Bot(token), Repo(os.environ["GITHUB_TOKEN"], os.environ["GITHUB_REPOSITORY"]))
+    bot = Bot(token)
+    me = bot.call("getMe")
+    hook = bot.call("getWebhookInfo")
+    print(f"бот: @{me.get('username')}, ждут в очереди: {hook.get('pending_update_count', 0)}"
+          + (", ВНИМАНИЕ: установлен вебхук — getUpdates не работает" if hook.get("url") else ""))
+    if hook.get("url"):
+        bot.call("deleteWebhook")  # сообщения забираем сами, вебхук мешает
+    run(bot, Repo(os.environ["GITHUB_TOKEN"], os.environ["GITHUB_REPOSITORY"]))
     return 0
 
 
