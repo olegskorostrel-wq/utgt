@@ -34,6 +34,4 @@
 .desk .tlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* раскрытый день — на всю ширину сетки */
 .desk #weekView .wday.open { grid-column: 1 / -1; }
-.desk .wday.open ul { columns: 2; column-gap: 28px; }
-.desk .wday.open li { break-inside: avoid; }
 .desk .wday[role="button"]:hover { border-color: var(--accent); }
