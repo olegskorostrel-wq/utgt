@@ -119,10 +119,48 @@
     var byShort = state.data.teachers.by_short || {};
     return teacher.split(" / ").map(function (t) {
       var full = byShort[t.trim()];
-      if (!full) return esc(t) + " — полного имени нет в списке преподавателей на сайте техникума.";
+      var where = '<small class="where" data-teacher="' + esc(t.trim()) + '"></small>';
+      if (!full) return esc(t) + " — полного имени нет в списке преподавателей на сайте техникума." + where;
       var p = full.split(" ");
-      return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>";
+      return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>" + where;
     }).join("");
+  }
+
+  // Расписания всех групп — грузятся только при первом нажатии на урок
+  var groupsLoad = null;
+  function allGroups() {
+    if (!groupsLoad) groupsLoad = getJSON("data/groups/index.json").then(function (ix) {
+      return Promise.all(ix.groups.map(function (g) {
+        return getJSON("data/groups/" + g.file).then(function (s) { return { group: g.group, schedule: s }; });
+      }));
+    });
+    return groupsLoad;
+  }
+
+  function zamenaForGroup(z, group) {
+    if (!z) return null;
+    var all = z.all_changes;
+    return Object.assign({}, z, { changes: all ? (all[group] || []) : (group === z.group ? z.changes : []) });
+  }
+
+  // «Где сейчас»: по расписаниям всех групп и сегодняшним заменам (только для сегодняшнего дня)
+  function fillWhere(card) {
+    var now = A.moscowNow(), date = baseDate(now);
+    var spots = card.querySelectorAll(".where");
+    if (!spots.length || state.offset !== 0 || date !== now.date) return;
+    Promise.all([allGroups(), zamenaFor(date)]).then(function (r) {
+      spots.forEach(function (el) {
+        var w = Teachers.whereIs(el.dataset.teacher, date, now.minutes, r[0], state.data.bells, state.data.calendar,
+          function (g) { return zamenaForGroup(r[1], g); });
+        var room = function (l) { return l.room ? "каб. " + l.room : "кабинет не указан"; };
+        var parts = [];
+        if (w.now) parts.push("Сейчас: " + room(w.now) + ", " + w.now.group + " (до " + w.now.endText + ")");
+        if (w.next) parts.push("Дальше: " + w.next.startText + " — " + room(w.next) + ", " + w.next.group);
+        if (!w.lessons.length) parts.push("Сегодня по расписанию пар нет");
+        else if (!parts.length) parts.push("Пары на сегодня закончились");
+        el.textContent = parts.join(" · ");
+      });
+    }).catch(function () {});
   }
 
   // «Полезное»: учебная часть (открыто/закрыто сейчас), ссылки, документы для своего курса
@@ -247,6 +285,7 @@
     state.open[key] = !state.open[key];
     card.classList.toggle("open", state.open[key]);
     card.setAttribute("aria-expanded", String(state.open[key]));
+    if (state.open[key]) fillWhere(card);
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);

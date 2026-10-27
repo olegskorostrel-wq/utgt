@@ -34,8 +34,8 @@ def build(out=ROOT / "_site", scrape_ok=True, preview=False):
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(ROOT / "site", out)
-    # расписания всех групп пока нужны только прототипу
-    shutil.copytree(ROOT / "data", out / "data", ignore=None if preview else shutil.ignore_patterns("groups"))
+    # расписания всех групп: на сайте 11-А нужны для «где сейчас преподаватель»
+    shutil.copytree(ROOT / "data", out / "data")
     if preview:
         shutil.copytree(ROOT / "prototype", out, dirs_exist_ok=True)
     zameny = out / "data" / "zameny"
