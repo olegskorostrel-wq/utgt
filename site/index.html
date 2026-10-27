@@ -61,8 +61,13 @@
       <p>Источники: <a href="https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html">замены</a>,
         <a href="https://utgt-pgups.ru/raspisaniya-i-grafiki.html">расписание и звонки</a> на сайте УТЖТ.
         Замены распознаются автоматически — при сомнениях сверяйтесь с картинкой.</p>
-      <p class="contact">Нашли ошибку или есть идея?<br>Напишите боту:
-        <a href="https://t.me/raspisanie_utgt_bot" target="_blank" rel="noopener">@raspisanie_utgt_bot</a></p>
+      <p class="contact">Нашли ошибку или есть идея?<br>Напишите в Телеграм:
+        <a href="https://t.me/raspisanie_utgt_bot" target="_blank" rel="noopener">@raspisanie_utgt_bot</a><br>или на почту:
+        <!-- адрес собирается скриптом, чтобы его не нашли спам-боты -->
+        <a id="mail" data-u="raspisanie.utgt" data-d="gmail.com">raspisanie.utgt [собака] gmail.com</a></p>
+      <script>
+        (function (a) { var m = a.dataset.u + "@" + a.dataset.d; a.href = "mailto:" + m; a.textContent = m; })(document.getElementById("mail"));
+      </script>
     </footer>
   </main>
   <script src="agenda.js"></script>
