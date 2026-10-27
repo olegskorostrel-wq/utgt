@@ -108,3 +108,16 @@
 .base li.gone .tag { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 6px; font-size: 11px;
   background: var(--warn-soft); color: var(--warn); text-decoration: none; }
 .base li.none { display: block; color: var(--muted); }
+
+/* кнопка «i» у даты: плашка о заменах по нажатию */
+.info-btn {
+  display: inline-block; width: 24px; height: 24px; margin-left: 6px; vertical-align: 1px; padding: 0; border-radius: 50%; border: 1.5px solid var(--line);
+  background: var(--card); color: var(--muted); font: 700 14px/1 Georgia, "Times New Roman", serif; font-style: italic;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s ease, background-color .2s ease;
+}
+.info-btn:active { transform: scale(.9); }
+.info-btn.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+.info-btn.ok { border-color: var(--ok); color: var(--ok); background: var(--ok-soft); }
+.info-btn[aria-expanded="true"] { box-shadow: 0 0 0 3px var(--accent-soft); }
+.info-btn[hidden] { display: none; }
+#banner:not([hidden]) { animation: rise .25s cubic-bezier(.2, .7, .3, 1) both; }

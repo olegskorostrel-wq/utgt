@@ -3,7 +3,7 @@
   "use strict";
   var A = window.Agenda, C = window.Calendar;
   var STORE_KEY = "utgt-group", WHO_KEY = "utgt-who", TEACHER_KEY = "utgt-teacher", LANG_KEY = "utgt-lang";
-  var state = { offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
+  var state = { infoOpen: false, offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
   var params = new URLSearchParams(location.search);
 
   function $(id) { return document.getElementById(id); }
@@ -112,6 +112,7 @@
     $("langSwitch").hidden = !!state.teacher;
     $("langToggle").checked = lang() === "немецкий";
     $("dayView").hidden = state.offset === "week";
+    $("infoBtn").hidden = state.offset === "week";
     $("weekView").hidden = state.offset !== "week";
     if (state.teacher) return state.offset === "week" ? renderTeacherWeek(now) : renderTeacherDay(now);
     if (state.offset === "week") return renderWeek(now);
@@ -301,9 +302,7 @@
     } else {
       html = "<strong>Замен на этот день пока нет</strong>Обычно их публикуют накануне. Сайт проверяет страницу замен несколько раз в день.";
     }
-    banner.className = "banner " + cls;
-    banner.innerHTML = html;
-    banner.hidden = false;
+    showBanner(cls, html);
     drawBase(ag, z, date, schedule);
 
     var list = $("list");
@@ -378,6 +377,18 @@
     }).join("") : '<li class="none">По расписанию пар нет</li>';
   }
 
+  // Плашка о заменах спрятана за кнопкой «i» у даты: цвет кнопки — есть ли замены
+  function showBanner(cls, html) {
+    var banner = $("banner"), btn = $("infoBtn");
+    banner.className = "banner " + cls;
+    banner.innerHTML = html;
+    banner.hidden = !state.infoOpen;
+    btn.hidden = false;
+    btn.className = "info-btn " + cls;
+    btn.setAttribute("aria-expanded", String(state.infoOpen));
+    btn.title = html.replace("</strong>", ". ").replace(/<[^>]+>/g, "");
+  }
+
   // ---------- режим преподавателя ----------
 
   function teacherFull(t) { return (state.data.teachers.by_short || {})[t] || ""; }
@@ -437,9 +448,7 @@
       } else {
         html = "<strong>Замен на этот день пока нет</strong>Обычно их публикуют накануне. Сайт проверяет страницу замен несколько раз в день.";
       }
-      banner.className = "banner " + cls;
-      banner.innerHTML = html;
-      banner.hidden = false;
+      showBanner(cls, html);
       $("base").hidden = true;
 
       var list = $("list");
@@ -642,6 +651,12 @@
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
+
+  $("infoBtn").addEventListener("click", function () {
+    state.infoOpen = !state.infoOpen;
+    $("banner").hidden = !state.infoOpen;
+    this.setAttribute("aria-expanded", String(state.infoOpen));
+  });
 
   $("langToggle").addEventListener("change", function (e) {
     store(LANG_KEY, e.target.checked ? "немецкий" : "английский");
