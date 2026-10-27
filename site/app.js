@@ -109,6 +109,8 @@
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(b.dataset.day === String(state.offset)));
     });
+    $("langSwitch").hidden = !!state.teacher;
+    $("langToggle").checked = lang() === "немецкий";
     $("dayView").hidden = state.offset === "week";
     $("weekView").hidden = state.offset !== "week";
     if (state.teacher) return state.offset === "week" ? renderTeacherWeek(now) : renderTeacherDay(now);
@@ -159,7 +161,7 @@
     });
     // иностранный язык: только своя подгруппа (если язык выбран)
     var off = C.dayOff(date, state.data.calendar, state.group);
-    ag = A.forLanguage(ag, store(LANG_KEY) || null);
+    ag = A.forLanguage(ag, lang());
     ag.off = off;
     if (ag.off && !(z && z.changes.length)) {
       ag.items = [];
@@ -191,19 +193,8 @@
     }).join("");
   }
 
-  // Выбор языковой подгруппы — в карточке иностранного языка
-  function langPicker() {
-    var cur = store(LANG_KEY);
-    var b = function (l, t) {
-      return '<button type="button" class="langbtn" data-lang="' + l + '" aria-pressed="' + (cur === l) + '">' + t + "</button>";
-    };
-    return '<div class="langpick"><small>' + (cur
-      ? "Ваш иностранный язык:"
-      : "Какой язык учили в школе? Кто учил немецкий — ходит на немецкий вместо английского.") + "</small>" +
-      b("английский", "Английский") + b("немецкий", "Немецкий") + (cur ? b("", "Показывать оба") : "") +
-      '<small class="note">⚠ Влияет на расписание: пары другого языка не будут показываться — ни на день, ни в неделе. ' +
-      "Выбор запоминается на этом устройстве, поменять можно здесь же.</small></div>";
-  }
+  // Языковая подгруппа: по умолчанию английский (обычное расписание), тумблер — немецкий
+  function lang() { return store(LANG_KEY) === "немецкий" ? "немецкий" : "английский"; }
 
   // Расписания всех групп — грузятся только при первом нажатии на урок
   function allGroups() {
@@ -321,7 +312,6 @@
         if (it.state === "next") tags += '<span class="tag state">далее</span>';
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
-        if (it.langOnly) tags += '<span class="tag lang">только ' + esc(it.langOnly.replace(/ий$/, "ая")) + " подгруппа</span>";
         var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
         var key = it.startText + " " + it.subject;
         return '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") +
@@ -332,7 +322,7 @@
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
           '<div class="full"><div><div class="in">' + teacherInfo(it.teacher) +
-            (it.lang ? langPicker() : "") + "</div></div></div>" +
+            "</div></div></div>" +
           (it.state === "now" ? '<div class="bar"><i style="width:' +
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
       }).join("");
@@ -613,14 +603,6 @@
   });
   // Нажатие на урок — показать/скрыть полное ФИО преподавателя
   function toggleLesson(e) {
-    var lb = e.target.closest(".langbtn");
-    if (lb) {
-      if (e.type === "keydown") return;
-      e.stopPropagation();
-      try { if (lb.dataset.lang) localStorage.setItem(LANG_KEY, lb.dataset.lang); else localStorage.removeItem(LANG_KEY); } catch (err) { /* приватный режим */ }
-      render(false);
-      return;
-    }
     if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
     var card = e.target.closest(".lesson");
     if (!card || !card.querySelector(".full")) return; // у преподавателя карточки не раскрываются
@@ -633,6 +615,11 @@
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
+
+  $("langToggle").addEventListener("change", function (e) {
+    store(LANG_KEY, e.target.checked ? "немецкий" : "английский");
+    render(true);
+  });
 
   document.querySelectorAll(".tabs button").forEach(function (b) {
     b.addEventListener("click", function () {

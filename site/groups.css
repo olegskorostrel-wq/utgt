@@ -71,16 +71,27 @@
 .wday h3 .cnt { float: right; font-size: 12px; font-weight: 600; color: var(--muted); }
 
 /* языковая подгруппа */
-.tag.lang { background: var(--accent-soft) !important; color: var(--accent) !important; }
-.langpick { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
-.langpick small { display: block; margin-bottom: 6px; color: var(--muted); }
-.langbtn {
-  margin: 0 6px 6px 0; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
-  background: var(--bg); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; transition: background-color .2s ease, border-color .2s ease;
-}
-.langbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (prefers-color-scheme: dark) { .langbtn[aria-pressed="true"] { color: #0b1220; } }
 .lesson .full small.guess { margin-top: 4px; }
-.langpick small.note { margin: 2px 0 0; padding: 6px 8px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 12.5px; }
 .week .total { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+
+/* тумблер «Немецкая подгруппа» */
+.switch {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 10px 14px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch .track {
+  flex: none; position: relative; width: 44px; height: 26px; border-radius: 13px; background: var(--line);
+  transition: background-color .25s ease;
+}
+.switch .track i {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .25s cubic-bezier(.2, .7, .3, 1);
+}
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track i { transform: translateX(18px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch .lbl strong { display: block; font-size: 15px; }
+.switch .lbl small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.3; }
+.switch[hidden] { display: none; }
