@@ -69,3 +69,16 @@
 .tlesson .groups { color: var(--accent); font-weight: 600; }
 .wday .g { color: var(--accent); font-weight: 600; font-size: 13px; margin-left: 4px; }
 .wday h3 .cnt { float: right; font-size: 12px; font-weight: 600; color: var(--muted); }
+
+/* языковая подгруппа */
+.tag.lang { background: var(--accent-soft) !important; color: var(--accent) !important; }
+.langpick { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.langpick small { display: block; margin-bottom: 6px; color: var(--muted); }
+.langbtn {
+  margin: 0 6px 6px 0; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--bg); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: background-color .2s ease, border-color .2s ease;
+}
+.langbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (prefers-color-scheme: dark) { .langbtn[aria-pressed="true"] { color: #0b1220; } }
+.lesson .full small.guess { margin-top: 4px; }

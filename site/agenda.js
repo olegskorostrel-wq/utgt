@@ -171,7 +171,37 @@
       time: v.hour + ":" + v.minute };
   }
 
-  var api = { build: build, weekNumber: weekNumber, markNow: markNow, moscowNow: moscowNow, isoWeekday: isoWeekday,
+  // Иностранный язык подгруппы: «Иностранный язык (немецкий)» -> «немецкий», иначе null
+  function langOf(subject) {
+    var m = String(subject).match(/иностранн[^(]*\(([а-яё]+)\)/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+
+  // Оставить только пары своей языковой подгруппы. lang не выбран — всё как есть,
+  // но у пар одного языка ставится item.langOnly (например, общий немецкий у всего 1 курса).
+  function forLanguage(agenda, lang) {
+    var items = [];
+    agenda.items.forEach(function (it) {
+      var subj = String(it.subject).split(" / "), teach = String(it.teacher || "").split(" / "),
+        rooms = String(it.room || "").split(" / ");
+      var keep = subj.map(function (s, i) { return i; }).filter(function (i) {
+        var l = langOf(subj[i]);
+        return !lang || !l || l === lang;
+      });
+      if (!keep.length) return;
+      var pick = function (arr) {
+        return arr.length === subj.length ? keep.map(function (i) { return arr[i]; }).join(" / ") : arr.join(" / ");
+      };
+      var copy = Object.assign({}, it, { subject: pick(subj), teacher: pick(teach), room: pick(rooms) });
+      var langs = keep.map(function (i) { return langOf(subj[i]); });
+      copy.langOnly = !lang && subj.length === 1 && langs[0] ? langs[0] : null;
+      copy.lang = langs.filter(Boolean)[0] || null;
+      items.push(copy);
+    });
+    return Object.assign({}, agenda, { items: items });
+  }
+
+  var api = { langOf: langOf, forLanguage: forLanguage, build: build, weekNumber: weekNumber, markNow: markNow, moscowNow: moscowNow, isoWeekday: isoWeekday,
     addDays: addDays, humanDate: humanDate, lessonTime: lessonTime, CANCEL: CANCEL };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Agenda = api;

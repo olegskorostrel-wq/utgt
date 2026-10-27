@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var A = window.Agenda, C = window.Calendar;
-  var STORE_KEY = "utgt-group", WHO_KEY = "utgt-who", TEACHER_KEY = "utgt-teacher";
+  var STORE_KEY = "utgt-group", WHO_KEY = "utgt-who", TEACHER_KEY = "utgt-teacher", LANG_KEY = "utgt-lang";
   var state = { offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
   var params = new URLSearchParams(location.search);
 
@@ -150,7 +150,17 @@
   // Расписание дня с учётом праздников, каникул и практики из учебного графика группы
   function build(date, schedule, z) {
     var ag = A.build(date, schedule, state.data.bells, z);
-    ag.off = C.dayOff(date, state.data.calendar, state.group);
+    // в распоряжении о замене преподаватель не указан — подставляем того, кто ведёт этот предмет у группы
+    ag.items.forEach(function (it) {
+      if (it.changed && !it.teacher && it.subject !== A.CANCEL && window.Teachers) {
+        it.teacher = Teachers.guessTeacher(schedule, it.subject);
+        it.guessed = !!it.teacher;
+      }
+    });
+    // иностранный язык: только своя подгруппа (если язык выбран)
+    var off = C.dayOff(date, state.data.calendar, state.group);
+    ag = A.forLanguage(ag, store(LANG_KEY) || null);
+    ag.off = off;
     if (ag.off && !(z && z.changes.length)) {
       ag.items = [];
       ag.cancelled = [];
@@ -179,6 +189,18 @@
       var p = full.split(" ");
       return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>" + where;
     }).join("");
+  }
+
+  // Выбор языковой подгруппы — в карточке иностранного языка
+  function langPicker() {
+    var cur = store(LANG_KEY);
+    var b = function (l, t) {
+      return '<button type="button" class="langbtn" data-lang="' + l + '" aria-pressed="' + (cur === l) + '">' + t + "</button>";
+    };
+    return '<div class="langpick"><small>' + (cur
+      ? "Показываем пары только вашей подгруппы. Ваш язык:"
+      : "Какой язык учили в школе? Кто учил немецкий — ходит на немецкий вместо английского. Лишние пары скроем:") + "</small>" +
+      b("английский", "Английский") + b("немецкий", "Немецкий") + (cur ? b("", "Показывать оба") : "") + "</div>";
   }
 
   // Расписания всех групп — грузятся только при первом нажатии на урок
@@ -298,6 +320,7 @@
         if (it.state === "next") tags += '<span class="tag state">далее</span>';
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
+        if (it.langOnly) tags += '<span class="tag lang">только ' + esc(it.langOnly.replace(/ий$/, "ая")) + " подгруппа</span>";
         var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
         var key = it.startText + " " + it.subject;
         return '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") +
@@ -307,7 +330,9 @@
           '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
-          '<div class="full"><div><div class="in">' + teacherInfo(it.teacher) + "</div></div></div>" +
+          '<div class="full"><div><div class="in">' + teacherInfo(it.teacher) +
+            (it.guessed ? '<small class="guess">В распоряжении преподаватель не указан — по расписанию группы этот предмет ведёт он(а).</small>' : "") +
+            (it.lang ? langPicker() : "") + "</div></div></div>" +
           (it.state === "now" ? '<div class="bar"><i style="width:' +
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
       }).join("");
@@ -590,6 +615,14 @@
   });
   // Нажатие на урок — показать/скрыть полное ФИО преподавателя
   function toggleLesson(e) {
+    var lb = e.target.closest(".langbtn");
+    if (lb) {
+      if (e.type === "keydown") return;
+      e.stopPropagation();
+      try { if (lb.dataset.lang) localStorage.setItem(LANG_KEY, lb.dataset.lang); else localStorage.removeItem(LANG_KEY); } catch (err) { /* приватный режим */ }
+      render(false);
+      return;
+    }
     if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
     var card = e.target.closest(".lesson");
     if (!card || !card.querySelector(".full")) return; // у преподавателя карточки не раскрываются

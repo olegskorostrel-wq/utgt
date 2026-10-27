@@ -42,12 +42,13 @@
       schedule.days[d].forEach(function (e) {
         var subj = split(e.subject), teach = split(e.teacher);
         subj.forEach(function (s, i) {
-          if (sameSubject(s, subject) && (teach[i] || teach[0])) found[norm(teach[i] || teach[0])] = true;
+          var t = teach[i] || teach[0];
+          if (sameSubject(s, subject) && norm(t)) found[norm(t)] = t.trim();
         });
       });
     });
     var names = Object.keys(found);
-    return names.length === 1 ? names[0] : "";
+    return names.length === 1 ? found[names[0]] : "";
   }
 
   // Пары преподавателя одной группы на дату (с заменами) и снятые с него пары
@@ -57,7 +58,7 @@
     ag.items.forEach(function (it) {
       var names = split(it.teacher).map(norm), rooms = split(it.room), subj = split(it.subject);
       var i = names.indexOf(who), guessed = false;
-      if (i < 0 && it.changed && !it.teacher && it.subject !== A.CANCEL && guessTeacher(s.schedule, it.subject) === who) {
+      if (i < 0 && it.changed && !it.teacher && it.subject !== A.CANCEL && norm(guessTeacher(s.schedule, it.subject)) === who) {
         i = 0; guessed = true;
       }
       if (i < 0) return;

@@ -82,3 +82,20 @@ test("воскресенье пустое, московская дата счи�
   const now = A.moscowNow(new Date("2026-10-26T21:30:00Z"));
   assert.deepStrictEqual([now.date, now.time], ["2026-10-27", "00:30"]);
 });
+
+test("языковая подгруппа: чужой язык скрывается, подгруппы «А / Б» делятся", () => {
+  const ag = { items: [
+    { subject: "Иностранный язык (немецкий)", teacher: "Хаменева И.И.", room: "1-14" },
+    { subject: "Иностранный язык (английский) / Иностранный язык (немецкий)", teacher: "Баякчан Л.А. / Хаменева И.И.", room: "2-15 / 1-14" },
+    { subject: "Математика", teacher: "Трудова С.В.", room: "1-8" },
+  ] };
+  const en = A.forLanguage(ag, "английский").items;
+  assert.deepStrictEqual(en.map((i) => [i.subject, i.teacher, i.room]), [
+    ["Иностранный язык (английский)", "Баякчан Л.А.", "2-15"], ["Математика", "Трудова С.В.", "1-8"]]);
+  const all = A.forLanguage(ag, null).items;
+  assert.strictEqual(all.length, 3);
+  assert.strictEqual(all[0].langOnly, "немецкий");
+  assert.strictEqual(all[1].langOnly, null);
+  assert.strictEqual(A.langOf("Иностранный язык в профессиональной деятельности (английский)"), "английский");
+  assert.strictEqual(A.langOf("Русский язык"), null);
+});
