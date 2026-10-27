@@ -34,5 +34,113 @@
    "room": "2-7",
    "uncertain": false
   }
- ]
+ ],
+ "all_changes": {
+  "11-П": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Математика",
+    "room": "1-14",
+    "uncertain": false
+   }
+  ],
+  "11-А": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "География",
+    "room": "2-7",
+    "uncertain": false
+   }
+  ],
+  "11-С": [
+   {
+    "lessons": [
+     1,
+     2
+    ],
+    "time": null,
+    "subject": "Иностранный язык в профессиональной деятельности (английский)",
+    "room": "2-1Е",
+    "uncertain": true
+   }
+  ],
+  "21-А": [
+   {
+    "lessons": [
+     3,
+     4
+    ],
+    "time": null,
+    "subject": "Электронная техника",
+    "room": "1-30",
+    "uncertain": false
+   },
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "21-С": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "МДК.01.01 Технология монтажа электронных устройств и систем",
+    "room": "1-32",
+    "uncertain": false
+   }
+  ],
+  "21-Л": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "31-А": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "31-С": [
+   {
+    "lessons": [
+     1,
+     2
+    ],
+    "time": null,
+    "subject": "МДК.03.01. Технология обслуживания и ремонта ТРО",
+    "room": "1-32",
+    "uncertain": false
+   }
+  ]
+ }
 }

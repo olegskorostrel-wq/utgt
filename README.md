@@ -53,3 +53,20 @@ python -m pytest tests -q && node --test tests/agenda.test.js
 ## Когда начнётся новый семестр
 
 Обновите `data/schedule_11A.json` и `data/bells.json` по новым PDF.
+
+## Заготовка: все группы (пока не на сайте)
+
+- `tools/extract_schedule.py` извлекает расписание **всех 19 групп** очного отделения из PDF
+  по сетке таблицы → `data/groups/<группа>.json` (+ `index.json`). Для 11-А результат совпадает
+  с проверенным вручную расписанием. Сверены глазами: 11-А, 21-П (`"verified": true`).
+- `scraper.py` сохраняет замены по всем группам: поле `all_changes` в `data/zameny/<дата>.json`.
+  `python scraper.py --reprocess` заново распознаёт уже скачанные картинки.
+- `prototype/` — страница с выбором группы: окно выбора при первом заходе, выбор запоминается,
+  ссылка вида `?group=21-С` открывает нужную группу. Посмотреть локально:
+
+```bash
+python tools/extract_schedule.py путь/к/расписанию.pdf
+python build_site.py --preview && python -m http.server -d _preview 8000
+```
+
+Обычная сборка (`build_site.py`) прототип и `data/groups` не включает.

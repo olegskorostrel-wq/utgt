@@ -235,11 +235,24 @@ def group_changes(table, group=GROUP):
             for r in table["rows"] if r["group"] == group]
 
 
+def all_group_changes(tables):
+    """Строки замен по всем группам: {"21-С": [...], ...}; «?» — группа не распозналась."""
+    out = {}
+    for t in tables:
+        for r in t["rows"]:
+            if r["group"]:
+                out.setdefault(r["group"], []).append(
+                    {k: r[k] for k in ("lessons", "time", "subject", "room", "uncertain")})
+    return out
+
+
 # ---------- сохранение ----------
 
 def subject_vocab():
-    sched = json.loads((ROOT / "data" / "schedule_11A.json").read_text(encoding="utf-8"))
-    names = {l["subject"] for day in sched["days"].values() for l in day}
+    names = set()
+    for path in [ROOT / "data" / "schedule_11A.json", *sorted((ROOT / "data" / "groups").glob("*.json"))]:
+        sched = json.loads(path.read_text(encoding="utf-8"))
+        names |= {l["subject"] for day in sched.get("days", {}).values() for l in day}
     return sorted(names | set(EXTRA_SUBJECTS))
 
 
@@ -278,10 +291,29 @@ def process_block(block, session, vocab, out_dir=OUT_DIR, log=print):
         "ocr_uncertain": any(t.get("uncertain_course1") for t in tables) or any(c["uncertain"] for c in changes),
         "groups_in_order": sorted({r["group"] for t in tables for r in t["rows"] if r["group"]}),
         "changes": changes,
+        "all_changes": all_group_changes(tables),
     }
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
     log(f"{date}: {len(images)} картинок, для {GROUP}: {len(changes)} строк, ocr_ok={meta['ocr_ok']}")
     return True
+
+
+def reprocess(out_dir=OUT_DIR, vocab=None, log=print):
+    """Заново распознать уже сохранённые картинки (после улучшений OCR)."""
+    vocab = vocab or subject_vocab()
+    for path in sorted(out_dir.glob("????-??-??.json")):
+        meta = json.loads(path.read_text(encoding="utf-8"))
+        if not meta["images"]:
+            continue
+        tables = [ocr_table(out_dir / i["file"], vocab) for i in meta["images"]]
+        changes = [c for t in tables for c in group_changes(t)]
+        meta.update(title=next((t["title"] for t in tables if t.get("title")), "") or meta.get("title", ""),
+                    ocr_ok=all(t["ok"] for t in tables),
+                    ocr_uncertain=any(t.get("uncertain_course1") for t in tables) or any(c["uncertain"] for c in changes),
+                    groups_in_order=sorted({r["group"] for t in tables for r in t["rows"] if r["group"]}),
+                    changes=changes, all_changes=all_group_changes(tables))
+        path.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+        log(f"{meta['date']}: групп с заменами {len(meta['all_changes'])}, для {GROUP}: {len(changes)}")
 
 
 def write_index(out_dir=OUT_DIR, today=None):
@@ -306,7 +338,12 @@ def main():
     ap.add_argument("--html", help="разобрать сохранённую страницу вместо скачивания")
     ap.add_argument("--offline", action="store_true", help="только показать найденные блоки")
     ap.add_argument("--ocr", help="распознать одну картинку и вывести таблицу")
+    ap.add_argument("--reprocess", action="store_true", help="заново распознать сохранённые картинки")
     args = ap.parse_args()
+
+    if args.reprocess:
+        reprocess()
+        return 0
 
     if args.ocr:
         t = ocr_table(args.ocr, subject_vocab())

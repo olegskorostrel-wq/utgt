@@ -2,6 +2,7 @@
 
     python build_site.py                  # обычная сборка
     python build_site.py --scrape-failed  # отметить, что проверка замен упала
+    python build_site.py --preview        # прототип для всех групп в _preview (не публикуется)
 """
 import argparse
 import datetime as dt
@@ -13,11 +14,14 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent
 
 
-def build(out=ROOT / "_site", scrape_ok=True):
+def build(out=ROOT / "_site", scrape_ok=True, preview=False):
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(ROOT / "site", out)
-    shutil.copytree(ROOT / "data", out / "data")
+    # расписания всех групп пока нужны только прототипу
+    shutil.copytree(ROOT / "data", out / "data", ignore=None if preview else shutil.ignore_patterns("groups"))
+    if preview:
+        shutil.copytree(ROOT / "prototype", out, dirs_exist_ok=True)
     zameny = out / "data" / "zameny"
     zameny.mkdir(exist_ok=True)
     if not (zameny / "index.json").exists():
@@ -32,4 +36,7 @@ def build(out=ROOT / "_site", scrape_ok=True):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--scrape-failed", action="store_true")
-    print("собрано в", build(scrape_ok=not ap.parse_args().scrape_failed))
+    ap.add_argument("--preview", action="store_true")
+    args = ap.parse_args()
+    out = ROOT / ("_preview" if args.preview else "_site")
+    print("собрано в", build(out, scrape_ok=not args.scrape_failed, preview=args.preview))

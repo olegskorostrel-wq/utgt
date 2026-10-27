@@ -23,5 +23,147 @@
   "41-П",
   "41-С"
  ],
- "changes": []
+ "changes": [],
+ "all_changes": {
+  "11-В": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Биология",
+    "room": "2-5",
+    "uncertain": false
+   }
+  ],
+  "11-Л": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Литература",
+    "room": "2-18",
+    "uncertain": false
+   }
+  ],
+  "21-Д": [
+   {
+    "lessons": [
+     5,
+     6
+    ],
+    "time": null,
+    "subject": "Транспортная система России",
+    "room": "1-31",
+    "uncertain": false
+   }
+  ],
+  "21-С": [
+   {
+    "lessons": [
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "МДК.01.01 Технология монтажа электронных устройств и систем",
+    "room": "1-32",
+    "uncertain": false
+   }
+  ],
+  "31-Д": [
+   {
+    "lessons": [
+     3,
+     4
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "41-П": [
+   {
+    "lessons": [
+     1,
+     2
+    ],
+    "time": null,
+    "subject": "Физическая культура",
+    "room": "1-33",
+    "uncertain": false
+   },
+   {
+    "lessons": [
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "41-А": [
+   {
+    "lessons": [
+     5,
+     6
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "41-С": [
+   {
+    "lessons": [
+     1,
+     2
+    ],
+    "time": null,
+    "subject": "МДК.03.01 Технологии программирования, инсталляции и ввода в действие транспорт. радиоэлектрон. оборуд. (по видам тр.-та)",
+    "room": "1-30",
+    "uncertain": false
+   },
+   {
+    "lessons": [
+     3,
+     4
+    ],
+    "time": null,
+    "subject": "МДК.04.01 Планирование и организация работы структурного подразделения",
+    "room": "1-9",
+    "uncertain": false
+   },
+   {
+    "lessons": [
+     5,
+     6
+    ],
+    "time": null,
+    "subject": "Техническая эксплуатация железных дорог и безопасность движения",
+    "room": "1-9",
+    "uncertain": false
+   },
+   {
+    "lessons": [
+     9,
+     10
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ]
+ }
 }

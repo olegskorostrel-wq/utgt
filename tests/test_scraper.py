@@ -135,3 +135,12 @@ def test_today_agenda_week_alternation(capsys):
     today_agenda.main(["2026-10-30"])
     out = capsys.readouterr().out
     assert "2-я неделя" in out and "12:50-14:20  Литература (Изъюрова Н.М., 2-18)" in out and "История" not in out
+
+
+@needs_tesseract
+def test_all_group_changes_27_10():
+    t = scraper.ocr_table(FIX / "27.10.2026.png", scraper.subject_vocab())
+    allc = scraper.all_group_changes([t])
+    assert {g: len(v) for g, v in allc.items()} == {
+        "11-В": 1, "11-Л": 1, "21-Д": 1, "21-С": 1, "31-Д": 1, "41-П": 2, "41-А": 1, "41-С": 4}
+    assert [c["subject"] for c in allc["41-С"]][-1] == "Отменить"
