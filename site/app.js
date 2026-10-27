@@ -751,7 +751,7 @@
     if (next === "auto") { delete root.dataset.theme; try { localStorage.removeItem("utgt-theme"); } catch (e) {} }
     else { root.dataset.theme = next; store("utgt-theme", next); }
     drawTheme(true);
-    setTimeout(function () { root.classList.remove("theme-anim"); }, 400);
+    setTimeout(function () { root.classList.remove("theme-anim"); }, 600);
   });
   drawTheme(false);
 
@@ -785,7 +785,7 @@
       state.offset = TABS[j];
       document.documentElement.dataset.swipe = dx < 0 ? "next" : "prev";
       render(true);
-      setTimeout(function () { delete document.documentElement.dataset.swipe; }, 400);
+      setTimeout(function () { delete document.documentElement.dataset.swipe; }, 550);
     }, { passive: true });
   })();
 
