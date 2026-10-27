@@ -171,3 +171,7 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* без синей вспышки браузера при нажатии на телефоне (отклик даёт лёгкое «нажатие» карточки) */
+.lesson, .tabs button, summary, .lesson * { -webkit-tap-highlight-color: transparent; }
+.lesson:focus:not(:focus-visible) { outline: none; }
