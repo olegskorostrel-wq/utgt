@@ -18,10 +18,20 @@
     return m ? '<span class="code">' + esc(m[1]) + '</span> <span class="long">' + esc(m[2]) + "</span>" : esc(text);
   }
   // «Иностранный язык (английский)» -> «Английский язык»
+  // В карточке — коротко (полное название видно по нажатию на урок):
+  // «Основы безопасности и защиты Родины» -> «ОБЗР», хвосты «(по видам транспорта)» убираются
+  var SHORT = { "Основы безопасности и защиты Родины": "ОБЗР", "Безопасность жизнедеятельности": "БЖД" };
   function nice(subject) {
-    return String(subject).replace(/Иностранный язык \((\S+)\)/g, function (m, l) {
-      return l.charAt(0).toUpperCase() + l.slice(1) + " язык";
-    });
+    return String(subject).split(" / ").map(function (x) {
+      x = x.trim();
+      return SHORT[x] || x.replace(/Иностранный язык \((\S+)\)/, function (m, l) {
+        return l.charAt(0).toUpperCase() + l.slice(1) + " язык";
+      }).replace(/\s*\(по видам[^)]*\)\s*$/, "");
+    }).join(" / ");
+  }
+  // Полное название, если в карточке оно сокращено
+  function fullSubject(subject) {
+    return nice(subject) === subject ? "" : '<small class="fullsubj">' + esc(subject) + "</small>";
   }
   // Подгруппы «А / Б»: каждая своей строкой (кабинеты — так же, по порядку)
   function subjectsHTML(subject) {
@@ -305,7 +315,7 @@
           '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
-          '<div class="full"><div><div class="in">' + teacherInfo(it.teacher) +
+          '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
             "</div></div></div>" +
           (it.state === "now" ? '<div class="bar"><i style="width:' +
             Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";

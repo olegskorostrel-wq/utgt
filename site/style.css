@@ -85,7 +85,7 @@ h1::first-letter { text-transform: uppercase; }
   border: 1.5px solid var(--frame); border-radius: 16px; background: color-mix(in srgb, var(--frame) 14%, transparent);
 }
 .lesson {
-  display: grid; grid-template-columns: 74px 1fr auto; gap: 0 12px; align-items: start;
+  display: grid; grid-template-columns: 58px 1fr auto; gap: 0 10px; align-items: start;
   background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
 }
 .lesson .time { font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -205,3 +205,4 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
 .lesson, .tabs button, summary, .lesson * { -webkit-tap-highlight-color: transparent; }
 .lesson:focus:not(:focus-visible) { outline: none; }
 
+.lesson .full small.fullsubj { color: var(--text); font-size: 14px; margin-bottom: 6px; }
