@@ -38,10 +38,11 @@
       getJSON("status.json").catch(function () { return {}; }),
       getJSON("data/calendar.json").catch(function () { return {}; }),
       getJSON("data/news.json").catch(function () { return { items: [] }; }),
-      getJSON("data/teachers.json").catch(function () { return { by_short: {} }; })
+      getJSON("data/teachers.json").catch(function () { return { by_short: {} }; }),
+      getJSON("data/info.json").catch(function () { return null; })
     ]).then(function (r) {
       state.data = { groups: r[0].groups, bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5],
-        teachers: r[6] };
+        teachers: r[6], info: r[7] };
       state.zamena = {};
     });
   }
@@ -84,6 +85,7 @@
     var date = A.addDays(params.get("date") || now.date, state.offset);
     var g = state.group;
     drawCalendar(params.get("date") || now.date);
+    drawUseful(now);
     Promise.all([scheduleFor(g), zamenaFor(date)]).then(function (r) {
       var schedule = r[0], z = zamenaForGroup(r[1], g);
       var ag = build(date, schedule, z);
@@ -125,6 +127,32 @@
     }).join("");
   }
 
+  // «Полезное» для выбранной группы: учебная часть, ссылки, документы курса, курсовые, программа ГИА
+  function drawUseful(now) {
+    var info = state.data.info;
+    $("useful").hidden = !info;
+    if (!info) return;
+    var g = state.group, course = g.charAt(0);
+    var cg = (state.data.calendar.groups || {})[g] || {};
+    var o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
+    var links = info.links.concat(info.by_course[course] || []);
+    var gia = course === "4" && cg.specialty && info.gia_by_specialty[cg.specialty.code];
+    if (gia) links.push({ title: "Программа ГИА " + cg.specialty.code + " (на " + info.gia_year + " уч. год)", url: gia });
+    var cw = cg.courseworks || {}, cwHtml = Object.keys(cw).map(function (sem) {
+      return "<li>" + sem + " семестр: " + cw[sem].map(esc).join("; ") + "</li>";
+    }).join("");
+    $("usefulBody").innerHTML =
+      '<div class="office"><strong>' + esc(o.name) + "</strong>" +
+      '<span class="status ' + (st.open ? "on" : "off") + '">' + esc(st.text) + "</span>" +
+      "<small>Кабинет " + esc(o.room) + ' · <a href="tel:' + esc(o.tel) + '">' + esc(o.phone) + "</a> · " +
+      "пн–пт " + o.hours["1"].join("–") + ", сб " + o.hours["6"].join("–") + ", обед " + o.lunch.join("–") +
+      "</small></div>" +
+      (cwHtml ? '<div class="office"><strong>Курсовые работы и проекты</strong><ul class="plain">' + cwHtml + "</ul></div>" : "") +
+      "<ul>" + links.map(function (l) {
+        return '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.title) + "</a></li>";
+      }).join("") + "</ul>";
+  }
+
   function drawNews() {
     var items = (state.data.news.items || []).slice(0, 5);
     $("news").hidden = !items.length;
@@ -140,6 +168,8 @@
     $("groupName").textContent = g;
     $("title").textContent = A.humanDate(date);
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
+    var spec = ((state.data.calendar.groups || {})[g] || {}).specialty;
+    $("specialty").textContent = spec ? spec.code + " " + spec.name : "";
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(+b.dataset.day === state.offset));
     });

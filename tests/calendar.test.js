@@ -48,3 +48,16 @@ test("другая группа без данных — пусто, без ош�
   assert.deepStrictEqual(C.countdown("2026-10-27", { holidays: [] }, "99-Я"), []);
   assert.strictEqual(C.dayOff("2026-10-27", {}, "99-Я"), null);
 });
+
+test("учебная часть: открыто, обед, закрыто, праздник", () => {
+  const office = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data/info.json"), "utf8")).office;
+  const st = (d, hhmm) => C.officeStatus(d, +hhmm.slice(0, 2) * 60 + +hhmm.slice(3), office, cal).text;
+  assert.strictEqual(st("2026-10-27", "10:00"), "Открыто до 16:30");
+  assert.strictEqual(st("2026-10-27", "11:45"), "Обед до 12:00");
+  assert.strictEqual(st("2026-10-27", "07:50"), "Закрыто, откроется сегодня в 08:30");
+  assert.strictEqual(st("2026-10-27", "17:00"), "Закрыто, откроется завтра в 08:30");
+  assert.strictEqual(st("2026-10-31", "14:59"), "Открыто до 15:00");          // суббота
+  assert.strictEqual(st("2026-10-31", "15:30"), "Закрыто, откроется 2 ноября в 08:30"); // воскресенье пропускаем
+  assert.strictEqual(st("2026-11-03", "18:00"), "Закрыто, откроется 5 ноября в 08:30"); // 4 ноября праздник
+  assert.strictEqual(C.officeStatus("2026-10-27", 600, office, cal).open, true);
+});

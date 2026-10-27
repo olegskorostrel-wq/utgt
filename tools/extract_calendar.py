@@ -1,5 +1,6 @@
 """Извлекает календарный учебный график (КУГ) всех групп очного отделения из PDF
-техникума: праздники, каникулы, сессию, практику, учебные сборы.
+техникума: праздники, каникулы, сессию с экзаменами, практику (с названием по условным
+обозначениям), учебные сборы, специальность группы и курсовые работы.
 
     python tools/extract_calendar.py kug.pdf             # -> data/calendar.json
     python tools/extract_calendar.py kug.pdf --print 11-А
@@ -33,6 +34,12 @@ KINDS = {"=": "kanikuly", "::": "sessiya", "СБ": "sbory", "8": "praktika", "X"
          "˄": "demo_prep", "^": "demo_prep", "э": "demo", "Э": "demo"}
 NAMES = {"sessiya": "Сессия", "sbory": "Учебные сборы (юноши)", "praktika": "Практика",
          "demo_prep": "Подготовка к демоэкзамену", "demo": "Демоэкзамен"}
+PRACTICE_NAMES = {"8": "Производственная практика (по профилю специальности)",
+                  "X": "Производственная практика (технологическая)", "Х": "Производственная практика (технологическая)"}
+SPECIALTY_RE = re.compile(r"^\d\d\.\d\d\.\d\d$")
+LEGEND_CODE_RE = re.compile(r"^0[а-яё]+$")
+ROMAN_RE = re.compile(r"^[IVХ]+$|^[IV]+(?=[а-яё(])|(?<=[а-яё)])[IV]+$")  # номер курса, прилипший к слову
+WORD_ENDINGS = {"ом", "ого", "ного", "ной", "ных", "ния", "ние", "ия", "ой", "ых", "ая"}
 SEASON = ["Зимние", "Весенние", "Летние", "Осенние"]  # по месяцу начала: 12–2, 3–5, 6–8, 9–11
 NO_CLASSES = {"kanikuly", "sbory", "praktika", "demo_prep", "demo"}
 
@@ -73,8 +80,10 @@ class Page:
         for x in sorted(e["x0"] for e in self.page.vertical_edges if e["x0"] > xs[52] and e["height"] > 100):
             if not borders or x - borders[-1] > 3:
                 borders.append(x)
-        a, b, c = borders[-3:]
-        self.exam_cols = [(a, b), (b, c)]
+        # справа налево: экзамены 2 и 1 семестра, курсовые 2 и 1 семестра
+        b = borders[-5:]
+        self.course_cols = [(b[0], b[1]), (b[1], b[2])]
+        self.exam_cols = [(b[2], b[3]), (b[3], b[4])]
 
     def _groups(self):
         labels = sorted([w for w in self.words if w["text"] in DAYS and w["top"] > self.weeks_top
@@ -92,11 +101,67 @@ class Page:
 
     def exams(self, group):
         """[[экзамены 1 семестра], [экзамены 2 семестра]] из правой части графика."""
+        return self._column_items(group, self.exam_cols)
+
+    def courseworks(self, group):
+        """[[курсовые 1 семестра], [курсовые 2 семестра]]."""
+        return self._column_items(group, self.course_cols)
+
+    def specialties(self):
+        """{группа: (код, название специальности)} — из левой колонки рядом с группами."""
+        left = min(w["x0"] for w in self.words if GROUP_RE.match(w["text"]))
+        col = [w for w in self.words if w["x1"] < left and w["top"] > self.weeks_top]
+        codes = sorted((w for w in col if SPECIALTY_RE.match(w["text"])), key=lambda w: w["top"])
+        bottom = min([w["top"] for w in col if w["text"].startswith("Условные")] or [self.page.height])
+        blocks = []
+        for i, c in enumerate(codes):
+            end = codes[i + 1]["top"] if i + 1 < len(codes) else bottom
+            ws = [w for w in col if c["top"] < w["top"] < end and not SPECIALTY_RE.match(w["text"])]
+            lines = collections.defaultdict(list)
+            for w in ws:
+                lines[round(w["top"] / 5)].append(w)
+            text = ""
+            for _, line in sorted(lines.items()):
+                for w in sorted(line, key=lambda w: w["x0"]):
+                    word = ROMAN_RE.sub("", w["text"])
+                    if not word:
+                        continue
+                    # слово, перенесённое по ширине ячейки: «(железнодорожн» + «ом»
+                    last = text.split(" ")[-1]
+                    glued = word in WORD_ENDINGS and len(last) >= 8 and last[-1].isalpha()
+                    text += ("" if glued else " ") + word
+            center = (c["top"] + max(w["top"] for w in ws)) / 2
+            blocks.append((center, c["text"], " ".join(text.split())))
+        out = {}
+        for g, tops in self.groups.items():
+            mid = (tops[0] + tops[-1]) / 2
+            _, code, name = min(blocks, key=lambda b: abs(b[0] - mid))
+            out[g] = (code, name)
+        return out
+
+    def legend(self):
+        """Условные обозначения учебных практик: {«0мсцб»: «Учебная практика: Монтаж …»}."""
+        codes = [w for w in self.words if LEGEND_CODE_RE.match(w["text"]) and w["top"] > max(
+            t for tops in self.groups.values() for t in tops)]
+        xs = sorted({round(c["x0"], -1) for c in codes})
+        out = {}
+        for c in codes:
+            nxt = [x for x in xs if x > c["x0"] + 50]
+            x1 = (nxt[0] - 40) if nxt else self.page.width
+            ws = [w for w in self.words if c["x1"] + 20 < w["x0"] < x1 and abs(w["top"] - c["top"]) < 45]
+            ws.sort(key=lambda w: (round(w["top"] / 5), w["x0"]))
+            text = " ".join(" ".join(w["text"] for w in ws).split())
+            if text:
+                text = text[0].upper() + text[1:]
+                out[c["text"]] = text if text.startswith("Учебная практика") else "Учебная практика: " + text
+        return out
+
+    def _column_items(self, group, cols):
         tops = self.groups[group]
         rowh = (tops[-1] - tops[0]) / 6
         y0, y1 = tops[0] - rowh / 2, tops[-1] + rowh / 2
         out = []
-        for x0, x1 in self.exam_cols:
+        for x0, x1 in cols:
             lines = collections.defaultdict(list)
             for w in self.words:
                 if x0 <= w["x0"] < x1 and y0 <= w["top"] < y1:
@@ -127,27 +192,34 @@ class Page:
         return out
 
 
-def periods_from(cells, holidays):
+def practice_name(text, legend):
+    return legend.get(text) or PRACTICE_NAMES.get(text) or NAMES["praktika"]
+
+
+def periods_from(cells, holidays, legend=None):
     """Подряд идущие дни одного вида -> периоды; воскресенья и праздники не разрывают период."""
-    marks = sorted((d, kind_of(t)) for d, t in cells.items() if kind_of(t))
+    legend = legend or {}
+    marks = sorted((d, kind_of(t), practice_name(t, legend) if kind_of(t) == "praktika" else None)
+                   for d, t in cells.items() if kind_of(t))
     out = []
-    for d, kind in marks:
+    for d, kind, pname in marks:
         last = out[-1] if out else None
-        if last and last["type"] == kind:
+        if last and last["type"] == kind and last.get("_pname") == pname:
             gap = (d - last["to"]).days
             between = [last["to"] + dt.timedelta(days=i) for i in range(1, gap)]
             if gap <= 3 and all(x.isoweekday() == 7 or x in holidays or cells.get(x) == "В" for x in between):
                 last["to"] = d
                 continue
-        out.append({"type": kind, "from": d, "to": d})
+        out.append({"type": kind, "from": d, "to": d, "_pname": pname})
     year_end = YEAR_START + dt.timedelta(days=7 * 52 - 1)  # понедельник последней недели графика
     for p in out:
         if p["to"] == year_end:
             p["to"] = YEAR_START.replace(year=YEAR_START.year + 1) - dt.timedelta(days=1)  # до 31 августа
+        pname = p.pop("_pname")
         if p["type"] == "kanikuly":
             p["name"] = SEASON[(p["from"].month % 12) // 3] + " каникулы"
         else:
-            p["name"] = NAMES[p["type"]]
+            p["name"] = pname or NAMES[p["type"]]
         if p["type"] in NO_CLASSES:
             p["no_classes"] = True
     return out
@@ -157,20 +229,28 @@ def extract(pdf_path):
     pages = [Page(p) for p in pdfplumber.open(pdf_path).pages]
     all_cells = {g: pg.cells(g) for pg in pages for g in pg.groups}
     all_exams = {g: pg.exams(g) for pg in pages for g in pg.groups}
+    all_courseworks = {g: pg.courseworks(g) for pg in pages for g in pg.groups}
+    specialty = {g: s for pg in pages for g, s in pg.specialties().items()}
+    legend = {}
+    for pg in pages:
+        legend.update(pg.legend())
     # праздник = «В» в будний день у большинства групп
     votes = collections.Counter(d for c in all_cells.values() for d, t in c.items()
                                 if t == "В" and d.isoweekday() != 7)
     holidays = sorted(d for d, n in votes.items() if n >= len(all_cells) / 2)
     groups = {}
     for g, cells in sorted(all_cells.items()):
-        ps = periods_from(cells, set(holidays))
+        ps = periods_from(cells, set(holidays), legend)
         sessions = [p for p in ps if p["type"] == "sessiya"]
         for sem, exams in enumerate(all_exams[g]):
             # 1 семестр — сессия до февраля, 2 семестр — последняя сессия года
             target = [p for p in sessions if p["from"].month >= 9 or p["from"].month <= 1] if sem == 0 else sessions[-1:]
             if exams and target:
                 target[0]["exams"] = exams
-        groups[g] = {"periods": [{**p, "from": p["from"].isoformat(), "to": p["to"].isoformat()} for p in ps]}
+        code, name = specialty[g]
+        groups[g] = {"specialty": {"code": code, "name": name},
+                     "courseworks": {str(i + 1): c for i, c in enumerate(all_courseworks[g]) if c},
+                     "periods": [{**p, "from": p["from"].isoformat(), "to": p["to"].isoformat()} for p in ps]}
     return {
         "source": SOURCE,
         "title": "Сводный календарный учебный график на 2026-2027 учебный год (очная форма обучения)",
@@ -189,8 +269,7 @@ def main():
     args = ap.parse_args()
     cal = extract(args.pdf)
     if args.show:
-        print(json.dumps({"holidays": cal["holidays"], "periods": cal["groups"][args.show]["periods"]},
-                         ensure_ascii=False, indent=1))
+        print(json.dumps({"holidays": cal["holidays"], **cal["groups"][args.show]}, ensure_ascii=False, indent=1))
         return 0
     Path(args.out).write_text(json.dumps(cal, ensure_ascii=False, indent=1), encoding="utf-8")
     for g, v in cal["groups"].items():

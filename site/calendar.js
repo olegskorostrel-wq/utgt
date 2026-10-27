@@ -71,7 +71,47 @@
     return out;
   }
 
-  var api = { dayOff: dayOff, countdown: countdown, plural: plural, daysText: daysText, dayMonth: dayMonth };
+  function toMin(hhmm) {
+    var p = hhmm.split(":");
+    return +p[0] * 60 + +p[1];
+  }
+
+  function weekday(iso) {
+    var d = new Date(iso + "T00:00:00Z").getUTCDay();
+    return d === 0 ? 7 : d;
+  }
+
+  function addDays(iso, n) {
+    var d = new Date(iso + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Учебная часть сейчас: { open: bool, text: "Открыто до 16:30" | "Обед до 12:00" | "Закрыто, откроется …" }
+  function officeStatus(date, minutes, office, cal) {
+    function hours(d) {
+      return holiday(d, cal || {}) ? null : office.hours[String(weekday(d))] || null;
+    }
+    var h = hours(date);
+    if (h) {
+      var open = toMin(h[0]), close = toMin(h[1]);
+      var l0 = toMin(office.lunch[0]), l1 = toMin(office.lunch[1]);
+      if (minutes >= l0 && minutes < l1) return { open: false, text: "Обед до " + office.lunch[1] };
+      if (minutes >= open && minutes < close) return { open: true, text: "Открыто до " + h[1] };
+      if (minutes < open) return { open: false, text: "Закрыто, откроется сегодня в " + h[0] };
+    }
+    for (var i = 1; i <= 14; i++) {
+      var d = addDays(date, i), next = hours(d);
+      if (next) {
+        var when = i === 1 ? "завтра" : dayMonth(d);
+        return { open: false, text: "Закрыто, откроется " + when + " в " + next[0] };
+      }
+    }
+    return { open: false, text: "Закрыто" };
+  }
+
+  var api = { dayOff: dayOff, countdown: countdown, officeStatus: officeStatus, plural: plural, daysText: daysText,
+    dayMonth: dayMonth };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Calendar = api;
 })(this);

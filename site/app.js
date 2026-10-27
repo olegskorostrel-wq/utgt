@@ -25,10 +25,11 @@
       getJSON("status.json").catch(function () { return {}; }),
       getJSON("data/calendar.json").catch(function () { return {}; }),
       getJSON("data/news.json").catch(function () { return { items: [] }; }),
-      getJSON("data/teachers.json").catch(function () { return { by_short: {} }; })
+      getJSON("data/teachers.json").catch(function () { return { by_short: {} }; }),
+      getJSON("data/info.json").catch(function () { return null; })
     ]).then(function (r) {
       state.data = { schedule: r[0], bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5],
-        teachers: r[6] };
+        teachers: r[6], info: r[7] };
       state.zamena = {};
     });
   }
@@ -50,6 +51,7 @@
     $("clock").textContent = now.time;
     var date = A.addDays(baseDate(now), state.offset);
     drawCalendar(params.get("date") || now.date);
+    drawUseful(now);
     zamenaFor(date).then(function (z) {
       var ag = build(date, z);
       if (date === now.date) A.markNow(ag, now.minutes);
@@ -89,6 +91,25 @@
       var p = full.split(" ");
       return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>";
     }).join("");
+  }
+
+  // «Полезное»: учебная часть (открыто/закрыто сейчас), ссылки, документы для своего курса
+  function drawUseful(now) {
+    var info = state.data.info;
+    $("useful").hidden = !info;
+    if (!info) return;
+    var o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
+    var course = String(state.data.schedule.group).charAt(0);
+    var links = info.links.concat(info.by_course[course] || []);
+    $("usefulBody").innerHTML =
+      '<div class="office"><strong>' + esc(o.name) + "</strong>" +
+      '<span class="status ' + (st.open ? "on" : "off") + '">' + esc(st.text) + "</span>" +
+      "<small>Кабинет " + esc(o.room) + ' · <a href="tel:' + esc(o.tel) + '">' + esc(o.phone) + "</a> · " +
+      "пн–пт " + o.hours["1"].join("–") + ", сб " + o.hours["6"].join("–") + ", обед " + o.lunch.join("–") +
+      "</small></div>" +
+      "<ul>" + links.map(function (l) {
+        return '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.title) + "</a></li>";
+      }).join("") + "</ul>";
   }
 
   function drawNews() {
