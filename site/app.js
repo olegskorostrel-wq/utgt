@@ -432,8 +432,7 @@
 
   load().then(function () {
     drawNews();
-    // на старом адресе сайт был только для 11-А — у тех, кто заходил раньше, сразу 11-А
-    var wanted = params.get("group") || store(STORE_KEY) || (location.hostname === "utgt-11a.github.io" ? "11-А" : null);
+    var wanted = params.get("group") || store(STORE_KEY);
     if (wanted && groupInfo(wanted)) {
       state.group = wanted;
       store(STORE_KEY, wanted);

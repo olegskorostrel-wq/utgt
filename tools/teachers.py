@@ -25,7 +25,7 @@ OUT = ROOT / "data" / "teachers.json"
 FULL_RE = re.compile(r"([А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?)\s+([А-ЯЁ][а-яё]+)\s+"
                      r"([А-ЯЁ][а-яё]+(?:вич|вна|ична|чна|оглы|кызы))")
 SHORT_RE = re.compile(r"^([А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?)\s([А-ЯЁ])\.\s?([А-ЯЁ])\.?$")
-UA = {"User-Agent": "Mozilla/5.0 (utgt schedule bot; +https://github.com/utgt-11a/utgt-11a.github.io)"}
+UA = {"User-Agent": "Mozilla/5.0 (utgt schedule bot; +https://github.com/raspisanie-utgt/raspisanie-utgt.github.io)"}
 
 
 def full_names(pdf_path):

@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 URL = "https://utgt-pgups.ru/novosti.html"
 OUT = Path(__file__).resolve().parent.parent / "data" / "news.json"
 LIMIT = 10
-UA = {"User-Agent": "Mozilla/5.0 (utgt schedule bot; +https://github.com/utgt-11a/utgt-11a.github.io)"}
+UA = {"User-Agent": "Mozilla/5.0 (utgt schedule bot; +https://github.com/raspisanie-utgt/raspisanie-utgt.github.io)"}
 
 
 def parse(html, base=URL):
