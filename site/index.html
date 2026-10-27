@@ -23,8 +23,12 @@
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" data-day="0">Сегодня</button>
       <button type="button" role="tab" data-day="1">Завтра</button>
+      <button type="button" role="tab" data-day="week">Неделя</button>
     </nav>
 
+    <section id="weekView" class="week" hidden></section>
+
+    <div id="dayView">
     <section id="banner" class="banner" hidden></section>
     <section id="list" class="list" aria-label="Уроки"></section>
     <section id="cancelled" class="cancelled" hidden></section>
@@ -34,6 +38,7 @@
       <h2>Распоряжение о замене</h2>
       <div id="imageList"></div>
     </section>
+    </div>
 
     <details id="news" class="news" hidden>
       <summary>Новости техникума</summary>

@@ -49,13 +49,45 @@
   function render() {
     var now = A.moscowNow();
     $("clock").textContent = now.time;
-    var date = A.addDays(baseDate(now), state.offset);
     drawCalendar(params.get("date") || now.date);
     drawUseful(now);
+    drawTabs();
+    $("dayView").hidden = state.offset === "week";
+    $("weekView").hidden = state.offset !== "week";
+    if (state.offset === "week") return renderWeek(now);
+    var date = A.addDays(baseDate(now), state.offset);
     zamenaFor(date).then(function (z) {
       var ag = build(date, z);
       if (date === now.date) A.markNow(ag, now.minutes);
       draw(ag, z, date, now);
+    });
+  }
+
+  function drawTabs() {
+    document.querySelectorAll(".tabs button").forEach(function (b) {
+      b.setAttribute("aria-selected", String(b.dataset.day === String(state.offset)));
+    });
+  }
+
+  // Неделя (пн–сб), в которой сегодняшний день; в воскресенье — следующая
+  function renderWeek(now) {
+    var base = baseDate(now), wd = A.isoWeekday(base);
+    var monday = A.addDays(base, wd === 7 ? 1 : 1 - wd);
+    var dates = [0, 1, 2, 3, 4, 5].map(function (i) { return A.addDays(monday, i); });
+    Promise.all(dates.map(zamenaFor)).then(function (zs) {
+      var days = dates.map(function (d, i) { return build(d, zs[i]); });
+      $("title").textContent = "Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]);
+      $("week").textContent = days[0].week + "-я неделя";
+      $("weekView").innerHTML = days.map(function (ag, i) {
+        var d = dates[i], head = A.humanDate(d);
+        var body = ag.items.length ? ag.items.map(function (it) {
+          return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
+            '<span class="s">' + esc(it.subject) + (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
+            '<span class="r">' + esc(it.room || "") + "</span></li>";
+        }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
+        return '<section class="wday' + (d === now.date ? " today" : "") + '"><h3>' + esc(head) +
+          (d === now.date ? ' <span class="tag state">сегодня</span>' : "") + "</h3><ul>" + body + "</ul></section>";
+      }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
     });
   }
 
@@ -124,9 +156,6 @@
   function draw(ag, z, date, now) {
     $("title").textContent = A.humanDate(date);
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
-    document.querySelectorAll(".tabs button").forEach(function (b) {
-      b.setAttribute("aria-selected", String(+b.dataset.day === state.offset));
-    });
 
     // Плашка про замены
     var banner = $("banner"), cls = "info", html;
@@ -223,7 +252,10 @@
   $("list").addEventListener("keydown", toggleLesson);
 
   document.querySelectorAll(".tabs button").forEach(function (b) {
-    b.addEventListener("click", function () { state.offset = +b.dataset.day; render(); });
+    b.addEventListener("click", function () {
+      state.offset = b.dataset.day === "week" ? "week" : +b.dataset.day;
+      render();
+    });
   });
 
   load().then(function () {

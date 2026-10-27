@@ -82,15 +82,46 @@
   function render() {
     var now = A.moscowNow();
     $("clock").textContent = now.time;
-    var date = A.addDays(params.get("date") || now.date, state.offset);
     var g = state.group;
     drawCalendar(params.get("date") || now.date);
     drawUseful(now);
+    document.querySelectorAll(".tabs button").forEach(function (b) {
+      b.setAttribute("aria-selected", String(b.dataset.day === String(state.offset)));
+    });
+    $("dayView").hidden = state.offset === "week";
+    $("weekView").hidden = state.offset !== "week";
+    if (state.offset === "week") return renderWeek(now);
+    var date = A.addDays(params.get("date") || now.date, state.offset);
     Promise.all([scheduleFor(g), zamenaFor(date)]).then(function (r) {
       var schedule = r[0], z = zamenaForGroup(r[1], g);
       var ag = build(date, schedule, z);
       if (date === now.date) A.markNow(ag, now.minutes);
       draw(ag, z, date, schedule);
+    });
+  }
+
+  // Неделя (пн–сб), в которой сегодняшний день; в воскресенье — следующая
+  function renderWeek(now) {
+    var base = params.get("date") || now.date, wd = A.isoWeekday(base), g = state.group;
+    var monday = A.addDays(base, wd === 7 ? 1 : 1 - wd);
+    var dates = [0, 1, 2, 3, 4, 5].map(function (i) { return A.addDays(monday, i); });
+    Promise.all([scheduleFor(g)].concat(dates.map(zamenaFor))).then(function (r) {
+      var schedule = r[0];
+      var days = dates.map(function (d, i) { return build(d, schedule, zamenaForGroup(r[i + 1], g)); });
+      document.title = "Расписание УТЖТ · " + g;
+      $("groupName").textContent = g;
+      $("title").textContent = "Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]);
+      $("week").textContent = days[0].week + "-я неделя";
+      $("weekView").innerHTML = days.map(function (ag, i) {
+        var d = dates[i];
+        var body = ag.items.length ? ag.items.map(function (it) {
+          return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
+            '<span class="s">' + esc(it.subject) + (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
+            '<span class="r">' + esc(it.room || "") + "</span></li>";
+        }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
+        return '<section class="wday' + (d === now.date ? " today" : "") + '"><h3>' + esc(A.humanDate(d)) +
+          (d === now.date ? ' <span class="tag state">сегодня</span>' : "") + "</h3><ul>" + body + "</ul></section>";
+      }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
     });
   }
 
@@ -170,9 +201,6 @@
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
     var spec = ((state.data.calendar.groups || {})[g] || {}).specialty;
     $("specialty").textContent = spec ? spec.code + " " + spec.name : "";
-    document.querySelectorAll(".tabs button").forEach(function (b) {
-      b.setAttribute("aria-selected", String(+b.dataset.day === state.offset));
-    });
 
     var banner = $("banner"), cls = "info", html;
     if (z) {
@@ -313,7 +341,10 @@
   $("list").addEventListener("keydown", toggleLesson);
 
   document.querySelectorAll(".tabs button").forEach(function (b) {
-    b.addEventListener("click", function () { state.offset = +b.dataset.day; render(); });
+    b.addEventListener("click", function () {
+      state.offset = b.dataset.day === "week" ? "week" : +b.dataset.day;
+      render();
+    });
   });
 
   load().then(function () {

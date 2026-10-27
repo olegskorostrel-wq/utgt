@@ -56,6 +56,18 @@ h1::first-letter { text-transform: uppercase; }
 .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 @media (prefers-color-scheme: dark) { .tabs button[aria-selected="true"] { color: #0b1220; } }
 
+.week { display: flex; flex-direction: column; gap: 10px; }
+.wday { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.wday.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.wday h3 { margin: 0 0 6px; font-size: 15px; }
+.wday h3::first-letter { text-transform: uppercase; }
+.wday ul { list-style: none; margin: 0; padding: 0; }
+.wday li { display: grid; grid-template-columns: 48px 1fr auto; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.wday li:first-child { border-top: 0; }
+.wday li .t { font-variant-numeric: tabular-nums; color: var(--muted); }
+.wday li .r { color: var(--muted); white-space: nowrap; }
+.wday li.none { display: block; color: var(--muted); }
+.wday .tag { font-size: 11px; }
 .banner { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 15px; }
 .banner strong { display: block; }
 .banner.info { background: var(--accent-soft); }
