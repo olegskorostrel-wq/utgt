@@ -34,7 +34,21 @@ self.addEventListener("fetch", function (e) {
   }
   // страница (с любыми ?group=…) хранится под одним ключом
   var key = req.mode === "navigate" ? new Request(new URL("./", location.href)) : new Request(url.origin + url.pathname);
-  e.respondWith(fromNetwork(req, key).catch(function () {
+  // медленный интернет: если сеть не ответила за 3 с (страница) или 2 с (данные), а сохранённая копия
+  // есть — сразу она. На обычном интернете ответ приходит быстрее, и показывается свежее.
+  // (сеть при этом догружает свежее в кэш для следующего раза)
+  var net = fromNetwork(req, key);
+  var saved = function () {
     return caches.match(key).then(function (hit) { return hit || caches.match(new Request(new URL("./", location.href))); });
+  };
+  e.respondWith(new Promise(function (resolve, reject) {
+    var done = false;
+    var timer = setTimeout(function () {
+      saved().then(function (hit) { if (hit && !done) { done = true; resolve(hit); } });
+    }, req.mode === "navigate" ? 3000 : 2000);
+    net.then(function (res) { if (!done) { done = true; clearTimeout(timer); resolve(res); } }, function () {
+      clearTimeout(timer);
+      saved().then(function (hit) { if (!done) { done = true; hit ? resolve(hit) : reject(new Error("нет сети")); } });
+    });
   }));
 });
