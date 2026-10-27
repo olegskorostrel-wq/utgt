@@ -304,6 +304,7 @@
     banner.className = "banner " + cls;
     banner.innerHTML = html;
     banner.hidden = false;
+    drawBase(ag, z, date, schedule);
 
     var list = $("list");
     if (!ag.items.length) {
@@ -356,6 +357,25 @@
       ? "Страница замен проверена: " + st.checked_at.replace("T", " ").slice(0, 16) + " (МСК)" +
         (st.ok === false ? " — последняя проверка завершилась ошибкой" : "")
       : "";
+  }
+
+  // «Обычное расписание на <день> (без замен)» — в дни с заменами, чтобы сравнить, не открывая PDF
+  function drawBase(ag, z, date, schedule) {
+    var box = $("base"), mine = z && z.changes && z.changes.length;
+    box.hidden = !mine || state.teacher;
+    if (box.hidden) return;
+    var base = A.forLanguage(A.build(date, schedule, state.data.bells, null), lang());
+    var day = A.humanDate(date).split(",")[0];
+    var acc = { "понедельник": "понедельник", "вторник": "вторник", "среда": "среду", "четверг": "четверг",
+      "пятница": "пятницу", "суббота": "субботу" }[day.toLowerCase()] || day;
+    $("baseTitle").textContent = "Обычное расписание на " + acc + " (без замен)";
+    $("baseList").innerHTML = base.items.length ? base.items.map(function (it) {
+      var kept = ag.items.some(function (x) { return x.start === it.start && x.subject === it.subject && !x.changed; });
+      return '<li class="' + (kept ? "" : "gone") + '"><span class="t">' + it.startText + "</span>" +
+        '<span class="s">' + esc(nice(it.subject)) + (it.teacher ? "<small>" + esc(it.teacher) + "</small>" : "") +
+        (kept ? "" : ' <span class="tag">изменено</span>') + "</span>" +
+        '<span class="r">' + esc(it.room || "") + "</span></li>";
+    }).join("") : '<li class="none">По расписанию пар нет</li>';
   }
 
   // ---------- режим преподавателя ----------
@@ -420,6 +440,7 @@
       banner.className = "banner " + cls;
       banner.innerHTML = html;
       banner.hidden = false;
+      $("base").hidden = true;
 
       var list = $("list");
       list.innerHTML = d.items.length ? d.items.map(function (it, idx) {
