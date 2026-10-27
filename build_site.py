@@ -28,6 +28,28 @@ def bust_cache(out):
         page.write_text(html, encoding="utf-8")
 
 
+def write_history(out_dir):
+    """История замен из вечного архива (data/archive) -> data/history/all.json: все распоряжения
+    по дням, от новых к старым, по всем группам; картинки — сжатые копии из архива."""
+    import gzip
+    days = {}
+    for p in sorted((ROOT / "data" / "archive").glob("????-??.json.gz")):
+        days.update(json.loads(gzip.decompress(p.read_bytes()).decode("utf-8")))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    hist = []
+    for date in sorted(days, reverse=True):
+        d = days[date]
+        groups = {g: [{k: r.get(k) for k in ("lessons", "time", "subject", "room", "uncertain")} for r in rows]
+                  for g, rows in (d.get("all_changes") or {}).items() if rows}
+        hist.append({"date": date, "title": d.get("title") or "", "po_raspisaniyu": bool(d.get("po_raspisaniyu")),
+                     "images": d.get("images") or [], "groups": groups})
+    (out_dir / "all.json").write_text(json.dumps({"days": hist}, ensure_ascii=False, separators=(",", ":")),
+                                      encoding="utf-8")
+    img = ROOT / "data" / "archive" / "img"
+    if img.exists():
+        shutil.copytree(img, out_dir / "img", dirs_exist_ok=True)
+
+
 def build(out=ROOT / "_site", scrape_ok=True):
     if out.exists():
         shutil.rmtree(out)
@@ -39,6 +61,7 @@ def build(out=ROOT / "_site", scrape_ok=True):
     zameny.mkdir(exist_ok=True)
     if not (zameny / "index.json").exists():
         (zameny / "index.json").write_text('{"days": []}', encoding="utf-8")
+    write_history(out / "data" / "history")
     bust_cache(out)
     status = {"checked_at": dt.datetime.now(ZoneInfo("Europe/Moscow")).isoformat(timespec="minutes"),
               "ok": scrape_ok}

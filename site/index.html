@@ -96,6 +96,17 @@
     </footer>
   </main>
 
+  <dialog id="history" class="picker history" aria-labelledby="historyTitle">
+    <form method="dialog" class="picker-inner">
+      <div class="picker-head">
+        <h2 id="historyTitle">История замен</h2>
+        <button type="submit" class="close" aria-label="Закрыть">✕</button>
+      </div>
+      <p class="picker-hint" id="historyHint"></p>
+      <div id="historyList"></div>
+    </form>
+  </dialog>
+
   <dialog id="picker" class="picker" aria-labelledby="pickerTitle">
     <form method="dialog" class="picker-inner">
       <div class="picker-head">

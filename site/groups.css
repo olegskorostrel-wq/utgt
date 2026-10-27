@@ -150,3 +150,35 @@
 html.theme-anim, html.theme-anim * { transition: background-color .3s ease, color .3s ease, border-color .3s ease !important; }
 .theme-btn .ico { display: inline-flex; }
 .hint.small { font-size: 11px; line-height: 1.35; margin: 6px 4px 12px; opacity: .85; }
+
+/* история замен */
+.history-btn {
+  display: block; width: 100%; text-align: left; margin: 4px 0 12px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 600; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.history-btn small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.history .hday { margin: 0 0 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.history .hday summary { padding: 10px 12px; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; -webkit-tap-highlight-color: transparent; }
+.history .hday summary strong::first-letter { text-transform: uppercase; }
+.history .hday summary small { color: var(--muted); }
+.history .hday summary .cnt { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+.history .hday[open] summary { border-bottom: 1px solid var(--line); }
+.history table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.history th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--muted); padding: 6px 8px 4px; }
+.history td { padding: 5px 8px; vertical-align: top; border-top: 1px solid var(--line); }
+.history tr:not(.first) td { border-top-color: transparent; }
+.history td.g { font-weight: 700; white-space: nowrap; }
+.history td.u { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.history td.u small { display: block; color: var(--muted); font-size: 11px; }
+.history td.r { white-space: nowrap; color: var(--muted); }
+.history td.cancel { color: var(--warn); font-weight: 600; }
+.history tr.mine td { background: var(--accent-soft); }
+.history tr.mine td.g { color: var(--accent); }
+.history .himg { margin: 6px 12px 10px; font-size: 13px; }
+
+/* свайп между вкладками: содержимое въезжает с той стороны, куда смахнули */
+@keyframes from-right { from { opacity: 0; transform: translateX(40px); } }
+@keyframes from-left { from { opacity: 0; transform: translateX(-40px); } }
+[data-swipe="next"] #dayView:not([hidden]), [data-swipe="next"] #weekView:not([hidden]) { animation: from-right .28s cubic-bezier(.2, .7, .3, 1) both; }
+[data-swipe="prev"] #dayView:not([hidden]), [data-swipe="prev"] #weekView:not([hidden]) { animation: from-left .28s cubic-bezier(.2, .7, .3, 1) both; }

@@ -244,6 +244,8 @@
       return "<li>" + sem + " семестр: " + cw[sem].map(esc).join("; ") + "</li>";
     }).join("");
     $("usefulBody").innerHTML =
+      '<button type="button" class="history-btn" id="historyBtn">История замен' +
+        "<small>все распоряжения о заменах по дням, начиная с 19 октября</small></button>" +
       '<div class="office"><strong>' + esc(o.name) + "</strong>" +
       '<span class="status ' + (st.open ? "on" : "off") + '">' + esc(st.text) + "</span>" +
       "<small>Кабинет " + esc(o.room) + ' · <a href="tel:' + esc(o.tel) + '">' + esc(o.phone) + "</a> · " +
@@ -405,6 +407,49 @@
         '<a class="full-link" href="' + src + '" target="_blank" rel="noopener">Открыть распоряжение целиком</a>';
     }).join("");
   }
+
+  // История замен (из архива): все распоряжения по дням, от новых к старым; день раскрывается
+  // в таблицу по всем группам, своя группа — первой и выделена
+  function openHistory() {
+    var mine = state.group, d = $("history");
+    $("historyTitle").textContent = "История замен";
+    $("historyHint").textContent = "Загрузка…";
+    $("historyList").innerHTML = "";
+    if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+    getJSON("data/history/all.json").then(function (h) {
+      $("historyHint").textContent = h.days.length
+        ? h.days.length + " " + C.plural(h.days.length, "распоряжение", "распоряжения", "распоряжений") +
+          ". Нажмите на день, чтобы раскрыть." + (mine ? " Ваша группа выделена." : "")
+        : "Архив пока пуст.";
+      $("historyList").innerHTML = h.days.map(function (day) {
+        var wd = A.isoWeekday(day.date), names = Object.keys(day.groups);
+        names.sort(function (a, b) { return (b === mine) - (a === mine) || a.localeCompare(b, "ru"); });
+        var week = (day.title.match(/[12]\s*-?\s*я\s+неделя/i) || [""])[0];
+        var count = day.po_raspisaniyu ? "занятия по расписанию" : names.length + " " + C.plural(names.length, "группа", "группы", "групп") +
+          (mine && day.groups[mine] ? " · есть " + mine : "");
+        var rows = names.map(function (g) {
+          return day.groups[g].map(function (r, k) {
+            var ls = r.lessons || [], cancel = r.subject === A.CANCEL;
+            var t = ls.length ? A.lessonTime(state.data.bells, wd, ls[0]) : null;
+            var when = ls.length ? (ls[0] === 0 ? "кл. час" : ls.length > 1 ? ls[0] + "–" + ls[ls.length - 1] : String(ls[0])) : (r.time || "");
+            return '<tr class="' + (g === mine ? "mine" : "") + (k === 0 ? " first" : "") + '"><td class="g">' + (k === 0 ? esc(g === "?" ? "группа?" : g) : "") +
+              '</td><td class="u">' + esc(when) + (t ? "<small>" + fromMinutes(t.start) + "</small>" : "") + "</td>" +
+              '<td class="s' + (cancel ? " cancel" : "") + '">' + (cancel ? "Отменено" : esc(nice(r.subject))) +
+              (r.uncertain ? ' <span class="tag">?</span>' : "") + '</td><td class="r">' + esc(r.room || "") + "</td></tr>";
+          }).join("");
+        }).join("");
+        var imgs = (day.images || []).map(function (f) {
+          return '<a href="data/history/img/' + esc(f) + '" target="_blank" rel="noopener">картинка распоряжения</a>';
+        }).join(" · ");
+        return '<details class="hday"><summary><strong>' + esc(A.humanDate(day.date)) + "</strong>" +
+          (week ? " <small>" + esc(week) + "</small>" : "") + '<span class="cnt">' + esc(count) + "</span></summary>" +
+          (rows ? '<table><thead><tr><th>Группа</th><th>Урок</th><th>Дисциплина</th><th>Ауд.</th></tr></thead><tbody>' + rows + "</tbody></table>" : "") +
+          (imgs ? '<p class="himg">' + imgs + "</p>" : "") + "</details>";
+      }).join("");
+    }).catch(function () { $("historyHint").textContent = "Не удалось загрузить историю."; });
+  }
+  function fromMinutes(m) { return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+  $("usefulBody").addEventListener("click", function (e) { if (e.target.closest("#historyBtn")) openHistory(); });
 
   // ---------- режим преподавателя ----------
 
@@ -717,6 +762,29 @@
     store(LANG_KEY, e.target.checked ? "немецкий" : "английский");
     render(true);
   });
+
+  // Свайп по расписанию: влево — следующая вкладка (Сегодня -> Завтра -> Неделя), вправо — предыдущая
+  (function () {
+    var TABS = [0, 1, "week"], x0 = null, y0 = 0, t0 = 0;
+    var area = document.querySelector("main");
+    area.addEventListener("touchstart", function (e) {
+      x0 = null;
+      if (e.touches.length !== 1 || e.target.closest(".tabs, .switch, input, dialog, .crop")) return;
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
+    }, { passive: true });
+    area.addEventListener("touchend", function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < 1.8 * Math.abs(dy) || Date.now() - t0 > 800) return;
+      var i = TABS.indexOf(state.offset), j = i + (dx < 0 ? 1 : -1);
+      if (i < 0 || j < 0 || j >= TABS.length) return;
+      state.offset = TABS[j];
+      document.documentElement.dataset.swipe = dx < 0 ? "next" : "prev";
+      render(true);
+      setTimeout(function () { delete document.documentElement.dataset.swipe; }, 400);
+    }, { passive: true });
+  })();
 
   document.querySelectorAll(".tabs button").forEach(function (b) {
     b.addEventListener("click", function () {
