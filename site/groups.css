@@ -82,3 +82,4 @@
 .langbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 @media (prefers-color-scheme: dark) { .langbtn[aria-pressed="true"] { color: #0b1220; } }
 .lesson .full small.guess { margin-top: 4px; }
+.langpick small.note { margin: 2px 0 0; padding: 6px 8px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 12.5px; }
