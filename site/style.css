@@ -110,8 +110,22 @@ h1::first-letter { text-transform: uppercase; }
 .lesson .full small { display: block; color: var(--muted); margin-bottom: 4px; }
 .lesson:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .lesson.changed { border-color: var(--warn); }
-.lesson.past { opacity: .5; }
-.lesson.now { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+/* Актуальные пары видно сразу: идущая — в яркой рамке, следующая — в пунктирной, прошедшие — бледнее и компактнее */
+.lesson.past { opacity: .42; padding-top: 8px; padding-bottom: 8px; }
+.lesson.past .who { display: none; }
+.lesson.now {
+  position: relative; border: 2px solid var(--accent); background: var(--accent-soft);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent), 0 6px 18px rgb(0 0 0 / .12);
+}
+.lesson.now::before, .lesson.next::before {
+  position: absolute; top: -10px; left: 12px; padding: 1px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+}
+.lesson.now::before { content: "Сейчас"; background: var(--accent); color: var(--card); }
+.lesson.next { position: relative; border: 2px dashed var(--accent); }
+.lesson.next::before { content: "Следующая"; background: var(--card); color: var(--accent); border: 1px solid var(--accent); }
+.lesson.now.changed, .lesson.next.changed { border-color: var(--accent); }
+.lesson.now, .lesson.next { margin-top: 6px; }
 .lesson.now .tag.state, .lesson.next .tag.state { background: var(--accent-soft); color: var(--accent); }
 .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 20px; text-align: center; color: var(--muted); }
 

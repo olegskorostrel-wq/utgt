@@ -294,7 +294,6 @@
         var tags = "";
         if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + (it.end - now.minutes) + " " +
           C.plural(it.end - now.minutes, "минута", "минуты", "минут") + "</span>";
-        if (it.state === "next") tags += '<span class="tag state">далее</span>';
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
@@ -432,7 +431,6 @@
         var tags = "";
         if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + (it.end - now.minutes) + " " +
           C.plural(it.end - now.minutes, "минута", "минуты", "минут") + "</span>";
-        if (it.state === "next") tags += '<span class="tag state">далее</span>';
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var n = lessonsLabel(it.lessons);
