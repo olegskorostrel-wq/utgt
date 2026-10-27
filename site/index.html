@@ -38,12 +38,6 @@
       <button type="button" role="tab" data-day="week">Неделя</button>
     </nav>
 
-    <label class="switch" id="langSwitch" hidden>
-      <input type="checkbox" id="langToggle">
-      <span class="track" aria-hidden="true"><i></i></span>
-      <span class="lbl"><strong>Немецкая подгруппа</strong>
-        <small>Для тех, кто учил немецкий в школе. Влияет на расписание.</small></span>
-    </label>
 
     <section id="weekView" class="week" hidden></section>
 
@@ -55,7 +49,13 @@
     </details>
     <section id="list" class="list" aria-label="Уроки"></section>
     <section id="cancelled" class="cancelled" hidden></section>
-    <p class="hint" id="lessonHint">Нажмите на урок — покажем полное имя преподавателя.</p>
+    <p class="hint small" id="lessonHint">Если нажать на урок, можно увидеть полное имя преподавателя.</p>
+    <label class="switch" id="langSwitch" hidden>
+      <input type="checkbox" id="langToggle">
+      <span class="track" aria-hidden="true"><i></i></span>
+      <span class="lbl"><strong>Немецкая подгруппа</strong>
+        <small>Для тех, кто учил немецкий в школе. Влияет на расписание.</small></span>
+    </label>
     <p id="unverified" class="unverified" hidden>Расписание этой группы считано из PDF автоматически и ещё не сверено вручную.
       Если видите ошибку — напишите, поправим.</p>
 

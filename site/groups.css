@@ -149,3 +149,4 @@
 .theme-btn.show .lbl { max-width: 120px; }
 html.theme-anim, html.theme-anim * { transition: background-color .3s ease, color .3s ease, border-color .3s ease !important; }
 .theme-btn .ico { display: inline-flex; }
+.hint.small { font-size: 11px; line-height: 1.35; margin: 6px 4px 12px; opacity: .85; }

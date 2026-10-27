@@ -6,7 +6,6 @@
 .desk .desk-side .clock span { font-size: 44px; line-height: 1; }
 .desk .desk-side h1 { font-size: 26px; }
 .desk .desk-side .calendar { flex-direction: column; align-items: flex-start; }
-.desk .desk-side .switch { margin-top: 14px; }
 .desk .desk-side .news { margin-top: 14px; }
 .desk .desk-side .foot { font-size: 12.5px; }
 

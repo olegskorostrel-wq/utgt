@@ -15,7 +15,7 @@
     side.className = "desk-side";
     main = document.createElement("div");
     main.className = "desk-main";
-    [".top", "#calendar", "#langSwitch", "#news", "#useful", ".foot"].forEach(function (s) {
+    [".top", "#calendar", "#news", "#useful", ".foot"].forEach(function (s) {
       var el = wrap.querySelector(s);
       if (el) side.appendChild(el);
     });
