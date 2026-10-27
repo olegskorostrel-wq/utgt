@@ -201,3 +201,6 @@ html.theme-anim, html.theme-anim * { transition: background-color .5s var(--ease
 .install button:active { transform: scale(.95); }
 .calendar .cal-offline::before { background: var(--warn); }
 .calendar .cal-offline { color: var(--warn); border-color: var(--warn); }
+.install .plus { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 8px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.install .plus li { border: 0; padding: 0; }
+.install .plus li::before { content: "✓ "; color: var(--ok); font-weight: 700; }

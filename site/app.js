@@ -499,7 +499,8 @@
     var w = installWay();
     if (!w) return "";
     return '<div class="install"><strong>Установить как приложение</strong>' +
-      "<small>Иконка на рабочем столе, открывается без браузера, последнее расписание видно и без интернета.</small>" +
+      '<ul class="plus"><li>В одно касание</li><li>На весь экран</li><li>Без интернета</li>' +
+        "<li>Сразу своя группа</li><li>Обновляется само</li></ul>" +
       (w.button ? '<button type="button" id="installBtn">Установить</button>' : "<p>" + esc(w.text) + "</p>") + "</div>";
   }
   window.addEventListener("beforeinstallprompt", function (e) {
