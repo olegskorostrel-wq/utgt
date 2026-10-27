@@ -5,14 +5,22 @@
   TELEGRAM_BOT_TOKEN — токен бота от @BotFather (секрет репозитория)
   GITHUB_TOKEN, GITHUB_REPOSITORY — выдаёт сам GitHub Actions
 
-В задачу попадает только текст и имя отправителя — без @username и id чата,
-потому что задачи в публичном репозитории видны всем.
+Ещё два события — ответ человеку в Telegram:
+  задачу закрыли как «выполнено»  -> бот благодарит: всё исправлено/учтено;
+  владелец написал комментарий «/ответ текст» -> бот пересылает текст человеку.
+
+В задачу попадает только текст и имя отправителя — без @username. Id чата нужен,
+чтобы ответить, поэтому он лежит в задаче зашифрованным ключом из токена бота.
 """
+import base64
+import hashlib
+import json
 import os
 import re
 import sys
 
 import requests
+from cryptography.fernet import Fernet, InvalidToken
 
 TG = "https://api.telegram.org/bot{token}/{method}"
 LABEL = "telegram"
@@ -24,7 +32,15 @@ LINK = re.compile(r"(https?://|t\.me/|www\.|@\w{5,}bot\b)", re.I)
 
 GREETING = ("Привет! Это бот сайта с расписанием УТЖТ.\n"
             "Напишите, если нашли ошибку в расписании или заменах, или есть идея — сообщение передадим Олегу.")
-THANKS = "Спасибо! Сообщение передано Олегу."
+THANKS = ("Спасибо! Сообщение получено ✅\n"
+          "В течение дня его прочитают. Если это ошибка в расписании — исправим, если предложение — рассмотрим. "
+          "Когда будет результат, бот напишет вам сюда.")
+DONE = ("Готово! ✅\nПо вашему сообщению «{quote}» всё сделано — ошибка исправлена или предложение учтено.\n"
+        "Спасибо, что написали!")
+REPLY = "Ответ на ваше сообщение «{quote}»:\n\n{text}"
+REPLY_CMD = re.compile(r"^/ответ\s+(.+)", re.S | re.I)
+CHAT_TAG = re.compile(r"<!-- tg-chat (\S+) -->")
+TEAM = {"OWNER", "MEMBER", "COLLABORATOR"}
 NOT_TEXT = "Пока принимаем только текстовые сообщения — опишите, пожалуйста, словами."
 
 
@@ -42,7 +58,24 @@ def spam_reason(text):
     return None
 
 
-def issue_for(msg):
+class Sealer:
+    """Шифрует id чата для хранения в публичной задаче. Ключ — из токена бота."""
+
+    def __init__(self, bot_token):
+        key = hashlib.sha256(b"utgt-feedback:" + bot_token.encode()).digest()
+        self.f = Fernet(base64.urlsafe_b64encode(key))
+
+    def seal(self, chat_id):
+        return self.f.encrypt(str(chat_id).encode()).decode()
+
+    def open(self, sealed):
+        try:
+            return int(self.f.decrypt(sealed.encode()).decode())
+        except (InvalidToken, ValueError):
+            return None
+
+
+def issue_for(msg, sealer=None):
     """Сообщение Telegram -> (заголовок, текст, метки) или None, если задачу не создаём."""
     text = (msg.get("text") or msg.get("caption") or "").strip()
     if not text or text.startswith("/"):
@@ -53,6 +86,8 @@ def issue_for(msg):
     quoted = "\n".join("> " + line for line in text.splitlines())
     body = (f"{quoted}\n\n— {name or 'без имени'}, сообщение в боте обратной связи\n\n"
             f"<!-- tg-update {msg.get('message_id')} -->")
+    if sealer:
+        body += f"\n<!-- tg-chat {sealer.seal(msg['chat']['id'])} -->"
     labels = [LABEL]
     reason = spam_reason(text)
     if reason:
@@ -86,6 +121,11 @@ class Repo:
             if r.status_code not in (201, 422):  # 422 — метка уже есть
                 r.raise_for_status()
 
+    def comment(self, number, text):
+        r = self.s.post(f"https://api.github.com/repos/{self.repo}/issues/{number}/comments", headers=self.h,
+                        json={"body": text}, timeout=30)
+        r.raise_for_status()
+
     def create_issue(self, title, body, labels):
         r = self.s.post(f"https://api.github.com/repos/{self.repo}/issues", headers=self.h,
                         json={"title": title, "body": body, "labels": labels}, timeout=30)
@@ -93,7 +133,7 @@ class Repo:
         return r.json()["number"]
 
 
-def run(bot, repo, log=print):
+def run(bot, repo, log=print, sealer=None):
     updates = bot.call("getUpdates", timeout=0, allowed_updates=["message"])
     if not updates:
         log("новых сообщений нет")
@@ -102,7 +142,7 @@ def run(bot, repo, log=print):
     created, done = 0, None
     try:
         for u in updates:
-            created += handle(u.get("message"), bot, repo, log)
+            created += handle(u.get("message"), bot, repo, log, sealer)
             done = u["update_id"]
     finally:
         # подтверждаем Telegram только то, что уже обработано, — без дублей при сбое
@@ -112,7 +152,7 @@ def run(bot, repo, log=print):
     return created
 
 
-def handle(msg, bot, repo, log):
+def handle(msg, bot, repo, log, sealer=None):
     """Одно сообщение. True, если создана задача."""
     if not msg or msg.get("chat", {}).get("type") != "private":
         return False
@@ -120,7 +160,7 @@ def handle(msg, bot, repo, log):
     if (msg.get("text") or "").startswith("/start"):
         bot.call("sendMessage", chat_id=chat, text=GREETING)
         return False
-    issue = issue_for(msg)
+    issue = issue_for(msg, sealer)
     if issue is None:
         bot.call("sendMessage", chat_id=chat, text=NOT_TEXT)
         return False
@@ -131,19 +171,55 @@ def handle(msg, bot, repo, log):
     return True
 
 
+def notify(event_name, event, bot, repo, sealer, log=print):
+    """Событие GitHub по задаче -> сообщение автору в Telegram. True, если отправлено."""
+    issue = event.get("issue") or {}
+    if LABEL not in [l["name"] for l in issue.get("labels", [])]:
+        return False
+    if event_name == "issues" and event.get("action") == "closed" and issue.get("state_reason") == "completed":
+        template, extra, note = DONE, {}, "Бот написал автору в Telegram: всё исправлено, спасибо."
+    elif event_name == "issue_comment" and event.get("action") == "created":
+        c = event.get("comment") or {}
+        m = REPLY_CMD.match((c.get("body") or "").strip())
+        if not m or c.get("author_association") not in TEAM:
+            return False
+        template, extra, note = REPLY, {"text": m.group(1).strip()}, "Бот отправил этот ответ автору в Telegram."
+    else:
+        return False
+    tag = CHAT_TAG.search(issue.get("body") or "")
+    chat = sealer.open(tag.group(1)) if tag else None
+    if chat is None:
+        log(f"#{issue['number']}: не знаю, кому писать (старая задача или токен бота сменился)")
+        repo.comment(issue["number"], "Не получилось написать автору: у задачи нет id чата "
+                                      "(создана до этой функции или токен бота менялся).")
+        return False
+    quote = issue["title"].removeprefix("Telegram: ")
+    bot.call("sendMessage", chat_id=chat, text=template.format(quote=quote, **extra))
+    repo.comment(issue["number"], note)
+    log(f"#{issue['number']}: отправлено в Telegram")
+    return True
+
+
 def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         print("TELEGRAM_BOT_TOKEN не задан — бот обратной связи ещё не настроен, пропускаю")
         return 0
     bot = Bot(token)
+    repo = Repo(os.environ["GITHUB_TOKEN"], os.environ["GITHUB_REPOSITORY"])
+    sealer = Sealer(token)
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    if event_name in ("issues", "issue_comment"):
+        with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
+            notify(event_name, json.load(f), bot, repo, sealer)
+        return 0
     me = bot.call("getMe")
     hook = bot.call("getWebhookInfo")
     print(f"бот: @{me.get('username')}, ждут в очереди: {hook.get('pending_update_count', 0)}"
           + (", ВНИМАНИЕ: установлен вебхук — getUpdates не работает" if hook.get("url") else ""))
     if hook.get("url"):
         bot.call("deleteWebhook")  # сообщения забираем сами, вебхук мешает
-    run(bot, Repo(os.environ["GITHUB_TOKEN"], os.environ["GITHUB_REPOSITORY"]))
+    run(bot, repo, sealer=sealer)
     return 0
 
 
