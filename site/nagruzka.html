@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Нагрузка УТЖТ</title>
+  <meta name="description" content="УТЖТ: у каких групп предмет или преподаватель и сколько пар в неделю">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232456c7'/%3E%3Ctext x='16' y='22' font-size='14' font-family='sans-serif' font-weight='700' text-anchor='middle' fill='white'%3E11А%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <p class="eyebrow"><a href="./">← Расписание 11-А</a></p>
+        <h1>Нагрузка по группам</h1>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-mode="s">Предмет</button>
+      <button type="button" role="tab" data-mode="t">Преподаватель</button>
+    </nav>
+
+    <label class="pick"><span id="pickLabel">Предмет</span>
+      <select id="pick"></select>
+    </label>
+
+    <p id="total" class="total" hidden></p>
+    <section id="result" class="week"></section>
+
+    <footer class="foot">
+      <p class="disclaimer"><strong>Неофициальный сайт.</strong> Данные взяты автоматически из расписания на сайте
+        техникума и могут содержать ошибки. Точная информация — на
+        <a href="https://utgt-pgups.ru/" target="_blank" rel="noopener">utgt-pgups.ru</a> и в учебной части.</p>
+      <p>По основному расписанию на 1 семестр 2026/27 для всех групп, без учёта замен.
+        Пара — 2 урока; там, где пары чередуются по неделям, они посчитаны отдельно для 1-й и 2-й недели.</p>
+      <p id="status"></p>
+    </footer>
+  </main>
+  <script src="agenda.js"></script>
+  <script src="load.js"></script>
+  <script src="nagruzka.js"></script>
+</body>
+</html>

@@ -169,7 +169,8 @@
     var g = state.group, course = g.charAt(0);
     var cg = (state.data.calendar.groups || {})[g] || {};
     var o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
-    var links = info.links.concat(info.by_course[course] || []);
+    var links = [{ title: "Нагрузка по группам: у кого какой предмет и преподаватель", url: "nagruzka.html" }]
+      .concat(info.links, info.by_course[course] || []);
     var gia = course === "4" && cg.specialty && info.gia_by_specialty[cg.specialty.code];
     if (gia) links.push({ title: "Программа ГИА " + cg.specialty.code + " (на " + info.gia_year + " уч. год)", url: gia });
     var cw = cg.courseworks || {}, cwHtml = Object.keys(cw).map(function (sem) {
@@ -183,7 +184,8 @@
       "</small></div>" +
       (cwHtml ? '<div class="office"><strong>Курсовые работы и проекты</strong><ul class="plain">' + cwHtml + "</ul></div>" : "") +
       "<ul>" + links.map(function (l) {
-        return '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.title) + "</a></li>";
+        var ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : "";
+        return '<li><a href="' + esc(l.url) + '"' + ext + ">" + esc(l.title) + "</a></li>";
       }).join("") + "</ul>";
   }
 

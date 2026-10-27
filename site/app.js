@@ -173,7 +173,8 @@
     if (!info) return;
     var o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
     var course = String(state.data.schedule.group).charAt(0);
-    var links = info.links.concat(info.by_course[course] || []);
+    var links = [{ title: "Нагрузка по группам: у кого какой предмет и преподаватель", url: "nagruzka.html" }]
+      .concat(info.links, info.by_course[course] || []);
     $("usefulBody").innerHTML =
       '<div class="office"><strong>' + esc(o.name) + "</strong>" +
       '<span class="status ' + (st.open ? "on" : "off") + '">' + esc(st.text) + "</span>" +
@@ -181,7 +182,8 @@
       "пн–пт " + o.hours["1"].join("–") + ", сб " + o.hours["6"].join("–") + ", обед " + o.lunch.join("–") +
       "</small></div>" +
       "<ul>" + links.map(function (l) {
-        return '<li><a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.title) + "</a></li>";
+        var ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : "";
+        return '<li><a href="' + esc(l.url) + '"' + ext + ">" + esc(l.title) + "</a></li>";
       }).join("") + "</ul>";
   }
 

@@ -18,16 +18,15 @@ ROOT = Path(__file__).resolve().parent
 
 def bust_cache(out):
     """app.js -> app.js?v=<хэш содержимого>: после обновления телефон не возьмёт старый скрипт из кэша."""
-    page = out / "index.html"
-    html = page.read_text(encoding="utf-8")
-
     def versioned(m):
         name = m.group(2)
         digest = hashlib.sha1((out / name).read_bytes()).hexdigest()[:8]
         return f'{m.group(1)}="{name}?v={digest}"'
 
-    html = re.sub(r'(src|href)="([\w.-]+\.(?:js|css))"', versioned, html)
-    page.write_text(html, encoding="utf-8")
+    for page in out.glob("*.html"):
+        html = page.read_text(encoding="utf-8")
+        html = re.sub(r'(src|href)="([\w.-]+\.(?:js|css))"', versioned, html)
+        page.write_text(html, encoding="utf-8")
 
 
 def build(out=ROOT / "_site", scrape_ok=True, preview=False):
