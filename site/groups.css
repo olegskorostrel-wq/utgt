@@ -46,3 +46,26 @@
 .subj .sg + .sg { margin-top: 2px; }
 .room .sg { text-align: right; }
 #pickerTitle:focus { outline: none; }
+
+/* выбор: студент / преподаватель */
+.seg { display: flex; gap: 4px; padding: 4px; margin: 10px 0 4px; border-radius: 12px; background: var(--bg); }
+.seg button {
+  flex: 1; padding: 8px 6px; border: 0; border-radius: 9px; background: none; color: var(--muted);
+  font: inherit; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s ease, color .2s ease;
+}
+.seg button[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+.tlist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.tlist button {
+  display: block; width: 100%; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--text); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tlist button strong { display: block; font-weight: 600; font-size: 15px; }
+.tlist button small { color: var(--muted); font-size: 12px; }
+.tlist button[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+
+/* карточки преподавателя: группа заметнее, без раскрытия */
+.tlesson { cursor: default; }
+.tlesson .groups { color: var(--accent); font-weight: 600; }
+.wday .g { color: var(--accent); font-weight: 600; font-size: 13px; margin-left: 4px; }
+.wday h3 .cnt { float: right; font-size: 12px; font-weight: 600; color: var(--muted); }

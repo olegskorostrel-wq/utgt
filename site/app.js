@@ -2,8 +2,8 @@
 (function () {
   "use strict";
   var A = window.Agenda, C = window.Calendar;
-  var STORE_KEY = "utgt-group";
-  var state = { offset: 0, data: null, zamena: {}, group: null, schedules: {}, open: {} };
+  var STORE_KEY = "utgt-group", WHO_KEY = "utgt-who", TEACHER_KEY = "utgt-teacher";
+  var state = { offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
   var params = new URLSearchParams(location.search);
 
   function $(id) { return document.getElementById(id); }
@@ -111,6 +111,7 @@
     });
     $("dayView").hidden = state.offset === "week";
     $("weekView").hidden = state.offset !== "week";
+    if (state.teacher) return state.offset === "week" ? renderTeacherWeek(now) : renderTeacherDay(now);
     if (state.offset === "week") return renderWeek(now);
     var date = A.addDays(params.get("date") || now.date, state.offset);
     Promise.all([scheduleFor(g), zamenaFor(date)]).then(function (r) {
@@ -212,7 +213,7 @@
     var info = state.data.info;
     $("useful").hidden = !info;
     if (!info) return;
-    var g = state.group, course = g.charAt(0);
+    var g = state.group || "", course = g.charAt(0);
     var cg = (state.data.calendar.groups || {})[g] || {};
     var o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
     var links = [{ title: "Нагрузка по группам: у кого какой предмет и преподаватель", url: "nagruzka.html" }]
@@ -321,6 +322,7 @@
       return "<s>" + esc(x.subject) + "</s> (" + x.startText + "–" + x.endText + ")";
     }).join(", ") : "";
     $("unverified").hidden = !!schedule.verified;
+    $("lessonHint").hidden = false;
 
     $("images").hidden = !z || !z.images.length;
     $("imageList").innerHTML = z ? z.images.map(function (i) {
@@ -335,6 +337,152 @@
       : "";
   }
 
+  // ---------- режим преподавателя ----------
+
+  function teacherFull(t) { return (state.data.teachers.by_short || {})[t] || ""; }
+
+  // Пары преподавателя на дату по расписаниям всех групп и заменам
+  function teacherDay(date) {
+    return Promise.all([allGroups(), zamenaFor(date)]).then(function (r) {
+      var d = Teachers.day(state.teacher, date, r[0], state.data.bells, state.data.calendar,
+        function (g) { return zamenaForGroup(r[1], g); });
+      d.z = r[1];
+      d.week = A.weekNumber(date, r[0][0].schedule, r[1]);
+      d.weekday = A.isoWeekday(date);
+      d.holiday = (state.data.calendar.holidays || []).filter(function (h) { return h.date === date; })[0] || null;
+      return d;
+    });
+  }
+
+  function teacherHeader() {
+    var t = state.teacher, full = teacherFull(t);
+    document.title = "Расписание УТЖТ · " + t;
+    $("groupName").textContent = t;
+    $("specialty").textContent = (full ? full + " · " : "") + "расписание преподавателя";
+  }
+
+  function lessonsLabel(ls) {
+    return ls.length ? (ls[0] === 0 ? "классный час" : ls.length > 1 ? "уроки " + ls[0] + "–" + ls[ls.length - 1] : "урок " + ls[0]) : "";
+  }
+
+  function renderTeacherDay(now) {
+    var date = A.addDays(params.get("date") || now.date, state.offset);
+    teacherDay(date).then(function (d) {
+      teacherHeader();
+      $("title").textContent = A.humanDate(date);
+      $("week").textContent = d.weekday === 7 ? "" : d.week + "-я неделя";
+      var nextFound = false;
+      d.items.forEach(function (it) {
+        if (date !== now.date) return;
+        if (now.minutes >= it.end) it.state = "past";
+        else if (now.minutes >= it.start) it.state = "now";
+        else if (!nextFound) { it.state = "next"; nextFound = true; }
+      });
+
+      var banner = $("banner"), cls = "info", html;
+      if (d.z && !d.z.po_raspisaniyu) {
+        cls = d.removed.length || d.items.some(function (i) { return i.changed; }) ? "warn" : "ok";
+        html = "<strong>Замены на этот день учтены</strong>" +
+          (d.items.some(function (i) { return i.guessed; })
+            ? "В распоряжении преподаватель не указан: пары с меткой «по замене» определены по предмету группы — сверьтесь с картинкой."
+            : d.removed.length ? "Часть пар снята — см. ниже." : "Ваших пар замены не коснулись.");
+      } else if (d.z) {
+        cls = "ok";
+        html = "<strong>Замен нет</strong>На сайте техникума: занятия по расписанию.";
+      } else if (d.holiday) {
+        cls = "ok";
+        html = "<strong>Выходной — " + esc(d.holiday.name) + "</strong>Занятий нет.";
+      } else if (d.weekday === 7) {
+        html = "<strong>Воскресенье</strong>Занятий нет.";
+      } else {
+        html = "<strong>Замен на этот день пока нет</strong>Обычно их публикуют накануне. Сайт проверяет страницу замен несколько раз в день.";
+      }
+      banner.className = "banner " + cls;
+      banner.innerHTML = html;
+      banner.hidden = false;
+
+      var list = $("list");
+      list.innerHTML = d.items.length ? d.items.map(function (it, idx) {
+        var tags = "";
+        if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + (it.end - now.minutes) + " " +
+          C.plural(it.end - now.minutes, "минута", "минуты", "минут") + "</span>";
+        if (it.state === "next") tags += '<span class="tag state">далее</span>';
+        if (it.guessed) tags += '<span class="tag" title="преподаватель определён по предмету">по замене</span>';
+        else if (it.changed) tags += '<span class="tag">замена</span>';
+        if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
+        var n = lessonsLabel(it.lessons);
+        return '<article class="lesson tlesson ' + (it.state || "") + (it.changed ? " changed" : "") + '" style="--i:' + idx + '">' +
+          '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
+          '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
+          '<div class="who"><span class="groups">' + it.groups.map(esc).join(", ") + "</span>" +
+          (n ? ' · <span class="nw">' + n + "</span>" : "") + "</div></div>" +
+          '<div class="room">' + (it.rooms.length ? "ауд. " + it.rooms.map(esc).join(", ") : "") + "</div>" +
+          (it.state === "now" ? '<div class="bar"><i style="width:' +
+            Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
+      }).join("") : '<div class="empty">' + (d.holiday ? esc(d.holiday.name) : d.weekday === 7 ? "Выходной" : "Пар нет") + "</div>";
+
+      var c = $("cancelled");
+      c.hidden = !d.removed.length;
+      c.innerHTML = d.removed.length ? "Снято заменой: " + d.removed.map(function (x) {
+        return "<s>" + esc(nice(x.subject)) + "</s> у " + esc(x.group) + " (" + x.startText + "–" + x.endText + ")";
+      }).join(", ") : "";
+      $("unverified").hidden = true;
+      $("lessonHint").hidden = true;
+      var z = d.z;
+      $("images").hidden = !z || !z.images.length;
+      $("imageList").innerHTML = z ? z.images.map(function (i) {
+        return '<a href="' + esc(i.url) + '"><img loading="lazy" src="data/zameny/' + esc(i.file) +
+          '" alt="Распоряжение о замене занятий на ' + esc(A.humanDate(date)) + '"></a>';
+      }).join("") : "";
+      drawStatus();
+    });
+  }
+
+  function renderTeacherWeek(now) {
+    var base = params.get("date") || now.date, wd = A.isoWeekday(base);
+    var monday = A.addDays(base, wd === 7 ? 1 : 1 - wd);
+    var dates = [0, 1, 2, 3, 4, 5].map(function (i) { return A.addDays(monday, i); });
+    Promise.all(dates.map(teacherDay)).then(function (days) {
+      teacherHeader();
+      $("title").textContent = "Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]);
+      $("week").textContent = days[0].week + "-я неделя";
+      var total = days.reduce(function (n, d) { return n + d.items.length; }, 0);
+      $("weekView").innerHTML = '<p class="total">' + total + " " + C.plural(total, "пара", "пары", "пар") + " за неделю</p>" +
+        days.map(function (d, i) {
+          var date = dates[i];
+          var body = d.items.length ? d.items.map(function (it) {
+            return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
+              '<span class="s">' + esc(nice(it.subject)) + ' <span class="g">' + it.groups.map(esc).join(", ") + "</span>" +
+              (it.guessed ? ' <span class="tag">по замене</span>' : it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
+              '<span class="r">' + it.rooms.map(esc).join(", ") + "</span></li>";
+          }).join("") : '<li class="none">' + (d.holiday ? esc(d.holiday.name) : "Пар нет") + "</li>";
+          return '<section class="wday' + (date === now.date ? " today" : "") + '" style="--i:' + i + '"><h3>' + esc(A.humanDate(date)) +
+            (date === now.date ? ' <span class="tag state">сегодня</span>' : "") +
+            (d.items.length ? ' <span class="cnt">' + d.items.length + " " + C.plural(d.items.length, "пара", "пары", "пар") + "</span>" : "") +
+            "</h3><ul>" + body + "</ul></section>";
+        }).join("") + '<p class="hint">Замены учтены на дни, на которые их уже опубликовали.</p>';
+    });
+  }
+
+  function drawStatus() {
+    var st = state.data.status;
+    $("status").textContent = st.checked_at
+      ? "Страница замен проверена: " + st.checked_at.replace("T", " ").slice(0, 16) + " (МСК)" +
+        (st.ok === false ? " — последняя проверка завершилась ошибкой" : "")
+      : "";
+  }
+
+  function setTeacher(name) {
+    state.teacher = name;
+    state.group = null;
+    store(WHO_KEY, "teacher");
+    store(TEACHER_KEY, name);
+    params.delete("group");
+    params.set("teacher", name);
+    history.replaceState(null, "", "?" + params.toString());
+    render(true);
+  }
+
   // ---------- выбор группы ----------
 
   function drawPicker() {
@@ -347,8 +495,22 @@
             (g.group === state.group) + '">' + esc(g.group) + "</button>";
         }).join("") + "</div></section>";
     }).join("");
-    $("pickerClose").hidden = !state.group;
-    $("shareBtn").hidden = !state.group;
+    var teachers = state.teacherList || [];
+    $("teacherList").innerHTML = teachers.map(function (t) {
+      var full = teacherFull(t);
+      return '<button type="button" data-teacher="' + esc(t) + '" aria-current="' + (t === state.teacher) + '">' +
+        "<strong>" + esc(full || t) + "</strong>" + (full ? "<small>" + esc(t) + "</small>" : "") + "</button>";
+    }).join("");
+    var who = state.pickWho;
+    document.querySelectorAll("#whoSeg button").forEach(function (b) {
+      b.setAttribute("aria-selected", String(b.dataset.who === who));
+    });
+    $("courses").hidden = who !== "group";
+    $("teacherList").hidden = who !== "teacher";
+    $("pickerTitle").textContent = who === "group" ? "Выберите группу" : "Выберите себя";
+    $("pickerClose").hidden = !state.group && !state.teacher;
+    $("shareBtn").hidden = !state.group && !state.teacher;
+    $("shareBtn").textContent = state.teacher ? "Скопировать ссылку на расписание" : "Скопировать ссылку на группу";
   }
 
   // Живое обновление: часы — каждую секунду, расписание — при смене минуты, данные — раз в 10 минут;
@@ -362,8 +524,8 @@
       if (now.date !== day && !params.get("date")) { day = now.date; state.offset = 0; }
       if (Date.now() - loaded > 10 * 60000) {
         loaded = Date.now();
-        load().then(function () { drawNews(); if (state.group) render(); }).catch(function () {});
-      } else if (state.group) render();
+        load().then(function () { drawNews(); if (state.group || state.teacher) render(); }).catch(function () {});
+      } else if (state.group || state.teacher) render();
     }
     setInterval(tick, 1000);
     function wake() { if (!document.hidden) tick(); }
@@ -374,13 +536,17 @@
 
   function setGroup(name) {
     state.group = name;
+    state.teacher = null;
     store(STORE_KEY, name);
+    store(WHO_KEY, "group");
+    params.delete("teacher");
     params.set("group", name);
     history.replaceState(null, "", "?" + params.toString());
     render(true);
   }
 
   function openPicker() {
+    state.pickWho = state.teacher ? "teacher" : "group";
     drawPicker();
     var d = $("picker");
     if (d.showModal) d.showModal(); else d.setAttribute("open", "");
@@ -395,14 +561,30 @@
     setGroup(b.dataset.group);
     $("picker").close();
   });
+  $("teacherList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-teacher]");
+    if (!b) return;
+    setTeacher(b.dataset.teacher);
+    $("picker").close();
+  });
+  document.querySelectorAll("#whoSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      state.pickWho = b.dataset.who;
+      if (state.pickWho === "teacher" && !state.teacherList) {
+        allGroups().then(function (gs) { state.teacherList = Teachers.list(gs); drawPicker(); });
+      }
+      drawPicker();
+    });
+  });
   $("picker").addEventListener("cancel", function (e) {
-    if (!state.group) e.preventDefault(); // первый вход: без группы закрыть нельзя
+    if (!state.group && !state.teacher) e.preventDefault(); // первый вход: без выбора закрыть нельзя
   });
   $("shareBtn").addEventListener("click", function () {
-    var url = location.origin + location.pathname + "?group=" + encodeURIComponent(state.group);
+    var url = location.origin + location.pathname + (state.teacher
+      ? "?teacher=" + encodeURIComponent(state.teacher) : "?group=" + encodeURIComponent(state.group));
     var b = $("shareBtn");
     var done = function () { b.textContent = "Ссылка скопирована"; };
-    if (navigator.share) navigator.share({ title: state.group + " УТЖТ", url: url }).catch(function () {});
+    if (navigator.share) navigator.share({ title: (state.teacher || state.group) + " УТЖТ", url: url }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, function () { prompt("Ссылка:", url); });
     else prompt("Ссылка:", url);
   });
@@ -410,7 +592,7 @@
   function toggleLesson(e) {
     if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
     var card = e.target.closest(".lesson");
-    if (!card) return;
+    if (!card || !card.querySelector(".full")) return; // у преподавателя карточки не раскрываются
     e.preventDefault();
     var key = card.dataset.key;
     state.open[key] = !state.open[key];
@@ -432,6 +614,24 @@
 
   load().then(function () {
     drawNews();
+    // преподаватель: ?teacher=… или запомненный выбор (если в ссылке нет группы)
+    var wantedT = params.get("teacher") || (!params.get("group") && store(WHO_KEY) === "teacher" ? store(TEACHER_KEY) : null);
+    if (wantedT) {
+      return allGroups().then(function (gs) {
+        state.teacherList = Teachers.list(gs);
+        if (state.teacherList.indexOf(wantedT) < 0) return openPicker();
+        state.teacher = wantedT;
+        store(WHO_KEY, "teacher");
+        store(TEACHER_KEY, wantedT);
+        var now = A.moscowNow();
+        if (params.get("date")) return render(true);
+        return teacherDay(now.date).then(function (d) {
+          var last = d.items[d.items.length - 1];
+          if (d.weekday === 7 || !last || now.minutes >= last.end) state.offset = 1;
+          render(true);
+        });
+      });
+    }
     var wanted = params.get("group") || store(STORE_KEY);
     if (wanted && groupInfo(wanted)) {
       state.group = wanted;

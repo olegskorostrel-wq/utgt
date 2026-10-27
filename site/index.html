@@ -37,7 +37,7 @@
     <section id="banner" class="banner" hidden></section>
     <section id="list" class="list" aria-label="Уроки"></section>
     <section id="cancelled" class="cancelled" hidden></section>
-    <p class="hint">Нажмите на урок — покажем полное имя преподавателя.</p>
+    <p class="hint" id="lessonHint">Нажмите на урок — покажем полное имя преподавателя и где он сейчас.</p>
     <p id="unverified" class="unverified" hidden>Расписание этой группы считано из PDF автоматически и ещё не сверено вручную.
       Если видите ошибку — напишите, поправим.</p>
 
@@ -84,8 +84,13 @@
         <h2 id="pickerTitle">Выберите группу</h2>
         <button type="submit" class="close" id="pickerClose" aria-label="Закрыть">✕</button>
       </div>
-      <p class="picker-hint">Выбор запомнится на этом устройстве. Ссылку на свою группу можно отправить в чат.</p>
+      <div class="seg" id="whoSeg" role="tablist">
+        <button type="button" role="tab" data-who="group">Я студент</button>
+        <button type="button" role="tab" data-who="teacher">Я преподаватель</button>
+      </div>
+      <p class="picker-hint">Выбор запомнится на этом устройстве. Ссылку можно отправить в чат.</p>
       <div id="courses"></div>
+      <div id="teacherList" class="tlist" hidden></div>
       <button type="button" id="shareBtn" class="share">Скопировать ссылку на группу</button>
     </form>
   </dialog>

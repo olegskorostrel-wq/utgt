@@ -38,3 +38,45 @@ test("ё/е в фамилии не мешает", () => {
   const a = T.whereIs("Черных С.С.", "2026-10-26", at("10:00"), schedules, bells, cal, null);
   assert.ok(a.lessons.length > 0);
 });
+
+const zam = (d) => { try { return read("data/zameny/" + d + ".json"); } catch (e) { return null; } };
+const forGroup = (z) => (g) => z ? Object.assign({}, z, { changes: (z.all_changes || {})[g] || [] }) : null;
+
+test("день преподавателя: пары по времени, у каждой группа и кабинет", () => {
+  const d = T.day("Трудова С.В.", "2026-10-27", schedules, bells, cal, null);
+  assert.ok(d.items.length >= 2);
+  d.items.forEach((x, i) => {
+    assert.ok(x.groups.length >= 1 && x.subject && x.startText);
+    if (i) assert.ok(d.items[i - 1].start <= x.start);
+  });
+});
+
+test("замена без преподавателя приписывается тому, кто ведёт этот предмет у группы", () => {
+  // 27.10: 11-Л 7-8 «Литература» 2-18 — литературу у 11-Л ведёт Изъюрова
+  const d = T.day("Изъюрова Н.М.", "2026-10-27", schedules, bells, cal, forGroup(zam("2026-10-27")));
+  const l = d.items.find((x) => x.groups.includes("11-Л") && x.startText === "14:30");
+  assert.ok(l, "пара по замене должна быть у Изъюровой");
+  assert.ok(l.guessed && l.changed);
+  assert.deepStrictEqual(l.rooms, ["2-18"]);
+});
+
+test("снятая заменой пара попадает в removed", () => {
+  // 27.10: 31-Д 3-4 «Отменить»
+  const z = forGroup(zam("2026-10-27"));
+  const all = T.list(schedules).map((t) => [t, T.day(t, "2026-10-27", schedules, bells, cal, z).removed]);
+  assert.ok(all.some(([, r]) => r.some((x) => x.group === "31-Д" && x.startText === "10:40")));
+});
+
+test("список преподавателей", () => {
+  const l = T.list(schedules);
+  assert.ok(l.length >= 25 && l.includes("Рыжикова Т.П."));
+});
+
+test("предмет замены сопоставляется с опечатками и по языку", () => {
+  assert.ok(T.sameSubject("Техническая эксплуатация железных дорог и безопасность движения",
+    "Техническая эксплуатация железных дорог и безопансость движения"));
+  assert.ok(T.sameSubject("Иностранный язык в профессиональной деятельности (немецкий)", "Иностранный язык (немецкий)"));
+  assert.ok(!T.sameSubject("Иностранный язык (немецкий)", "Иностранный язык (английский)"));
+  assert.ok(!T.sameSubject("Математика", "Информатика"));
+  assert.ok(!T.sameSubject("Русский язык", "Иностранный язык (английский)"));
+});

@@ -247,3 +247,4 @@ details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) 
 .chosen-row .star { border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
 .chosen-row[hidden] { display: none; }
 .finder input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.total .bydays { display: block; margin-top: 6px; font-size: 14px; }

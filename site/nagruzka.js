@@ -127,7 +127,9 @@
     var sum = state.mode === "s" ? L.bySubject(state.list, value) : L.byTeacher(state.list, value);
     total.hidden = false;
     total.innerHTML = "<strong>" + sum.rows.length + " " + (sum.rows.length === 1 ? "группа" : sum.rows.length < 5 ? "группы" : "групп") +
-      "</strong> · всего " + perWeek(sum.total);
+      "</strong> · всего " + perWeek(sum.total) +
+      (state.mode === "t" ? '<a class="bydays" href="./?teacher=' + encodeURIComponent(value) +
+        '">Расписание по дням: сегодня, завтра, неделя — с датами и заменами →</a>' : "");
     res.innerHTML = sum.rows.map(function (r, i) {
       return '<section class="wday" style="--i:' + i + '"><h3>' + esc(r.group) + ' <span class="tag state">' +
         esc(perWeek(r)) + "</span></h3><ul>" + r.slots.map(function (e) {
