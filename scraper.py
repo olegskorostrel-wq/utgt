@@ -233,6 +233,8 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS):
                      "room": room, "uncertain": row_uncertain or not s_ok, "raw": raw})
         uncertain |= row_uncertain and (group or "").startswith(("1", "?"))
     return {"ok": in_table and bool(rows), "title": title, "rows": rows,
+            # рамка таблицы на картинке: сайт показывает только её, крупно (x0, y0, x1, y1, ширина, высота)
+            "box": [int(vlines[0]), int(hlines[0]), int(vlines[-1]), int(hlines[-1]), im.width, im.height],
             "uncertain_course1": uncertain,
             "error": None if in_table else "не найдена шапка таблицы"}
 
@@ -284,6 +286,8 @@ def process_block(block, session, vocab, out_dir=OUT_DIR, log=print):
     for img, blob in zip(images, blobs):
         (out_dir / img["file"]).write_bytes(blob)
         t = ocr_table(out_dir / img["file"], vocab)
+        if t.get("box"):
+            img["table"] = t["box"]
         tables.append(t)
         changes += group_changes(t)
     meta = {
@@ -313,6 +317,9 @@ def reprocess(out_dir=OUT_DIR, vocab=None, log=print):
         if not meta["images"]:
             continue
         tables = [ocr_table(out_dir / i["file"], vocab) for i in meta["images"]]
+        for i, t in zip(meta["images"], tables):
+            if t.get("box"):
+                i["table"] = t["box"]
         changes = [c for t in tables for c in group_changes(t)]
         meta.update(title=next((t["title"] for t in tables if t.get("title")), "") or meta.get("title", ""),
                     ocr_ok=all(t["ok"] for t in tables),

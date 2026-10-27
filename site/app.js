@@ -321,10 +321,7 @@
     $("lessonHint").hidden = false;
 
     $("images").hidden = !z || !z.images.length;
-    $("imageList").innerHTML = z ? z.images.map(function (i) {
-      return '<a href="' + esc(i.url) + '"><img loading="lazy" src="data/zameny/' + esc(i.file) +
-        '" alt="Распоряжение о замене занятий на ' + esc(A.humanDate(date)) + '"></a>';
-    }).join("") : "";
+    $("imageList").innerHTML = imagesHTML(z, date);
 
     var st = state.data.status;
     $("status").textContent = st.checked_at
@@ -362,6 +359,25 @@
     btn.className = "info-btn " + cls;
     btn.setAttribute("aria-expanded", String(state.infoOpen));
     btn.title = html.replace("</strong>", ". ").replace(/<[^>]+>/g, "");
+  }
+
+  // Картинка распоряжения: на сайте — только таблица замен, на всю ширину (на телефоне читается);
+  // нажатие открывает полный лист. Рамку таблицы находит scraper.py (images[].table).
+  function imagesHTML(z, date) {
+    if (!z) return "";
+    return z.images.map(function (i) {
+      var alt = "Распоряжение о замене занятий на " + esc(A.humanDate(date));
+      var src = "data/zameny/" + esc(i.file);
+      var t = i.table;
+      if (!t) return '<a href="' + esc(i.url) + '"><img loading="lazy" src="' + src + '" alt="' + alt + '"></a>';
+      var pad = 6, x0 = Math.max(0, t[0] - pad), y0 = Math.max(0, t[1] - pad),
+        w = Math.min(t[4], t[2] + pad) - x0, h = Math.min(t[5], t[3] + pad) - y0;
+      var pct = function (v) { return (100 * v / w).toFixed(3) + "%"; };
+      return '<a class="crop" href="' + src + '" style="aspect-ratio:' + w + "/" + h + '">' +
+        '<img loading="lazy" src="' + src + '" alt="' + alt + '" style="width:' + pct(t[4]) +
+        ";margin-left:-" + pct(x0) + ";margin-top:-" + pct(y0) + '"></a>' +
+        '<a class="full-link" href="' + src + '" target="_blank" rel="noopener">Открыть распоряжение целиком</a>';
+    }).join("");
   }
 
   // ---------- режим преподавателя ----------
@@ -453,10 +469,7 @@
       $("lessonHint").hidden = true;
       var z = d.z;
       $("images").hidden = !z || !z.images.length;
-      $("imageList").innerHTML = z ? z.images.map(function (i) {
-        return '<a href="' + esc(i.url) + '"><img loading="lazy" src="data/zameny/' + esc(i.file) +
-          '" alt="Распоряжение о замене занятий на ' + esc(A.humanDate(date)) + '"></a>';
-      }).join("") : "";
+      $("imageList").innerHTML = imagesHTML(z, date);
       drawStatus();
     });
   }

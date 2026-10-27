@@ -7,7 +7,15 @@
   {
    "url": "https://utgt-pgups.ru/images/24.10.2026.png",
    "file": "2026-10-24-1.png",
-   "sha1": "de0fa40d246391c22e87e548f7e07abfdba483e5"
+   "sha1": "de0fa40d246391c22e87e548f7e07abfdba483e5",
+   "table": [
+    64,
+    362,
+    805,
+    728,
+    854,
+    751
+   ]
   }
  ],
  "title": "Суббота, 1-я неделя",

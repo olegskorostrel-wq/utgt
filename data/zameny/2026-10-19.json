@@ -7,7 +7,15 @@
   {
    "url": "https://utgt-pgups.ru/images/19.10.2026.png",
    "file": "2026-10-19-1.png",
-   "sha1": "9c5f17cabdc40d31684381266fc9e4a25c73c181"
+   "sha1": "9c5f17cabdc40d31684381266fc9e4a25c73c181",
+   "table": [
+    37,
+    44,
+    505,
+    560,
+    533,
+    580
+   ]
   }
  ],
  "title": "",
