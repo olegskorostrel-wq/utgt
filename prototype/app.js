@@ -79,9 +79,12 @@
     });
   }
 
-  function render() {
+  // animate — плавно показать карточки (при открытии и смене вкладки, но не при ежеминутном обновлении)
+  function render(animate) {
     var now = A.moscowNow();
     $("clock").textContent = now.time;
+    $("dayView").classList.toggle("anim", !!animate);
+    $("weekView").classList.toggle("anim", !!animate);
     var g = state.group;
     drawCalendar(params.get("date") || now.date);
     drawUseful(now);
@@ -96,7 +99,7 @@
       var schedule = r[0], z = zamenaForGroup(r[1], g);
       var ag = build(date, schedule, z);
       if (date === now.date) A.markNow(ag, now.minutes);
-      draw(ag, z, date, schedule);
+      draw(ag, z, date, schedule, now);
     });
   }
 
@@ -119,7 +122,7 @@
             '<span class="s">' + esc(it.subject) + (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
             '<span class="r">' + esc(it.room || "") + "</span></li>";
         }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
-        return '<section class="wday' + (d === now.date ? " today" : "") + '"><h3>' + esc(A.humanDate(d)) +
+        return '<section class="wday' + (d === now.date ? " today" : "") + '" style="--i:' + i + '"><h3>' + esc(A.humanDate(d)) +
           (d === now.date ? ' <span class="tag state">сегодня</span>' : "") + "</h3><ul>" + body + "</ul></section>";
       }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
     });
@@ -193,7 +196,7 @@
     }).join("");
   }
 
-  function draw(ag, z, date, schedule) {
+  function draw(ag, z, date, schedule, now) {
     var g = state.group;
     document.title = "Расписание УТЖТ · " + g;
     $("groupName").textContent = g;
@@ -237,24 +240,27 @@
     if (!ag.items.length) {
       list.innerHTML = '<div class="empty">' + (ag.off ? esc(ag.off.reason) : ag.weekday === 7 ? "Выходной" : "Занятий нет") + "</div>";
     } else {
-      list.innerHTML = ag.items.map(function (it) {
+      list.innerHTML = ag.items.map(function (it, idx) {
         var n = it.lessons.length ? (it.lessons[0] === 0 ? "классный час"
           : (it.lessons.length > 1 ? "уроки " + it.lessons[0] + "–" + it.lessons[it.lessons.length - 1] : "урок " + it.lessons[0])) : "";
         var tags = "";
-        if (it.state === "now") tags += '<span class="tag state">идёт</span>';
+        if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + (it.end - now.minutes) + " " +
+          C.plural(it.end - now.minutes, "минута", "минуты", "минут") + "</span>";
         if (it.state === "next") tags += '<span class="tag state">далее</span>';
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
         var key = it.startText + " " + it.subject;
         return '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") +
-          (state.open[key] ? " open" : "") + '" data-key="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' +
+          (state.open[key] ? " open" : "") + '" style="--i:' + idx + '" data-key="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' +
           !!state.open[key] + '">' +
           '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
           '<div><div class="subj">' + subjectHTML(it.subject) + tags + "</div>" +
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + (it.room ? "ауд. " + esc(it.room) : "") + "</div>" +
-          '<div class="full">' + teacherInfo(it.teacher) + "</div></article>";
+          '<div class="full">' + teacherInfo(it.teacher) + "</div>" +
+          (it.state === "now" ? '<div class="bar"><i style="width:' +
+            Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
       }).join("");
     }
 
@@ -294,12 +300,33 @@
     $("shareBtn").hidden = !state.group;
   }
 
+  // Живое обновление: часы — каждую секунду, расписание — при смене минуты, данные — раз в 10 минут;
+  // при возврате на вкладку (телефон «замораживает» страницу в фоне) — сразу.
+  function startLive() {
+    var start = A.moscowNow(), shown = start.time, day = start.date, loaded = Date.now();
+    function tick() {
+      var now = A.moscowNow();
+      if (now.time === shown) return;
+      shown = now.time;
+      if (now.date !== day && !params.get("date")) { day = now.date; state.offset = 0; }
+      if (Date.now() - loaded > 10 * 60000) {
+        loaded = Date.now();
+        load().then(function () { drawNews(); if (state.group) render(); }).catch(function () {});
+      } else if (state.group) render();
+    }
+    setInterval(tick, 1000);
+    function wake() { if (!document.hidden) tick(); }
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("pageshow", wake);
+    window.addEventListener("focus", wake);
+  }
+
   function setGroup(name) {
     state.group = name;
     store(STORE_KEY, name);
     params.set("group", name);
     history.replaceState(null, "", "?" + params.toString());
-    render();
+    render(true);
   }
 
   function openPicker() {
@@ -343,7 +370,7 @@
   document.querySelectorAll(".tabs button").forEach(function (b) {
     b.addEventListener("click", function () {
       state.offset = b.dataset.day === "week" ? "week" : +b.dataset.day;
-      render();
+      render(true);
       // переключились снизу длинной страницы — вернуть наверх, к заголовку с датой
       window.scrollTo(0, 0);
     });
@@ -362,13 +389,12 @@
           var last = today.items[today.items.length - 1];
           if (today.weekday === 7 || !last || now.minutes >= last.end) state.offset = 1;
         }
-        render();
+        render(true);
       });
     }
     openPicker();
   }).then(function () {
-    setInterval(function () { if (state.group) render(); }, 30000);
-    setInterval(function () { load().then(function () { drawNews(); if (state.group) render(); }); }, 10 * 60000);
+    startLive();
   }).catch(function (e) {
     $("status").textContent = "Не удалось загрузить данные: " + e.message;
   });

@@ -146,3 +146,28 @@ h1::first-letter { text-transform: uppercase; }
 .foot { margin-top: 28px; color: var(--muted); font-size: 13px; }
 .foot .contact { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; color: var(--text); }
 .foot .contact a { font-weight: 600; white-space: nowrap; }
+
+/* Анимации: карточки мягко «всплывают» по очереди при открытии и смене вкладки
+   (при ежеминутном обновлении — без анимации) */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes fade { from { opacity: 0; } }
+.anim .lesson, .anim .wday, .anim .banner, .anim .empty {
+  animation: rise .35s cubic-bezier(.2, .7, .3, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.lesson.open .full { animation: fade .25s ease both; }
+.lesson { transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease, opacity .3s ease; }
+.lesson:active { transform: scale(.985); }
+.tabs button { transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .12s ease; }
+.tabs button:active { transform: scale(.96); }
+details[open] > :not(summary) { animation: rise .3s cubic-bezier(.2, .7, .3, 1) both; }
+
+/* Полоска прогресса у идущей пары */
+.lesson .bar { grid-column: 1 / -1; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--accent-soft); overflow: hidden; }
+.lesson .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.anim .lesson .bar i { animation: grow .8s .2s cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes grow { from { width: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
