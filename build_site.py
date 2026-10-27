@@ -6,12 +6,28 @@
 """
 import argparse
 import datetime as dt
+import hashlib
 import json
+import re
 import shutil
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent
+
+
+def bust_cache(out):
+    """app.js -> app.js?v=<хэш содержимого>: после обновления телефон не возьмёт старый скрипт из кэша."""
+    page = out / "index.html"
+    html = page.read_text(encoding="utf-8")
+
+    def versioned(m):
+        name = m.group(2)
+        digest = hashlib.sha1((out / name).read_bytes()).hexdigest()[:8]
+        return f'{m.group(1)}="{name}?v={digest}"'
+
+    html = re.sub(r'(src|href)="([\w.-]+\.(?:js|css))"', versioned, html)
+    page.write_text(html, encoding="utf-8")
 
 
 def build(out=ROOT / "_site", scrape_ok=True, preview=False):
@@ -26,6 +42,7 @@ def build(out=ROOT / "_site", scrape_ok=True, preview=False):
     zameny.mkdir(exist_ok=True)
     if not (zameny / "index.json").exists():
         (zameny / "index.json").write_text('{"days": []}', encoding="utf-8")
+    bust_cache(out)
     status = {"checked_at": dt.datetime.now(ZoneInfo("Europe/Moscow")).isoformat(timespec="minutes"),
               "ok": scrape_ok}
     (out / "status.json").write_text(json.dumps(status), encoding="utf-8")
