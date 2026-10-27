@@ -89,7 +89,7 @@
 
   function draw(ag, z, date, schedule) {
     var g = state.group;
-    document.title = g + " УТЖТ — расписание";
+    document.title = "Расписание УТЖТ · " + g;
     $("groupName").textContent = g;
     $("title").textContent = A.humanDate(date);
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
