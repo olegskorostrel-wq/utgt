@@ -12,6 +12,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  issues: write
 
 concurrency:
   group: update-${{ github.ref }}
@@ -46,6 +47,7 @@ jobs:
         run: python scraper.py
 
       - name: Новости техникума
+        id: news
         continue-on-error: true
         run: python tools/news.py
 
@@ -53,10 +55,17 @@ jobs:
         continue-on-error: true
         run: python tools/teachers.py
 
+      - name: Сигнал о сбое (3 неудачи подряд -> задача и пуш)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEALTH_ASSIGNEE: olegskorostrel-wq
+        run: python tools/health.py --scrape ${{ steps.scrape.outcome }} --news ${{ steps.news.outcome }}
+
       - name: Сохранить новые замены и новости в репозиторий
         if: github.ref == 'refs/heads/main'
         run: |
-          git add data/zameny data/news.json data/teachers.json
+          git add data/zameny data/news.json data/teachers.json data/health.json
           if git diff --cached --quiet; then
             echo "Новых замен и новостей нет"
           else

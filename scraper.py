@@ -374,7 +374,8 @@ def main():
     for b in ochnoe:
         process_block(b, session, vocab)
     write_index()
-    return 0
+    # страница открылась, но замен не нашлось — для мониторинга это сбой (скорее всего, вёрстка)
+    return 0 if ochnoe else 2
 
 
 if __name__ == "__main__":
