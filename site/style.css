@@ -4,6 +4,7 @@
   --text: #16181d;
   --muted: #646b78;
   --line: #e2e5ea;
+  --frame: #c9ced8;
   --accent: #2456c7;
   --accent-soft: #e6edfb;
   --warn: #9a5b00;
@@ -19,6 +20,7 @@
     --text: #e9ebef;
     --muted: #9aa1ad;
     --line: #2c3038;
+    --frame: #3d434f;
     --accent: #7ea2f5;
     --accent-soft: #1f2a44;
     --warn: #f0b860;
@@ -60,7 +62,7 @@ h1::first-letter { text-transform: uppercase; }
 @media (prefers-color-scheme: dark) { .tabs button[aria-selected="true"] { color: #0b1220; } }
 
 .week { display: flex; flex-direction: column; gap: 10px; }
-.wday { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.wday { background: var(--card); border: 1.5px solid var(--frame); border-radius: 12px; padding: 10px 14px; }
 .wday.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .wday h3 { margin: 0 0 6px; font-size: 15px; }
 .wday h3::first-letter { text-transform: uppercase; }
@@ -80,7 +82,8 @@ h1::first-letter { text-transform: uppercase; }
 .list { display: flex; flex-direction: column; gap: 8px; }
 .lesson {
   display: grid; grid-template-columns: 74px 1fr auto; gap: 0 12px; align-items: start;
-  background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  background: var(--card); border: 1.5px solid var(--frame); border-radius: 12px; padding: 12px 14px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / .06);
 }
 .lesson .time { font-variant-numeric: tabular-nums; font-weight: 600; }
 .lesson .time small { display: block; color: var(--muted); font-weight: 400; }
