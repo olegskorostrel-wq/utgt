@@ -35,7 +35,8 @@ def build(out=ROOT / "_site", scrape_ok=True, preview=False):
         shutil.rmtree(out)
     shutil.copytree(ROOT / "site", out)
     # расписания всех групп: на сайте 11-А нужны для «где сейчас преподаватель»
-    shutil.copytree(ROOT / "data", out / "data")
+    # архив замен сайту не нужен — он для запросов «что было тогда-то»
+    shutil.copytree(ROOT / "data", out / "data", ignore=shutil.ignore_patterns("archive"))
     if preview:
         shutil.copytree(ROOT / "prototype", out, dirs_exist_ok=True)
     zameny = out / "data" / "zameny"

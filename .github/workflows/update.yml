@@ -46,6 +46,10 @@ jobs:
         continue-on-error: true
         run: python scraper.py
 
+      - name: Архив замен (хранится навсегда, сжатый)
+        continue-on-error: true
+        run: python tools/archive.py
+
       - name: Новости техникума
         id: news
         continue-on-error: true
@@ -65,7 +69,7 @@ jobs:
       - name: Сохранить новые замены и новости в репозиторий
         if: github.ref == 'refs/heads/main'
         run: |
-          git add data/zameny data/news.json data/teachers.json data/health.json
+          git add data/zameny data/archive data/news.json data/teachers.json data/health.json
           if git diff --cached --quiet; then
             echo "Новых замен и новостей нет"
           else
