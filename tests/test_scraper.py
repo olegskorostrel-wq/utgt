@@ -144,3 +144,20 @@ def test_all_group_changes_27_10():
     assert {g: len(v) for g, v in allc.items()} == {
         "11-В": 1, "11-Л": 1, "21-Д": 1, "21-С": 1, "31-Д": 1, "41-П": 2, "41-А": 1, "41-С": 4}
     assert [c["subject"] for c in allc["41-С"]][-1] == "Отменить"
+
+
+@needs_tesseract
+def test_all_groups_26_10_room_and_dangling_dash():
+    """26.10: кабинет «2-]2» -> «2-12», урок «3-—» -> 3-4 (сверено с картинкой по всем группам)."""
+    t = scraper.ocr_table(FIX / "26.10.2026.png", scraper.subject_vocab())
+    allc = scraper.all_group_changes([t])
+    assert allc["11-П"][0]["room"] == "2-12"
+    assert [c["lessons"] for c in allc["31-А"]] == [[0], [3, 4], [], [5, 6]]
+    assert allc["31-А"][2]["time"] == "12:40"
+    assert {g: len(v) for g, v in allc.items()} == {
+        "11-П": 2, "11-Д": 1, "11-А": 1, "11-С": 1, "11-В": 1, "11-Л": 2, "21-П": 1, "21-Д": 1, "21-А": 1,
+        "21-С": 1, "21-Л": 2, "31-П": 2, "31-Д": 1, "31-А": 4, "31-С": 2, "41-П": 4, "41-С": 4}
+
+
+def test_fix_digits():
+    assert scraper.fix_digits("2-]2") == "2-12" and scraper.fix_digits("1-З") == "1-3"

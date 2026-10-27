@@ -127,6 +127,11 @@ def normalize_group(text):
     return (group, True) if group in KNOWN_GROUPS else (group, False)
 
 
+def fix_digits(text):
+    """OCR путает цифры в номере кабинета: «2-]2» -> «2-12», «1-З» -> «1-3»."""
+    return text.translate(str.maketrans({"]": "1", "[": "1", "|": "1", "l": "1", "I": "1", "З": "3", "О": "0", "о": "0"}))
+
+
 def parse_lessons(text):
     """'5-6' -> ([5, 6], None); '8-30' -> ([0], '08:30') ; '3' -> ([3], None)."""
     t = text.replace("—", "-").replace("–", "-").replace(":", "-")
@@ -138,7 +143,7 @@ def parse_lessons(text):
             return ([0] if time == "08:30" else []), time
         if 1 <= a <= b <= 10:
             return list(range(a, b + 1)), None
-    if len(nums) == 1 and re.search(r"\d\s*-\s*$", t) and nums[0] % 2 == 1:
+    if len(nums) == 1 and re.search(r"\d\s*-+\s*$", t) and nums[0] % 2 == 1:
         return [nums[0], nums[0] + 1], None  # «3-» — вторая цифра не распозналась
     if len(nums) == 1 and 1 <= nums[0] <= 10:
         return [nums[0]], None
@@ -212,7 +217,7 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS):
             group, row_uncertain = "?", True
         lessons, time = parse_lessons(raw[1] if len(raw) > 1 else "")
         subject = raw[2] if len(raw) > 2 else ""
-        room = raw[3] if len(raw) > 3 else ""
+        room = fix_digits(raw[3]) if len(raw) > 3 else ""
         if not re.search(r"\d-\d", room):
             m = re.search(r"\s*[|\]]?\s*(\d-\d{1,2})\s*$", subject)
             room = m.group(1) if m else ""
