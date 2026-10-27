@@ -12,9 +12,12 @@
   --ok: #1d7a46;
   --ok-soft: #e4f4ea;
   --bad: #b3261e;
+  --on-accent: #ffffff;
+  color-scheme: light;
 }
+/* Тёмная тема: по настройке телефона или по переключателю (data-theme на <html>) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #111317;
     --card: #1b1e24;
     --text: #e9ebef;
@@ -28,7 +31,26 @@
     --ok: #6fcf97;
     --ok-soft: #17301f;
     --bad: #ff8a80;
+    --on-accent: #0b1220;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #111317;
+  --card: #1b1e24;
+  --text: #e9ebef;
+  --muted: #9aa1ad;
+  --line: #2c3038;
+  --frame: #3d434f;
+  --accent: #7ea2f5;
+  --accent-soft: #1f2a44;
+  --warn: #f0b860;
+  --warn-soft: #3a2c12;
+  --ok: #6fcf97;
+  --ok-soft: #17301f;
+  --bad: #ff8a80;
+  --on-accent: #0b1220;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -58,8 +80,7 @@ h1::first-letter { text-transform: uppercase; }
   flex: 1; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--card); color: var(--text); font: inherit; cursor: pointer;
 }
-.tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (prefers-color-scheme: dark) { .tabs button[aria-selected="true"] { color: #0b1220; } }
+.tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 .week { display: flex; flex-direction: column; gap: 10px; }
 .wday { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
@@ -72,7 +93,10 @@ h1::first-letter { text-transform: uppercase; }
 .wday li .t { font-variant-numeric: tabular-nums; color: var(--muted); }
 .wday li .r { color: var(--muted); white-space: nowrap; }
 .wday li.none { display: block; color: var(--muted); }
-.wday .tag { font-size: 11px; }
+.wday .tag { font-size: 11px; padding: 0 6px; }
+/* строка с заменой в неделе — оранжевая подсветка, как карточка с заменой в дне */
+.wday li.changed { margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 8px; background: var(--warn-soft); border-top-color: transparent; }
+.wday li.changed + li { border-top-color: transparent; }
 .banner { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 15px; }
 .banner strong { display: block; }
 .banner.info { background: var(--accent-soft); }
@@ -94,11 +118,13 @@ h1::first-letter { text-transform: uppercase; }
 .lesson .who { color: var(--muted); font-size: 14px; }
 .nw { white-space: nowrap; }
 .lesson .room { color: var(--muted); white-space: nowrap; }
-.lesson .tag {
-  display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 6px;
-  font-size: 12px; font-weight: 600; vertical-align: 2px;
-  background: var(--warn-soft); color: var(--warn);
+/* Метки — одинаковые везде: оранжевая — замена/изменение, синяя — сегодня/идёт/состояние */
+.tag {
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px;
+  font-size: 12px; font-weight: 600; line-height: 1.35; vertical-align: 1px; white-space: nowrap;
+  background: var(--warn-soft); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
 }
+.tag.state { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
 .lesson { cursor: pointer; }
 /* раскрытие ФИО: плавно по высоте (0fr -> 1fr) и прозрачности, в обе стороны */
 .lesson .full {

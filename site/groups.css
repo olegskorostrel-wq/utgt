@@ -27,8 +27,7 @@
   padding: 10px 0; border: 1px solid var(--line); border-radius: 10px;
   background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
 }
-.course button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (prefers-color-scheme: dark) { .course button[aria-current="true"] { color: #0b1220; } }
+.course button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .share {
   width: 100%; margin-top: 4px; padding: 10px; border: 1px dashed var(--line); border-radius: 10px;
   background: none; color: var(--accent); font: inherit; cursor: pointer;
@@ -105,8 +104,7 @@
 .base li .r { color: var(--muted); white-space: nowrap; }
 .base li small { display: block; color: var(--muted); font-size: 12.5px; }
 .base li.gone .s { text-decoration: line-through; text-decoration-color: var(--warn); }
-.base li.gone .tag { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 6px; font-size: 11px;
-  background: var(--warn-soft); color: var(--warn); text-decoration: none; }
+.base li.gone .tag { font-size: 11px; padding: 0 6px; text-decoration: none; }
 .base li.none { display: block; color: var(--muted); }
 
 /* кнопка «i» у даты: плашка о заменах по нажатию */
@@ -138,3 +136,16 @@
 .wday.open .det { display: block; animation: fade .25s ease both; }
 .wday.open li { padding: 8px 0; }
 .wday.open { border-color: var(--accent); }
+
+/* переключатель темы: авто / светлая / тёмная */
+.theme-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; margin: 0 0 6px 6px; padding: 0 10px; vertical-align: top;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--muted);
+  font: inherit; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s ease;
+}
+.theme-btn:active { transform: scale(.94); }
+.theme-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.theme-btn .lbl { max-width: 0; overflow: hidden; white-space: nowrap; transition: max-width .3s ease; }
+.theme-btn.show .lbl { max-width: 120px; }
+html.theme-anim, html.theme-anim * { transition: background-color .3s ease, color .3s ease, border-color .3s ease !important; }
+.theme-btn .ico { display: inline-flex; }
