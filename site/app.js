@@ -149,6 +149,25 @@
     });
   }
 
+  // Заголовок дня/недели: при смене — «печатается» по буквам за то же время, что появляются пары
+  function setTitle(text) {
+    var h = $("title");
+    text = text.charAt(0).toUpperCase() + text.slice(1);
+    if (h.getAttribute("aria-label") === text && !state.animNext) return;
+    h.setAttribute("aria-label", text);
+    if (!state.animNext || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { h.textContent = text; return; }
+    var step = 650 / Math.max(text.length, 1); // вся строка — за ~0,65 с, как карточки
+    // буквы сгруппированы по словам — переносится только между словами
+    var i = 0;
+    h.innerHTML = text.split(" ").map(function (word) {
+      var w = '<span class="w" aria-hidden="true">' + word.split("").map(function (ch) {
+        return '<span class="ch" style="animation-delay:' + Math.round(i++ * step) + 'ms">' + esc(ch) + "</span>";
+      }).join("") + "</span>";
+      i++; // пробел
+      return w;
+    }).join(" ");
+  }
+
   // Плавное появление карточек — только для нового содержимого и только когда его просили
   function animIn(el) {
     el.classList.remove("anim", "slide-next", "slide-prev", "pending");
@@ -168,7 +187,7 @@
       var days = dates.map(function (d, i) { return build(d, schedule, zamenaForGroup(r[i + 1], g)); });
       document.title = "Расписание УТЖТ · " + g;
       $("groupName").textContent = g;
-      $("title").textContent = "Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]);
+      setTitle("Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]));
       $("week").textContent = days[0].week + "-я неделя";
       $("weekView").innerHTML = days.map(function (ag, i) {
         var d = dates[i];
@@ -312,7 +331,7 @@
     var g = state.group;
     document.title = "Расписание УТЖТ · " + g;
     $("groupName").textContent = g;
-    $("title").textContent = A.humanDate(date);
+    setTitle(A.humanDate(date));
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
     var spec = ((state.data.calendar.groups || {})[g] || {}).specialty;
     $("specialty").textContent = spec ? spec.code + " " + spec.name : "";
@@ -597,7 +616,7 @@
     var date = A.addDays(params.get("date") || now.date, state.offset);
     teacherDay(date).then(function (d) {
       teacherHeader();
-      $("title").textContent = A.humanDate(date);
+      setTitle(A.humanDate(date));
       $("week").textContent = d.weekday === 7 ? "" : d.week + "-я неделя";
       var nextFound = false;
       d.items.forEach(function (it) {
@@ -666,7 +685,7 @@
     var dates = [0, 1, 2, 3, 4, 5].map(function (i) { return A.addDays(monday, i); });
     Promise.all(dates.map(teacherDay)).then(function (days) {
       teacherHeader();
-      $("title").textContent = "Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]);
+      setTitle("Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]));
       $("week").textContent = days[0].week + "-я неделя";
       var total = days.reduce(function (n, d) { return n + d.items.length; }, 0);
       $("weekView").innerHTML = '<p class="total">' + total + " " + C.plural(total, "пара", "пары", "пар") + " за неделю</p>" +
