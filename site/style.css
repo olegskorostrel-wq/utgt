@@ -90,7 +90,8 @@ h1::first-letter { text-transform: uppercase; }
 /* вкладки всегда видны вверху экрана — из длинной недели можно сразу вернуться */
 .tabs { display: flex; gap: 6px; margin: 10px 0 6px; padding: 8px 0; position: sticky; top: 0; z-index: 5; background: var(--bg); }
 .tabs button {
-  flex: 1; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
+  flex: 1 1 0; min-width: 0; padding: 9px 6px; border: 1px solid var(--line); border-radius: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   background: var(--card); color: var(--text); font: inherit; cursor: pointer;
 }
 .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -101,7 +102,7 @@ h1::first-letter { text-transform: uppercase; }
 .wday h3 { margin: 0 0 6px; font-size: 15px; }
 .wday h3::first-letter { text-transform: uppercase; }
 .wday ul { list-style: none; margin: 0; padding: 0; }
-.wday li { display: grid; grid-template-columns: 48px 1fr auto; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.wday li { display: grid; grid-template-columns: minmax(48px, max-content) minmax(0, 1fr) auto; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .wday li:first-child { border-top: 0; }
 .wday li .t { font-variant-numeric: tabular-nums; color: var(--muted); }
 .wday li .r { color: var(--muted); white-space: nowrap; }
@@ -122,19 +123,22 @@ h1::first-letter { text-transform: uppercase; }
   border: 1.5px solid var(--frame); border-radius: 16px; background: color-mix(in srgb, var(--frame) 14%, transparent);
 }
 .lesson {
-  display: grid; grid-template-columns: 58px 1fr auto; gap: 0 10px; align-items: start;
+  display: grid; grid-template-columns: minmax(58px, max-content) minmax(0, 1fr) auto; gap: 0 10px; align-items: start;
   background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
 }
 .lesson .time { font-variant-numeric: tabular-nums; font-weight: 600; }
 .lesson .time small { display: block; color: var(--muted); font-weight: 400; }
-.lesson .subj { font-weight: 600; }
+.lesson .subj { font-weight: 600; overflow-wrap: break-word; }
+/* метка не шире своей колонки: на узком экране или с крупным шрифтом переносится внутри, а не выталкивает аудиторию */
+.tag { white-space: normal; }
+.tag.nw, .wday .tag { white-space: nowrap; }
 .lesson .who { color: var(--muted); font-size: 14px; }
 .nw { white-space: nowrap; }
 .lesson .room { color: var(--muted); white-space: nowrap; }
 /* Метки — одинаковые везде: оранжевая — замена/изменение, синяя — сегодня/идёт/состояние */
 .tag {
   display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px;
-  font-size: 12px; font-weight: 600; line-height: 1.35; vertical-align: 1px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; line-height: 1.35; vertical-align: 1px; max-width: 100%; box-sizing: border-box;
   background: var(--warn-soft); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
 }
 .tag.state { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }

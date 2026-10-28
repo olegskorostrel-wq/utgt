@@ -108,6 +108,10 @@ def build(out=ROOT / "_site", scrape_ok=True):
     webp_images(out / "data" / "zameny")
     inline_preload(out)
     minify_assets(out)
+    # змейка грузится из app.js по требованию — версия её файла вписывается туда же (до хэша самого app.js)
+    snake = hashlib.sha1((out / "snake.js").read_bytes()).hexdigest()[:8]
+    app = out / "app.js"
+    app.write_text(app.read_text(encoding="utf-8").replace("SNAKE_V", '"' + snake + '"'), encoding="utf-8")
     bust_cache(out)
     # версия кэша для работы без интернета: меняется только при изменении самого сайта (site/),
     # а не данных каждые 2 часа — иначе телефон при каждом заходе заново скачивал бы в фоне всё целиком

@@ -249,7 +249,7 @@
       ? '<span class="sr">' + esc(text) + "</span>" + typeHTML(text, 450, i * 70 + 150) : esc(text);
     return '<section class="wday' + (date === now.date ? " today" : "") + (open ? " open" : "") + '" style="--i:' + i +
       '" data-date="' + date + '"' + (count ? ' tabindex="0" role="button" aria-expanded="' + open + '"' : "") + "><h3>" +
-      head + tagsHTML + "</h3><ul>" + body + "</ul></section>";
+      '<span class="dt">' + head + "</span>" + tagsHTML + "</h3><ul>" + body + "</ul></section>";
   }
 
   // Расписание дня с учётом праздников, каникул и практики из учебного графика группы
@@ -978,6 +978,33 @@
     store(LANG_KEY, e.target.checked ? "немецкий" : "английский");
     render(true);
   });
+
+  // Пасхалка — змейка: W A S D подряд на клавиатуре или 5 быстрых нажатий на плашку «Неофициальный сайт».
+  // Сама игра в snake.js и грузится только в этот момент — обычной загрузке сайта не мешает.
+  function openSnake() {
+    if (window.Snake) { window.Snake.open(); return; }
+    var sc = document.createElement("script");
+    sc.src = "snake.js?v=" + SNAKE_V;
+    sc.onload = function () { window.Snake.open(); };
+    document.head.appendChild(sc);
+  }
+  (function () {
+    var typed = "";
+    document.addEventListener("keydown", function (e) {
+      if (e.target.closest && e.target.closest("input, textarea") || e.ctrlKey || e.metaKey || e.altKey) return;
+      // по коду клавиши — сработает и в русской раскладке (Ц Ф Ы В)
+      var k = { KeyW: "w", KeyA: "a", KeyS: "s", KeyD: "d" }[e.code];
+      typed = (typed + (k || "-")).slice(-4);
+      if (typed === "wasd" && !document.documentElement.classList.contains("snake-on")) { typed = ""; openSnake(); }
+    });
+    var taps = [];
+    document.querySelector(".disclaimer").addEventListener("click", function (e) {
+      if (e.target.closest("a")) return;
+      var t = Date.now();
+      taps = taps.filter(function (x) { return t - x < 2500; }).concat(t);
+      if (taps.length >= 5) { taps = []; openSnake(); }
+    });
+  })();
 
   // Свайп по расписанию: влево — следующая вкладка (Сегодня -> Завтра -> Неделя), вправо — предыдущая
   (function () {

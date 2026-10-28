@@ -112,7 +112,7 @@
 .base { margin: -6px 0 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; }
 .base summary { padding: 11px 0; font-weight: 600; font-size: 15px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .base ul { list-style: none; margin: 0; padding: 0 0 6px; }
-.base li { display: grid; grid-template-columns: 48px 1fr auto; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.base li { display: grid; grid-template-columns: minmax(48px, max-content) minmax(0, 1fr) auto; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .base li .t { color: var(--muted); font-variant-numeric: tabular-nums; }
 .base li .r { color: var(--muted); white-space: nowrap; }
 .base li small { display: block; color: var(--muted); font-size: 12.5px; }
@@ -141,7 +141,9 @@
 
 /* неделя: нажатие на день раскрывает подробности */
 .wday[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: border-color .3s var(--ease-io); }
-.wday[role="button"] h3 { display: flex; align-items: baseline; gap: 6px; }
+.wday[role="button"] h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
+/* дата — одним куском, который переносится по словам, а не вылезает за карточку в узкой колонке */
+.wday h3 .dt { min-width: 0; }
 .wday[role="button"] h3 .cnt { float: none; margin-left: auto; white-space: nowrap; }
 .wday[role="button"] h3::after { content: "▾"; margin-left: 4px; color: var(--muted); font-size: 13px; transition: transform .35s var(--ease); }
 .wday[role="button"] h3:not(:has(.cnt))::after { margin-left: auto; }
@@ -180,7 +182,7 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
   -webkit-tap-highlight-color: transparent;
 }
 .history-btn small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
-.history .hday { margin: 0 0 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.history .hday { margin: 0 0 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); overflow-x: auto; }
 .history .hday summary { padding: 10px 12px; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; -webkit-tap-highlight-color: transparent; }
 .history .hday summary strong::first-letter { text-transform: uppercase; }
 .history .hday summary small { color: var(--muted); }
@@ -195,6 +197,14 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 .history td.u small { display: block; color: var(--muted); font-size: 11px; }
 .history td.r { white-space: nowrap; color: var(--muted); }
 .history td.cancel { color: var(--warn); font-weight: 600; }
+/* длинные названия переносятся внутри ячейки — таблица не вылезает за окно на узком экране / с крупным шрифтом */
+.history td.s { overflow-wrap: anywhere; }
+@media (max-width: 420px) {
+  .history table { font-size: 12.5px; }
+  .history th, .history td { padding-left: 5px; padding-right: 5px; }
+  .history th:first-child, .history td:first-child { padding-left: 8px; }
+  .history td.u { white-space: normal; }
+}
 .history tr.mine td { background: var(--accent-soft); }
 .history tr.mine td.g { color: var(--accent); }
 .history .himg { margin: 6px 12px 10px; font-size: 13px; }
@@ -238,3 +248,23 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 }
 .base li.open .det { max-height: 140px; opacity: 1; margin-top: 4px; }
 .base li.gone .det { text-decoration: none; }
+
+/* Пасхалка-змейка */
+.snake {
+  position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); touch-action: none; animation: fade .3s var(--ease-io) both;
+}
+.snake[hidden] { display: none; }
+html.snake-on { overflow: hidden; }
+.snake-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.snake-top { width: 100%; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+.snake-close { border: 0; background: none; color: var(--muted); font-size: 20px; padding: 6px; cursor: pointer; }
+.snake canvas { border-radius: 12px; border: 2px solid var(--accent); box-shadow: 0 6px 24px rgb(0 0 0 / .18); }
+.snake-hint { margin: 0; color: var(--muted); font-size: 14px; text-align: center; }
+.snake-win {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: var(--accent); color: var(--on-accent, #fff); font-weight: 800; letter-spacing: -.04em;
+  font-size: min(62vw, 62vh); line-height: 1; animation: win-in .9s var(--ease) both;
+}
+.snake-win[hidden] { display: none; }
+@keyframes win-in { from { opacity: 0; transform: scale(.4) rotate(-8deg); } }
