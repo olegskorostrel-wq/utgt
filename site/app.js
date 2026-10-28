@@ -822,11 +822,20 @@
     render(true);
   }
 
+  // Список преподавателей собирается из расписаний всех групп — грузим заранее, пока окно открывается,
+  // чтобы первое нажатие «Я преподаватель» не подтормаживало
+  function loadTeacherList() {
+    if (!loadTeacherList.p) loadTeacherList.p = allGroups().then(function (gs) { state.teacherList = Teachers.list(gs); },
+      function (e) { loadTeacherList.p = null; throw e; }); // без интернета — попробуем снова при следующем нажатии
+    return loadTeacherList.p;
+  }
+
   function openPicker() {
     state.pickWho = state.teacher ? "teacher" : "group";
     drawPicker();
     var d = $("picker");
     if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+    if (!state.teacherList) setTimeout(function () { loadTeacherList().then(function () { if (state.pickWho !== "teacher") drawPicker(); }, function () {}); }, 600);
     // фокус на заголовок, а не на первую группу — иначе 11-П выглядит «уже выбранной»
     var h = $("pickerTitle"); h.tabIndex = -1; h.focus();
   }
@@ -849,8 +858,7 @@
       if (state.pickWho === b.dataset.who) return;
       state.pickWho = b.dataset.who;
       if (state.pickWho === "teacher" && !state.teacherList) {
-        allGroups().then(function (gs) {
-          state.teacherList = Teachers.list(gs);
+        loadTeacherList().then(function () {
           drawPicker.animate = state.pickWho === "teacher";
           drawPicker();
         });
