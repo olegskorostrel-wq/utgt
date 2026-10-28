@@ -15,7 +15,7 @@
   --on-accent: #ffffff;
   color-scheme: light;
   /* плавность: быстрый старт и мягкое торможение — для всех анимаций сайта */
-  --ease: cubic-bezier(.22, 1, .36, 1);
+  --ease: cubic-bezier(.33, 1, .68, 1);
   --ease-io: cubic-bezier(.4, 0, .2, 1);
 }
 html { scroll-behavior: smooth; }
@@ -133,12 +133,12 @@ h1::first-letter { text-transform: uppercase; }
 /* раскрытие ФИО: плавно по высоте (0fr -> 1fr) и прозрачности, в обе стороны */
 .lesson .full {
   grid-column: 1 / -1; display: grid; grid-template-rows: 0fr; opacity: 0;
-  transition: grid-template-rows .45s var(--ease), opacity .35s var(--ease-io);
+  transition: grid-template-rows .6s var(--ease), opacity .45s var(--ease-io);
 }
 .lesson .full > div { overflow: hidden; min-height: 0; }
 .lesson .full .in {
   margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 14px;
-  transform: translateY(-6px); transition: transform .45s var(--ease);
+  transform: translateY(-6px); transition: transform .6s var(--ease);
 }
 .lesson.open .full { grid-template-rows: 1fr; opacity: 1; }
 .lesson.open .full .in { transform: none; }
@@ -212,19 +212,19 @@ h1::first-letter { text-transform: uppercase; }
 @keyframes rise { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
 @keyframes fade { from { opacity: 0; } }
 .anim .lesson, .anim .wday, .anim .banner, .anim .empty {
-  animation: rise .55s var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 55ms);
+  animation: rise .75s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
 }
 .lesson { transition: transform .22s var(--ease), box-shadow .3s var(--ease-io), border-color .3s var(--ease-io), opacity .35s var(--ease-io); }
 .lesson:active { transform: scale(.985); }
 .tabs button { transition: background-color .3s var(--ease-io), color .3s var(--ease-io), border-color .3s var(--ease-io), transform .22s var(--ease); }
 .tabs button:active { transform: scale(.96); }
-details[open] > :not(summary) { animation: rise .45s var(--ease) both; }
+details[open] > :not(summary) { animation: rise .6s var(--ease) both; }
 
 /* Полоска прогресса у идущей пары */
 .lesson .bar { grid-column: 1 / -1; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--accent-soft); overflow: hidden; }
 .lesson .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
-.anim .lesson .bar i { transform-origin: left center; animation: grow 1s .25s var(--ease) both; }
+.anim .lesson .bar i { transform-origin: left center; animation: grow 1.2s .3s var(--ease) both; }
 @keyframes grow { from { transform: scaleX(0); } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -240,5 +240,5 @@ details[open] > :not(summary) { animation: rise .45s var(--ease) both; }
 /* окна (выбор группы, история замен): плавно появляются, фон затемняется мягко */
 @keyframes pop-in { from { opacity: 0; transform: translateY(12px) scale(.97); } }
 @keyframes dim-in { from { opacity: 0; } }
-dialog[open] { animation: pop-in .4s var(--ease) both; }
-dialog[open]::backdrop { animation: dim-in .35s var(--ease-io) both; }
+dialog[open] { animation: pop-in .55s var(--ease) both; }
+dialog[open]::backdrop { animation: dim-in .45s var(--ease-io) both; }

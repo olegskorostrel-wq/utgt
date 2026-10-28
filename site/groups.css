@@ -118,7 +118,7 @@
 .info-btn.ok { border-color: var(--ok); color: var(--ok); background: var(--ok-soft); }
 .info-btn[aria-expanded="true"] { box-shadow: 0 0 0 3px var(--accent-soft); }
 .info-btn[hidden] { display: none; }
-#banner:not([hidden]) { animation: rise .4s var(--ease) both; }
+#banner:not([hidden]) { animation: rise .55s var(--ease) both; }
 
 /* таблица из распоряжения о замене — обрезана по рамке и растянута на всю ширину */
 .images a.crop { display: block; overflow: hidden; border-radius: 12px; border: 1.5px solid var(--frame); background: #fff; }
@@ -134,10 +134,10 @@
 .wday.open h3::after { transform: rotate(180deg); }
 .wday .det {
   display: block; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45;
-  max-height: 0; opacity: 0; overflow: hidden; transition: max-height .45s var(--ease), opacity .35s var(--ease-io), margin .45s var(--ease);
+  max-height: 0; opacity: 0; overflow: hidden; transition: max-height .6s var(--ease), opacity .45s var(--ease-io), margin .6s var(--ease);
 }
 .wday.open .det { max-height: 140px; opacity: 1; margin-top: 2px; }
-.wday li { transition: padding .45s var(--ease); }
+.wday li { transition: padding .6s var(--ease); }
 .wday.open li { padding: 8px 0; }
 .wday.open { border-color: var(--accent); }
 
@@ -154,7 +154,7 @@
 /* смена темы: плавно меняются только фон и карточки (а не каждый элемент — так не тормозит) */
 html.theme-anim body, html.theme-anim .lesson, html.theme-anim .wday, html.theme-anim .list, html.theme-anim .tabs,
 html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html.theme-anim .switch, html.theme-anim .calendar li {
-  transition: background-color .45s var(--ease-io), color .45s var(--ease-io), border-color .45s var(--ease-io) !important;
+  transition: background-color .6s var(--ease-io), color .6s var(--ease-io), border-color .6s var(--ease-io) !important;
 }
 .theme-btn .ico { display: inline-flex; }
 .hint.small { font-size: 11px; line-height: 1.35; margin: 6px 4px 12px; opacity: .85; }
@@ -188,8 +188,6 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 /* свайп между вкладками: содержимое въезжает с той стороны, куда смахнули */
 @keyframes from-right { from { opacity: 0; transform: translateX(28px); } }
 @keyframes from-left { from { opacity: 0; transform: translateX(-28px); } }
-[data-swipe="next"] #dayView:not([hidden]), [data-swipe="next"] #weekView:not([hidden]) { animation: from-right .45s var(--ease) both; }
-[data-swipe="prev"] #dayView:not([hidden]), [data-swipe="prev"] #weekView:not([hidden]) { animation: from-left .45s var(--ease) both; }
 .history .hnote { display: block; margin-bottom: 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
 .wday li { row-gap: 0; }
 
@@ -208,7 +206,21 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 .install .plus { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 8px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
 .install .plus li { border: 0; padding: 0; }
 .install .plus li::before { content: "✓ "; color: var(--ok); font-weight: 700; }
-[data-swipe] .anim .lesson, [data-swipe] .anim .wday, [data-swipe] .anim .banner { animation: none; }
 .tlesson.past .who { display: block; }
 .calendar .cal-fresh::before { background: var(--ok); }
 .calendar .cal-fresh { color: var(--ok); }
+
+/* новое содержимое: скрыто, пока не готово; свайп — въезжает целиком один раз */
+#dayView.pending, #weekView.pending { opacity: 0; }
+.slide-next { animation: from-right .7s var(--ease) both; }
+.slide-prev { animation: from-left .7s var(--ease) both; }
+
+/* «Обычное расписание»: нажатие на пару раскрывает подробности */
+.base li[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; row-gap: 0; }
+.base li .s .nm { display: inline; }
+.base li .det {
+  display: block; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45;
+  max-height: 0; opacity: 0; overflow: hidden; transition: max-height .6s var(--ease), opacity .45s var(--ease-io), margin .6s var(--ease);
+}
+.base li.open .det { max-height: 140px; opacity: 1; margin-top: 4px; }
+.base li.gone .det { text-decoration: none; }

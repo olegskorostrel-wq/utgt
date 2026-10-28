@@ -118,7 +118,15 @@
   function render(animate) {
     var now = A.moscowNow();
     $("clock").textContent = now.time;
-    state.animNext = !!animate;
+    state.animNext = animate ? (animate === "next" || animate === "prev" ? animate : true) : false;
+    if (animate) {
+      // старое содержимое прячем сразу — новое появится одной анимацией, когда будет готово
+      ["dayView", "weekView"].forEach(function (id) { $(id).classList.add("pending"); });
+      clearTimeout(render.safety);
+      render.safety = setTimeout(function () {
+        ["dayView", "weekView"].forEach(function (id) { $(id).classList.remove("pending"); });
+      }, 2500);
+    }
     var g = state.group;
     drawCalendar(params.get("date") || now.date);
     drawUseful(now);
@@ -143,10 +151,11 @@
 
   // Плавное появление карточек — только для нового содержимого и только когда его просили
   function animIn(el) {
-    el.classList.remove("anim");
+    el.classList.remove("anim", "slide-next", "slide-prev", "pending");
     if (!state.animNext) return;
     void el.offsetWidth; // перезапуск анимации
-    el.classList.add("anim");
+    // свайп — блок въезжает целиком с той стороны; иначе карточки появляются по очереди
+    el.classList.add(state.animNext === "next" || state.animNext === "prev" ? "slide-" + state.animNext : "anim");
   }
 
   // Неделя (пн–сб), в которой сегодняшний день; в воскресенье — следующая
@@ -401,10 +410,13 @@
     $("baseTitle").textContent = "Обычное расписание на " + acc + " (без замен)";
     $("baseList").innerHTML = base.items.length ? base.items.map(function (it) {
       var kept = ag.items.some(function (x) { return x.start === it.start && x.subject === it.subject && !x.changed; });
-      return '<li class="' + (kept ? "" : "gone") + '"><span class="t">' + it.startText + "</span>" +
-        '<span class="s">' + esc(nice(it.subject)) + (it.teacher ? "<small>" + esc(it.teacher) + "</small>" : "") +
+      var by = state.data.teachers.by_short || {};
+      var who = String(it.teacher || "").split(" / ").map(function (t) { return by[t.trim()] || t.trim(); }).filter(Boolean).join(" / ");
+      return '<li class="' + (kept ? "" : "gone") + '" tabindex="0" role="button"><span class="t">' + it.startText + "</span>" +
+        '<span class="s"><span class="nm">' + esc(nice(it.subject)) + "</span>" + (it.teacher ? "<small>" + esc(it.teacher) + "</small>" : "") +
         (kept ? "" : ' <span class="tag">изменено</span>') + "</span>" +
-        '<span class="r">' + esc(it.room || "") + "</span></li>";
+        '<span class="r">' + esc(it.room || "") + "</span>" +
+        detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who]) + "</li>";
     }).join("") : '<li class="none">По расписанию пар нет</li>';
   }
 
@@ -813,6 +825,35 @@
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
 
+  function toggleBase(e) {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    var li = e.target.closest("#baseList li[role=button]");
+    if (!li) return;
+    e.preventDefault();
+    li.classList.toggle("open");
+  }
+  $("baseList").addEventListener("click", toggleBase);
+  $("baseList").addEventListener("keydown", toggleBase);
+
+  // Раскрывающиеся блоки («Обычное расписание», «Новости», «Полезное», дни в истории) — плавно по высоте
+  document.addEventListener("click", function (e) {
+    var sum = e.target.closest("details > summary");
+    if (!sum || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !sum.parentElement.animate) return;
+    var d = sum.parentElement;
+    e.preventDefault();
+    if (d._anim) d._anim.cancel();
+    var from = d.offsetHeight, opening = !d.open, to;
+    if (opening) { d.open = true; to = d.offsetHeight; }
+    else { d.open = false; to = d.offsetHeight; d.open = true; }
+    d.style.overflow = "hidden";
+    d._anim = d.animate({ height: [from + "px", to + "px"] }, { duration: 600, easing: "cubic-bezier(.33, 1, .68, 1)" });
+    d._anim.onfinish = d._anim.oncancel = function () {
+      d._anim = null;
+      d.style.overflow = "";
+      if (!opening) d.open = false;
+    };
+  });
+
   function toggleWeekDay(e) {
     if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
     var card = e.target.closest(".wday[role=button]");
@@ -883,9 +924,7 @@
       var i = TABS.indexOf(state.offset), j = i + (dx < 0 ? 1 : -1);
       if (i < 0 || j < 0 || j >= TABS.length) return;
       state.offset = TABS[j];
-      document.documentElement.dataset.swipe = dx < 0 ? "next" : "prev";
-      render(true);
-      setTimeout(function () { delete document.documentElement.dataset.swipe; }, 550);
+      render(dx < 0 ? "next" : "prev");
     }, { passive: true });
   })();
 
