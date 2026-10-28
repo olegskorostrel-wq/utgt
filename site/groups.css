@@ -136,6 +136,7 @@
 /* таблица из распоряжения о замене — обрезана по рамке и растянута на всю ширину */
 .images a.crop { display: block; overflow: hidden; border-radius: 12px; border: 1.5px solid var(--frame); background: #fff; }
 .images a.crop img { display: block; max-width: none; border: 0; border-radius: 0; }
+.images picture { display: contents; }
 .images .full-link { display: inline-block; margin: 8px 0 4px; font-size: 14px; }
 
 /* неделя: нажатие на день раскрывает подробности */

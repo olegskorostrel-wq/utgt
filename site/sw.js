@@ -12,7 +12,12 @@ function keyOf(u) { var x = new URL(u, location.href); return x.searchParams.has
 
 function precache(c) {
   var put = function (u) {
-    return fetch(u, { cache: "no-cache" }).then(function (r) { if (r.ok) return c.put(keyOf(u), r); }).catch(function () {});
+    var k = keyOf(u);
+    // стили и скрипты с ?v=… не меняются: если такой уже лежит в прошлом кэше — берём оттуда, не качаем заново
+    var old = /[?&]v=/.test(u) ? caches.match(k) : Promise.resolve(null);
+    return old.then(function (hit) {
+      return hit || fetch(u, { cache: "no-cache" }).then(function (r) { return r.ok ? r : null; });
+    }).then(function (r) { if (r) return c.put(k, r); }).catch(function () {});
   };
   return fetch("./", { cache: "no-cache" }).then(function (r) {
     return r.clone().text().then(function (html) {
@@ -64,7 +69,7 @@ self.addEventListener("fetch", function (e) {
   }
   // страница (с любыми ?group=…) хранится под одним ключом
   var key = req.mode === "navigate" ? new URL("./", location.href).href : url.origin + url.pathname;
-  // медленный интернет: если сеть не ответила за 2 с, а сохранённая копия
+  // медленный интернет: если сеть не ответила за 1 с (страница) или 1,5 с (данные), а сохранённая копия
   // есть — сразу она. На обычном интернете ответ приходит быстрее, и показывается свежее.
   // (сеть при этом догружает свежее в кэш для следующего раза)
   var net = fromNetwork(req, key);
@@ -84,7 +89,7 @@ self.addEventListener("fetch", function (e) {
     var done = false;
     var timer = setTimeout(function () {
       saved().then(function (hit) { if (hit && !done) { done = true; resolve(hit); } });
-    }, 2000);
+    }, req.mode === "navigate" ? 1000 : 1500);
     net.then(function (res) { if (!done) { done = true; clearTimeout(timer); resolve(res); } }, function () {
       clearTimeout(timer);
       saved().then(function (hit) { if (!done) { done = true; hit ? resolve(hit) : reject(new Error("нет сети")); } });

@@ -35,6 +35,29 @@ def minify_json(data_dir):
                      encoding="utf-8")
 
 
+def webp_images(zameny_dir):
+    """Картинки распоряжений ещё и в WebP без потерь — в 2–2,5 раза легче PNG, качество то же."""
+    from PIL import Image
+    for png in zameny_dir.glob("*.png"):
+        with Image.open(png) as im:
+            im.save(png.with_suffix(".webp"), "WEBP", lossless=True, method=4)
+
+
+def minify_assets(out):
+    """Скрипты и стили без комментариев и пробелов — на треть меньше качать.
+    Без rjsmin/rcssmin (не установлены) — остаются как есть."""
+    try:
+        import rcssmin
+        import rjsmin
+    except ImportError:
+        print("rjsmin/rcssmin не установлены — скрипты и стили без сжатия")
+        return
+    for f in out.glob("*.js"):
+        f.write_text(rjsmin.jsmin(f.read_text(encoding="utf-8")), encoding="utf-8")
+    for f in out.glob("*.css"):
+        f.write_text(rcssmin.cssmin(f.read_text(encoding="utf-8")), encoding="utf-8")
+
+
 def inline_preload(out):
     """В index.html — какие файлы у групп и на какие дни есть замены: страница начинает грузить их сразу."""
     groups = json.loads((out / "data" / "groups" / "index.json").read_text(encoding="utf-8"))["groups"]
@@ -82,13 +105,18 @@ def build(out=ROOT / "_site", scrape_ok=True):
         (zameny / "index.json").write_text('{"days": []}', encoding="utf-8")
     write_history(out / "data" / "history")
     minify_json(out / "data")
+    webp_images(out / "data" / "zameny")
     inline_preload(out)
+    minify_assets(out)
     bust_cache(out)
-    # версия кэша для работы без интернета: меняется при любом изменении сайта или данных
+    # версия кэша для работы без интернета: меняется только при изменении самого сайта (site/),
+    # а не данных каждые 2 часа — иначе телефон при каждом заходе заново скачивал бы в фоне всё целиком
+    # (данные и так берутся из сети и сохраняются при каждом открытии)
     digest = hashlib.sha1()
-    for f in sorted(out.rglob("*")):
+    for f in sorted((ROOT / "site").rglob("*")):
         if f.is_file() and f.name != "sw.js":
             digest.update(f.name.encode()); digest.update(f.read_bytes())
+    digest.update((ROOT / "site" / "sw.js").read_bytes())
     sw = out / "sw.js"
     sw.write_text(sw.read_text(encoding="utf-8").replace("__BUILD__", digest.hexdigest()[:10]), encoding="utf-8")
     status = {"checked_at": dt.datetime.now(ZoneInfo("Europe/Moscow")).isoformat(timespec="minutes"),

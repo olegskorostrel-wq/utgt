@@ -493,14 +493,18 @@
     return z.images.map(function (i) {
       var alt = "Распоряжение о замене занятий на " + esc(A.humanDate(date));
       var src = "data/zameny/" + esc(i.file);
+      // на сайте показываем WebP (в 2 раза легче, его делает build_site.py), PNG — запасной и для «открыть целиком»
+      var img = function (style) {
+        return '<picture><source type="image/webp" srcset="' + src.replace(/\.png$/, ".webp") + '"><img loading="lazy" decoding="async" src="' +
+          src + '" alt="' + alt + '"' + (style ? ' style="' + style + '"' : "") + "></picture>";
+      };
       var t = i.table;
-      if (!t) return '<a href="' + esc(i.url) + '"><img loading="lazy" src="' + src + '" alt="' + alt + '"></a>';
+      if (!t) return '<a href="' + esc(i.url) + '">' + img("") + "</a>";
       var pad = 6, x0 = Math.max(0, t[0] - pad), y0 = Math.max(0, t[1] - pad),
         w = Math.min(t[4], t[2] + pad) - x0, h = Math.min(t[5], t[3] + pad) - y0;
       var pct = function (v) { return (100 * v / w).toFixed(3) + "%"; };
       return '<a class="crop" href="' + src + '" style="aspect-ratio:' + w + "/" + h + '">' +
-        '<img loading="lazy" src="' + src + '" alt="' + alt + '" style="width:' + pct(t[4]) +
-        ";margin-left:-" + pct(x0) + ";margin-top:-" + pct(y0) + '"></a>' +
+        img("width:" + pct(t[4]) + ";margin-left:-" + pct(x0) + ";margin-top:-" + pct(y0)) + "</a>" +
         '<a class="full-link" href="' + src + '" target="_blank" rel="noopener">Открыть распоряжение целиком</a>';
     }).join("");
   }
@@ -614,7 +618,10 @@
   });
   window.addEventListener("offline", function () { if (state.data) render(); });
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    // чуть позже загрузки: на слабом интернете сохранение для офлайна не отнимает скорость у первой страницы
+    window.addEventListener("load", function () {
+      setTimeout(function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }, 2500);
+    });
   }
 
   // ---------- режим преподавателя ----------
@@ -794,16 +801,21 @@
   // при возврате на вкладку (телефон «замораживает» страницу в фоне) — сразу.
   function startLive() {
     var start = A.moscowNow(), shown = start.time, day = start.date, loaded = Date.now();
+    function refresh() {
+      loaded = Date.now();
+      load().then(function () { drawNews(); if (state.group || state.teacher) render(); }).catch(function () {});
+    }
+    // медленный интернет: сначала быстро показали сохранённое — через несколько секунд тихо подтягиваем свежее
+    // (сеть за это время успевает догрузить, плашка сменится на «Обновлено в …»)
+    setTimeout(function () { if (state.savedHit && navigator.onLine) refresh(); }, 5000);
     function tick() {
       var now = A.moscowNow();
       if (now.time === shown) return;
       shown = now.time;
       if (now.date !== day && !params.get("date")) { day = now.date; state.offset = 0; }
       // свежие данные — раз в 10 минут; если показано сохранённое, а интернет есть — пробуем каждую минуту
-      if (Date.now() - loaded > (state.savedHit && navigator.onLine ? 50000 : 10 * 60000)) {
-        loaded = Date.now();
-        load().then(function () { drawNews(); if (state.group || state.teacher) render(); }).catch(function () {});
-      } else if (state.group || state.teacher) render();
+      if (Date.now() - loaded > (state.savedHit && navigator.onLine ? 50000 : 10 * 60000)) refresh();
+      else if (state.group || state.teacher) render();
     }
     setInterval(tick, 1000);
     function wake() { if (!document.hidden) tick(); }
