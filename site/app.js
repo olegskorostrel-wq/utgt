@@ -297,8 +297,10 @@
       }).join("") + "</ul>";
   }
 
+  // На всякий случай и на самом сайте: без новостей про СВО, беспилотники, военную службу
+  var NEWS_BLOCK = /(^|[^а-яё])СВО([^а-яё]|$)|специальн[а-яё]*\s+военн[а-яё]*\s+операц|беспилот|БПЛА|(^|[^а-яё])БАС([^а-яё]|$)|дрон|военн[а-яё]*\s+служб[а-яё]*\s+по\s+контракт|мобилизац|Минобороны|министерств[а-яё]*\s+обороны/i;
   function drawNews() {
-    var items = (state.data.news.items || []).slice(0, 5);
+    var items = (state.data.news.items || []).filter(function (n) { return !NEWS_BLOCK.test(n.title); }).slice(0, 5);
     $("news").hidden = !items.length;
     $("newsList").innerHTML = items.map(function (n) {
       return '<li><a href="' + esc(n.url) + '" target="_blank" rel="noopener">' + esc(n.title) + "</a>" +

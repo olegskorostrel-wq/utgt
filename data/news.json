@@ -2,11 +2,6 @@
  "source": "https://utgt-pgups.ru/novosti.html",
  "items": [
   {
-   "title": "Обучение по Эксплуатации беспилотных авиационных систем",
-   "date": "14 октября 2026",
-   "url": "https://utgt-pgups.ru/512-obuchenie-po-ekspluatatsii-bespilotnykh-aviatsionnykh-sistem.html"
-  },
-  {
    "title": "Поздравление директора УТЖТ - филиала ПГУПС с Днем учителя!",
    "date": "05 октября 2026",
    "url": "https://utgt-pgups.ru/511-pozdravlenie-direktora-utzht-filiala-pgups-s-dnem-uchitelya.html"
@@ -51,5 +46,20 @@
    "date": "03 июня 2026",
    "url": "https://utgt-pgups.ru/498-strokami-proshedshikh-let-podvig-soldata-lyubit-chtoby-pobezhdat.html"
   }
+ ],
+ "hidden": [
+  "https://utgt-pgups.ru/512-obuchenie-po-ekspluatatsii-bespilotnykh-aviatsionnykh-sistem.html"
+ ],
+ "checked": [
+  "https://utgt-pgups.ru/498-strokami-proshedshikh-let-podvig-soldata-lyubit-chtoby-pobezhdat.html",
+  "https://utgt-pgups.ru/499-detskij-mesyachnik-ustupi-dorogu-poezdam.html",
+  "https://utgt-pgups.ru/500-17-iyunya-start-prijomnaya-kampaniya-2026-abiturient-my-zhdem-tebya-v-utzht.html",
+  "https://utgt-pgups.ru/501-eto-nashe-vremya-vremya-pamyati.html",
+  "https://utgt-pgups.ru/502-zashchita-diplomnyj-proektov-i-sdacha-demoekzamena-2026.html",
+  "https://utgt-pgups.ru/505-vnimanie-uvazhaemye-pervokursniki-i-ikh-roditeli.html",
+  "https://utgt-pgups.ru/507-eto-bylo-moshchno-1-sentyabrya-v-utzht-kak-eto-bylo.html",
+  "https://utgt-pgups.ru/510-s-dnem-rozhdeniya-utzht-nam-82-goda.html",
+  "https://utgt-pgups.ru/511-pozdravlenie-direktora-utzht-filiala-pgups-s-dnem-uchitelya.html",
+  "https://utgt-pgups.ru/512-obuchenie-po-ekspluatatsii-bespilotnykh-aviatsionnykh-sistem.html"
  ]
 }
