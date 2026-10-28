@@ -76,8 +76,13 @@ h1 { margin: 2px 0 0; font-size: 24px; line-height: 1.2; }
 h1::first-letter { text-transform: uppercase; }
 /* «печать» заголовка: буквы появляются по очереди */
 @keyframes type-in { from { opacity: 0; transform: translate3d(0, .25em, 0); } }
-h1 .w { display: inline-block; white-space: nowrap; }
-h1 .ch { display: inline-block; animation: type-in .35s var(--ease) both; }
+.w { display: inline-block; white-space: nowrap; }
+.ch { display: inline-block; animation: type-in .35s var(--ease) both; }
+/* спрятано для глаз, но читается экранными дикторами */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* часы: сменившаяся цифра въезжает снизу */
+@keyframes roll { from { opacity: 0; transform: translate3d(0, .45em, 0); } }
+.clock .roll { display: inline-block; animation: roll .6s var(--ease) both; }
 .clock { text-align: right; font-variant-numeric: tabular-nums; }
 .clock span { display: block; font-size: 28px; font-weight: 650; }
 .clock small { color: var(--muted); }
@@ -181,6 +186,7 @@ h1 .ch { display: inline-block; animation: type-in .35s var(--ease) both; }
   padding: 3px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line);
   font-size: 13px; font-weight: 500; color: var(--muted); line-height: 1.4;
 }
+.calendar.stagger li { animation: rise .75s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 200ms); }
 .calendar li small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
 .calendar li::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: var(--line); }
 .calendar .cal-kanikuly::before { background: var(--ok); }

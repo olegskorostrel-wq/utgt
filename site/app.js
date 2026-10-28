@@ -117,7 +117,7 @@
   // animate — плавно показать карточки (при открытии и смене вкладки, но не при ежеминутном обновлении)
   function render(animate) {
     var now = A.moscowNow();
-    $("clock").textContent = now.time;
+    setClock(now.time);
     state.animNext = animate ? (animate === "next" || animate === "prev" ? animate : true) : false;
     if (animate) {
       // старое содержимое прячем сразу — новое появится одной анимацией, когда будет готово
@@ -155,17 +155,41 @@
     text = text.charAt(0).toUpperCase() + text.slice(1);
     if (h.getAttribute("aria-label") === text && !state.animNext) return;
     h.setAttribute("aria-label", text);
-    if (!state.animNext || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { h.textContent = text; return; }
-    var step = 650 / Math.max(text.length, 1); // вся строка — за ~0,65 с, как карточки
-    // буквы сгруппированы по словам — переносится только между словами
-    var i = 0;
-    h.innerHTML = text.split(" ").map(function (word) {
+    if (!state.animNext || reducedMotion()) { h.textContent = text; return; }
+    h.innerHTML = typeHTML(text, 650, 0); // вся строка — за ~0,65 с, как карточки
+  }
+
+  function reducedMotion() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  // Разметка «печати»: буквы появляются по очереди за total мс после delay мс;
+  // буквы сгруппированы по словам — переносится только между словами
+  function typeHTML(text, total, delay) {
+    var step = total / Math.max(text.length, 1), i = 0;
+    return text.split(" ").map(function (word) {
       var w = '<span class="w" aria-hidden="true">' + word.split("").map(function (ch) {
-        return '<span class="ch" style="animation-delay:' + Math.round(i++ * step) + 'ms">' + esc(ch) + "</span>";
+        return '<span class="ch" style="animation-delay:' + Math.round(delay + i++ * step) + 'ms">' + esc(ch) + "</span>";
       }).join("") + "</span>";
       i++; // пробел
       return w;
     }).join(" ");
+  }
+  // Короткая надпись (группа в кнопке, заголовок окна) «печатается», только когда меняется;
+  // настоящий текст — в aria-label или спрятанном для глаз span
+  function typeInto(el, text, force) {
+    if (!force && el.dataset.typed === text) return;
+    el.dataset.typed = text;
+    if (reducedMotion()) { el.textContent = text; return; }
+    el.innerHTML = '<span class="sr">' + esc(text) + "</span>" + typeHTML(text, Math.min(450, text.length * 40), 0);
+  }
+
+  // Часы: сменившиеся цифры мягко «перекатываются» снизу
+  function setClock(time) {
+    var el = $("clock"), prev = el.dataset.time || "";
+    if (prev === time) return;
+    el.dataset.time = time;
+    if (reducedMotion()) { el.textContent = time; return; }
+    el.innerHTML = time.split("").map(function (ch, i) {
+      return ch === prev.charAt(i) ? esc(ch) : '<span class="roll">' + esc(ch) + "</span>";
+    }).join("");
   }
 
   // Плавное появление карточек — только для нового содержимого и только когда его просили
@@ -186,7 +210,7 @@
       var schedule = r[0];
       var days = dates.map(function (d, i) { return build(d, schedule, zamenaForGroup(r[i + 1], g)); });
       document.title = "Расписание УТЖТ · " + g;
-      $("groupName").textContent = g;
+      typeInto($("groupName"), g);
       setTitle("Неделя: " + C.dayMonth(dates[0]) + " — " + C.dayMonth(dates[5]));
       $("week").textContent = days[0].week + "-я неделя";
       $("weekView").innerHTML = days.map(function (ag, i) {
@@ -199,7 +223,7 @@
             '<span class="r">' + esc(it.room || "") + "</span>" +
             detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who, it.was ? "Было по расписанию: " + nice(it.was) : ""]) + "</li>";
         }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
-        return weekDayHTML(d, i, now, A.humanDate(d) + (d === now.date ? ' <span class="tag state">сегодня</span>' : ""), body, ag.items.length);
+        return weekDayHTML(d, i, now, d === now.date ? ' <span class="tag state">сегодня</span>' : "", body, ag.items.length);
       }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
       animIn($("weekView"));
     });
@@ -212,11 +236,15 @@
     var parts = [it.startText + "–" + it.endText + (n ? " · " + n : "")].concat(lines.filter(Boolean));
     return '<span class="det">' + parts.map(esc).join("<br>") + "</span>";
   }
-  function weekDayHTML(date, i, now, headHTML, body, count) {
-    var open = !!state.weekOpen[date];
+  // Шапка дня — дата (при смене недели «печатается» вместе с появлением карточки) и метки
+  function weekDayHTML(date, i, now, tagsHTML, body, count) {
+    var open = !!state.weekOpen[date], text = A.humanDate(date);
+    text = text.charAt(0).toUpperCase() + text.slice(1);
+    var head = state.animNext && !reducedMotion()
+      ? '<span class="sr">' + esc(text) + "</span>" + typeHTML(text, 450, i * 70 + 150) : esc(text);
     return '<section class="wday' + (date === now.date ? " today" : "") + (open ? " open" : "") + '" style="--i:' + i +
       '" data-date="' + date + '"' + (count ? ' tabindex="0" role="button" aria-expanded="' + open + '"' : "") + "><h3>" +
-      headHTML.charAt(0).toUpperCase() + headHTML.slice(1) + "</h3><ul>" + body + "</ul></section>";
+      head + tagsHTML + "</h3><ul>" + body + "</ul></section>";
   }
 
   // Расписание дня с учётом праздников, каникул и практики из учебного графика группы
@@ -255,8 +283,10 @@
     }
     var ul = $("calendar");
     ul.hidden = !lines.length;
-    ul.innerHTML = lines.map(function (l) {
-      return '<li class="cal-' + l.kind + '">' + esc(l.text) +
+    if (!drawCalendar.shown && lines.length) { drawCalendar.shown = true; ul.classList.add("stagger"); }
+    else ul.classList.remove("stagger");
+    ul.innerHTML = lines.map(function (l, i) {
+      return '<li class="cal-' + l.kind + '" style="--i:' + i + '">' + esc(l.text) +
         (l.exams ? "<small>Экзамены: " + l.exams.map(esc).join(", ") + "</small>" : "") + "</li>";
     }).join("");
   }
@@ -330,7 +360,7 @@
   function draw(ag, z, date, schedule, now) {
     var g = state.group;
     document.title = "Расписание УТЖТ · " + g;
-    $("groupName").textContent = g;
+    typeInto($("groupName"), g);
     setTitle(A.humanDate(date));
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
     var spec = ((state.data.calendar.groups || {})[g] || {}).specialty;
@@ -476,7 +506,7 @@
   // в таблицу по всем группам, своя группа — первой и выделена
   function openHistory() {
     var mine = state.group, d = $("history");
-    $("historyTitle").textContent = "История замен";
+    typeInto($("historyTitle"), "История замен", true);
     $("historyHint").textContent = "Загрузка…";
     $("historyList").innerHTML = "";
     if (d.showModal) d.showModal(); else d.setAttribute("open", "");
@@ -604,7 +634,7 @@
   function teacherHeader() {
     var t = state.teacher, full = teacherFull(t);
     document.title = "Расписание УТЖТ · " + t;
-    $("groupName").textContent = t;
+    typeInto($("groupName"), t);
     $("specialty").textContent = (full ? full + " · " : "") + "расписание преподавателя";
   }
 
@@ -699,7 +729,7 @@
               detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "",
                 (it.groups.length > 1 ? "Поток: " : "Группа: ") + it.groups.join(", ")]) + "</li>";
           }).join("") : '<li class="none">' + (d.holiday ? esc(d.holiday.name) : "Пар нет") + "</li>";
-          return weekDayHTML(date, i, now, A.humanDate(date) + (date === now.date ? ' <span class="tag state">сегодня</span>' : "") +
+          return weekDayHTML(date, i, now, (date === now.date ? ' <span class="tag state">сегодня</span>' : "") +
             (d.items.length ? ' <span class="cnt">' + d.items.length + " " + C.plural(d.items.length, "пара", "пары", "пар") + "</span>" : ""),
             body, d.items.length);
         }).join("") + '<p class="hint">Замены учтены на дни, на которые их уже опубликовали.</p>';
@@ -750,7 +780,7 @@
     });
     $("courses").hidden = who !== "group";
     $("teacherList").hidden = who !== "teacher";
-    $("pickerTitle").textContent = who === "group" ? "Выберите группу" : "Выберите себя";
+    typeInto($("pickerTitle"), who === "group" ? "Выберите группу" : "Выберите себя", drawPicker.opening);
     $("pickerClose").hidden = !state.group && !state.teacher;
     $("shareBtn").hidden = !state.group && !state.teacher;
     $("shareBtn").textContent = state.teacher ? "Скопировать ссылку на расписание" : "Скопировать ссылку на группу";
@@ -791,7 +821,9 @@
 
   function openPicker() {
     state.pickWho = state.teacher ? "teacher" : "group";
+    drawPicker.opening = true;
     drawPicker();
+    drawPicker.opening = false;
     var d = $("picker");
     if (d.showModal) d.showModal(); else d.setAttribute("open", "");
     // фокус на заголовок, а не на первую группу — иначе 11-П выглядит «уже выбранной»
