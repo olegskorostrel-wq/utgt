@@ -761,17 +761,18 @@
   function drawPicker() {
     var byCourse = {};
     state.data.groups.forEach(function (g) { (byCourse[g.course] = byCourse[g.course] || []).push(g); });
-    $("courses").innerHTML = Object.keys(byCourse).sort().map(function (k) {
-      return '<section class="course"><h3>' + k + " курс</h3><div class=\"grid\">" +
+    $("courses").innerHTML = Object.keys(byCourse).sort().map(function (k, i) {
+      return '<section class="course" style="--i:' + i + '"><h3>' + k + " курс</h3><div class=\"grid\">" +
         byCourse[k].map(function (g) {
           return '<button type="button" data-group="' + esc(g.group) + '" aria-current="' +
             (g.group === state.group) + '">' + esc(g.group) + "</button>";
         }).join("") + "</div></section>";
     }).join("");
     var teachers = state.teacherList || [];
-    $("teacherList").innerHTML = teachers.map(function (t) {
+    $("teacherList").innerHTML = !state.teacherList ? '<p class="hint small">Загрузка списка…</p>' : teachers.map(function (t, i) {
       var full = teacherFull(t);
-      return '<button type="button" data-teacher="' + esc(t) + '" aria-current="' + (t === state.teacher) + '">' +
+      // по очереди появляются первые строки, остальные (их не видно без прокрутки) — вместе с последней
+      return '<button type="button" data-teacher="' + esc(t) + '" aria-current="' + (t === state.teacher) + '" style="--i:' + Math.min(i, 12) + '">' +
         "<strong>" + esc(full || t) + "</strong>" + (full ? "<small>" + esc(t) + "</small>" : "") + "</button>";
     }).join("");
     var who = state.pickWho;
@@ -780,6 +781,9 @@
     });
     $("courses").hidden = who !== "group";
     $("teacherList").hidden = who !== "teacher";
+    // при переключении «Я студент / Я преподаватель» список мягко появляется
+    ["courses", "teacherList"].forEach(function (id) { $(id).classList.toggle("appear", !!drawPicker.animate); });
+    drawPicker.animate = false;
     typeInto($("pickerTitle"), who === "group" ? "Выберите группу" : "Выберите себя", drawPicker.opening);
     $("pickerClose").hidden = !state.group && !state.teacher;
     $("shareBtn").hidden = !state.group && !state.teacher;
@@ -845,10 +849,16 @@
   });
   document.querySelectorAll("#whoSeg button").forEach(function (b) {
     b.addEventListener("click", function () {
+      if (state.pickWho === b.dataset.who) return;
       state.pickWho = b.dataset.who;
       if (state.pickWho === "teacher" && !state.teacherList) {
-        allGroups().then(function (gs) { state.teacherList = Teachers.list(gs); drawPicker(); });
+        allGroups().then(function (gs) {
+          state.teacherList = Teachers.list(gs);
+          drawPicker.animate = state.pickWho === "teacher";
+          drawPicker();
+        });
       }
+      drawPicker.animate = true;
       drawPicker();
     });
   });

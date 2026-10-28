@@ -62,6 +62,8 @@
 .tlist button strong { display: block; font-weight: 600; font-size: 15px; }
 .tlist button small { color: var(--muted); font-size: 12px; }
 .tlist button[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+/* переключение «Я студент / Я преподаватель»: курсы и строки списка всплывают по очереди */
+.appear .course, .appear > button, .appear > .hint { animation: rise .6s var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms); }
 
 /* карточки преподавателя: группа заметнее, без раскрытия */
 .tlesson { cursor: default; }
