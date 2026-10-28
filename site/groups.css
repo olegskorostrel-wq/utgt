@@ -28,10 +28,6 @@
   background: var(--bg); color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
 }
 .course button[aria-current="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.share {
-  width: 100%; margin-top: 4px; padding: 10px; border: 1px dashed var(--line); border-radius: 10px;
-  background: none; color: var(--accent); font: inherit; cursor: pointer;
-}
 
 .subj .code { display: block; }
 .subj .long { font-weight: 400; font-size: 14px; line-height: 1.35; }

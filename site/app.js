@@ -787,8 +787,6 @@
     drawPicker.animate = false;
     $("pickerTitle").textContent = who === "group" ? "Выберите группу" : "Выберите себя";
     $("pickerClose").hidden = !state.group && !state.teacher;
-    $("shareBtn").hidden = !state.group && !state.teacher;
-    $("shareBtn").textContent = state.teacher ? "Скопировать ссылку на расписание" : "Скопировать ссылку на группу";
   }
 
   // Живое обновление: часы — каждую секунду, расписание — при смене минуты, данные — раз в 10 минут;
@@ -863,15 +861,6 @@
   });
   $("picker").addEventListener("cancel", function (e) {
     if (!state.group && !state.teacher) e.preventDefault(); // первый вход: без выбора закрыть нельзя
-  });
-  $("shareBtn").addEventListener("click", function () {
-    var url = location.origin + location.pathname + (state.teacher
-      ? "?teacher=" + encodeURIComponent(state.teacher) : "?group=" + encodeURIComponent(state.group));
-    var b = $("shareBtn");
-    var done = function () { b.textContent = "Ссылка скопирована"; };
-    if (navigator.share) navigator.share({ title: (state.teacher || state.group) + " УТЖТ", url: url }).catch(function () {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, function () { prompt("Ссылка:", url); });
-    else prompt("Ссылка:", url);
   });
   // Нажатие на урок — показать/скрыть полное ФИО преподавателя
   function toggleLesson(e) {
