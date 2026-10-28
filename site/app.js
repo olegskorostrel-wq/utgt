@@ -785,7 +785,7 @@
     // при переключении «Я студент / Я преподаватель» список мягко появляется
     ["courses", "teacherList"].forEach(function (id) { $(id).classList.toggle("appear", !!drawPicker.animate); });
     drawPicker.animate = false;
-    typeInto($("pickerTitle"), who === "group" ? "Выберите группу" : "Выберите себя", drawPicker.opening);
+    $("pickerTitle").textContent = who === "group" ? "Выберите группу" : "Выберите себя";
     $("pickerClose").hidden = !state.group && !state.teacher;
     $("shareBtn").hidden = !state.group && !state.teacher;
     $("shareBtn").textContent = state.teacher ? "Скопировать ссылку на расписание" : "Скопировать ссылку на группу";
@@ -826,9 +826,7 @@
 
   function openPicker() {
     state.pickWho = state.teacher ? "teacher" : "group";
-    drawPicker.opening = true;
     drawPicker();
-    drawPicker.opening = false;
     var d = $("picker");
     if (d.showModal) d.showModal(); else d.setAttribute("open", "");
     // фокус на заголовок, а не на первую группу — иначе 11-П выглядит «уже выбранной»
