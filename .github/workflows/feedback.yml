@@ -5,32 +5,23 @@ on:
     # каждые 15 минут (GitHub может запускать с задержкой)
     - cron: "*/15 * * * *"
   workflow_dispatch:
-  # ответ человеку: задачу закрыли как «выполнено» или написали «/ответ ...»
-  issues:
-    types: [closed]
-  issue_comment:
-    types: [created]
 
 permissions:
   issues: write
 
 concurrency:
-  # сбор сообщений — по одному; уведомления по задачам — каждое отдельно, чтобы не вытеснялись
-  group: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'tg-poll' || format('tg-notify-{0}', github.run_id) }}
+  group: tg-poll
   cancel-in-progress: false
 
 jobs:
   feedback:
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
-      contains(github.event.issue.labels.*.name, 'telegram')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests cryptography
+      - run: pip install requests
       - name: Забрать сообщения из бота
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

@@ -68,7 +68,10 @@ self.addEventListener("fetch", function (e) {
     return;
   }
   // страница (с любыми ?group=…) хранится под одним ключом
-  var key = req.mode === "navigate" ? new URL("./", location.href).href : url.origin + url.pathname;
+  // (другие страницы, например privacy.html, — под своим адресом, чтобы не подменить главную)
+  var root = new URL("./", location.href);
+  var main = req.mode === "navigate" && (url.pathname === root.pathname || url.pathname === root.pathname + "index.html");
+  var key = main ? root.href : url.origin + url.pathname;
   // медленный интернет: если сеть не ответила за 1 с (страница) или 1,5 с (данные), а сохранённая копия
   // есть — сразу она. На обычном интернете ответ приходит быстрее, и показывается свежее.
   // (сеть при этом догружает свежее в кэш для следующего раза)

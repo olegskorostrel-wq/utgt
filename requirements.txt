@@ -4,6 +4,5 @@ pillow>=10
 numpy>=1.26
 pytest>=8
 pdfplumber>=0.11
-cryptography>=42
 rjsmin>=1.2
 rcssmin>=1.1

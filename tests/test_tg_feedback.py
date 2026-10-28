@@ -20,12 +20,22 @@ def test_spam_rules():
     assert T.spam_reason("на сайте не та аудитория у 11-А, должна быть 2-18") is None
 
 
-def test_issue_keeps_text_and_name_but_not_username_or_chat():
-    title, body, labels = T.issue_for(msg("У 11-А завтра история в 2-10, а не в 2-18", chat=987654))
+def test_issue_keeps_only_text_no_personal_data():
+    title, body, labels = T.issue_for(msg("У 11-А завтра история в 2-10, а не в 2-18", chat=987654,
+                                          first="Аня", last="Иванова"))
     assert title == "Telegram: У 11-А завтра история в 2-10, а не в 2-18"
-    assert "> У 11-А завтра история в 2-10, а не в 2-18" in body and "Аня" in body
-    assert "anya_secret" not in body and "987654" not in body
+    assert "> У 11-А завтра история в 2-10, а не в 2-18" in body
+    for secret in ("Аня", "Иванова", "anya_secret", "987654", "tg-chat"):
+        assert secret not in body
     assert labels == ["telegram"]
+
+
+def test_phones_emails_mentions_in_text_are_hidden():
+    title, body, _ = T.issue_for(msg("Пишите мне +7 912 345-67-89 или 8(912)3456789, anya@mail.ru, @anya_tg — "
+                                     "у 21-С в 2-10 пара 3-4"))
+    for secret in ("345-67-89", "3456789", "anya@mail.ru", "@anya_tg"):
+        assert secret not in body and secret not in title
+    assert body.count("[скрыто]") == 4 and "у 21-С в 2-10 пара 3-4" in body
 
 
 def test_issue_long_title_and_spam_label():
@@ -61,9 +71,6 @@ class FakeRepo:
         self.assignees = getattr(self, "assignees", []) + [list(assignees)]
         return len(self.issues)
 
-    def comment(self, number, text):
-        self.comments = getattr(self, "comments", []) + [(number, text)]
-
 
 def test_run_creates_issues_replies_and_acknowledges():
     updates = [
@@ -79,6 +86,7 @@ def test_run_creates_issues_replies_and_acknowledges():
     sent = [(p["chat_id"], p["text"]) for m, p in bot.calls if m == "sendMessage"]
     assert sent == [(1, T.GREETING), (2, T.THANKS)]  # спамеру не отвечаем, группы игнорируем
     assert "в течение дня" in T.THANKS.lower()
+    assert "не сохраняются" in T.THANKS and "почту" in T.THANKS
     assert bot.calls[-1] == ("getUpdates", {"offset": 14, "timeout": 0})
 
 
@@ -109,71 +117,6 @@ def test_failure_midway_acknowledges_only_processed():
         pass
     assert repo.issues == [("Telegram: первое сообщение", ["telegram"])]
     assert bot.calls[-1] == ("getUpdates", {"offset": 21, "timeout": 0})  # второе придёт снова
-
-
-SEALER = T.Sealer("123:test-token")
-
-
-def test_chat_id_is_stored_encrypted():
-    title, body, _ = T.issue_for(msg("ошибка у 21-С", chat=555777), SEALER)
-    assert "555777" not in body
-    assert SEALER.open(T.CHAT_TAG.search(body).group(1)) == 555777
-    assert T.Sealer("другой токен").open(T.CHAT_TAG.search(body).group(1)) is None  # без токена не прочитать
-
-
-def issue_event(state_reason="completed", labels=("telegram",), chat=42, title="Telegram: у 11-А не та аудитория"):
-    body = "> текст" + (f"\n<!-- tg-chat {SEALER.seal(chat)} -->" if chat else "")
-    return {"action": "closed", "issue": {"number": 7, "title": title, "body": body, "state_reason": state_reason,
-                                          "labels": [{"name": n} for n in labels]}}
-
-
-def test_closed_as_completed_thanks_author():
-    bot, repo = FakeBot([]), FakeRepo()
-    assert T.notify("issues", issue_event(), bot, repo, SEALER, log=lambda *_: None)
-    (method, p), = bot.calls
-    assert method == "sendMessage" and p["chat_id"] == 42
-    assert "«у 11-А не та аудитория»" in p["text"] and "Спасибо" in p["text"]
-    assert repo.comments[0][0] == 7
-
-
-def test_spam_or_not_planned_or_foreign_issue_is_silent():
-    for ev in (issue_event(state_reason="not_planned"), issue_event(labels=("bug",))):
-        bot, repo = FakeBot([]), FakeRepo()
-        assert not T.notify("issues", ev, bot, repo, SEALER, log=lambda *_: None)
-        assert bot.calls == []
-
-
-def test_old_issue_without_chat_explains_in_comment():
-    bot, repo = FakeBot([]), FakeRepo()
-    assert not T.notify("issues", issue_event(chat=None), bot, repo, SEALER, log=lambda *_: None)
-    assert bot.calls == [] and "не получилось" in repo.comments[0][1].lower()
-
-
-def comment_event(text, assoc="OWNER"):
-    ev = issue_event()
-    ev.update(action="created", comment={"body": text, "author_association": assoc})
-    return ev
-
-
-def test_reply_command_from_owner_is_forwarded():
-    bot, repo = FakeBot([]), FakeRepo()
-    assert T.notify("issue_comment", comment_event("/ответ Уточните, пожалуйста, какой день?"), bot, repo, SEALER,
-                    log=lambda *_: None)
-    assert bot.calls[0][1]["text"] == "Ответ на ваше сообщение «у 11-А не та аудитория»:\n\nУточните, пожалуйста, какой день?"
-
-
-def test_reply_ignored_from_strangers_and_plain_comments():
-    for ev in (comment_event("/ответ привет", assoc="NONE"), comment_event("просто заметка")):
-        bot, repo = FakeBot([]), FakeRepo()
-        assert not T.notify("issue_comment", ev, bot, repo, SEALER, log=lambda *_: None)
-        assert bot.calls == []
-
-
-def test_reply_drops_generated_footer():
-    bot, repo = FakeBot([]), FakeRepo()
-    body = "/ответ Поправили, спасибо!\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_"
-    assert T.notify("issue_comment", comment_event(body), bot, repo, SEALER, log=lambda *_: None)
-    assert bot.calls[0][1]["text"].endswith("\n\nПоправили, спасибо!")
 
 
 def test_real_messages_are_assigned_spam_is_not():
