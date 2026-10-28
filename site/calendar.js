@@ -17,6 +17,14 @@
     return many;
   }
 
+  // 85 -> «1 час 25 минут», 60 -> «1 час», 40 -> «40 минут»
+  function minutesText(n) {
+    var h = Math.floor(n / 60), m = n % 60, out = [];
+    if (h) out.push(h + " " + plural(h, "час", "часа", "часов"));
+    if (m || !h) out.push(m + " " + plural(m, "минута", "минуты", "минут"));
+    return out.join(" ");
+  }
+
   function daysText(n) {
     return n + " " + plural(n, "день", "дня", "дней");
   }
@@ -115,7 +123,7 @@
     return periods(cal, group).filter(function (p) { return p.from <= date && date <= p.to; })[0] || null;
   }
 
-  var api = { current: current, dayOff: dayOff, countdown: countdown, officeStatus: officeStatus, plural: plural, daysText: daysText,
+  var api = { current: current, dayOff: dayOff, countdown: countdown, officeStatus: officeStatus, plural: plural, daysText: daysText, minutesText: minutesText,
     dayMonth: dayMonth };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Calendar = api;
