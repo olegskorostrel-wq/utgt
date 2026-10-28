@@ -231,11 +231,18 @@ h1::first-letter { text-transform: uppercase; }
 .tabs button:active { transform: scale(.96); }
 details[open] > :not(summary) { animation: rise .6s var(--ease) both; }
 
-/* Полоска прогресса у идущей пары */
-.lesson .bar { grid-column: 1 / -1; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--accent-soft); overflow: hidden; }
-.lesson .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
-.anim .lesson .bar i { transform-origin: left center; animation: grow 1.2s .3s var(--ease) both; }
-@keyframes grow { from { transform: scaleX(0); } }
+/* Сколько прошло от идущей пары: нижняя рамка утолщается от правого нижнего угла влево
+   (места не занимает; в самом начале пары толще только сам угол) */
+.lesson .bar {
+  position: absolute; inset: -2px; border-radius: 12px; border-bottom: 5px solid var(--accent); pointer-events: none;
+  /* конец утолщения плавно сходит на нет, без ступеньки */
+  --to: max(var(--p), 18px);
+  -webkit-mask-image: linear-gradient(to left, #000 var(--to), transparent calc(var(--to) + 16px));
+  mask-image: linear-gradient(to left, #000 var(--to), transparent calc(var(--to) + 16px));
+}
+@property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+.anim .lesson .bar { animation: bar-in 1.2s .3s var(--ease) both; }
+@keyframes bar-in { from { --p: 0%; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

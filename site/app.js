@@ -424,8 +424,8 @@
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
           '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
             "</div></div></div>" +
-          (it.state === "now" ? '<div class="bar"><i style="width:' +
-            Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
+          (it.state === "now" ? '<div class="bar" aria-hidden="true" style="--p:' +
+            Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></div>' : "") + "</article>";
       }).join("");
     }
 
@@ -688,8 +688,8 @@
           '<div class="who"><span class="groups">' + it.groups.map(esc).join(", ") + "</span>" +
           (n ? ' · <span class="nw">' + n + "</span>" : "") + "</div></div>" +
           '<div class="room">' + (it.rooms.length ? "ауд. " + it.rooms.map(esc).join(", ") : "") + "</div>" +
-          (it.state === "now" ? '<div class="bar"><i style="width:' +
-            Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></i></div>' : "") + "</article>";
+          (it.state === "now" ? '<div class="bar" aria-hidden="true" style="--p:' +
+            Math.round(100 * (now.minutes - it.start) / (it.end - it.start)) + '%"></div>' : "") + "</article>";
       }).join("") : '<div class="empty">' + (d.holiday ? esc(d.holiday.name) : d.weekday === 7 ? "Выходной" : "Пар нет") + "</div>";
 
       animIn($("dayView"));
