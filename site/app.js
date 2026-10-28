@@ -569,6 +569,9 @@
     var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
     var android = /Android/.test(ua);
     var inApp = /Telegram|VKAndroidApp|VKClient|vkontakte|Instagram|FBAN|FBAV|OKApp/i.test(ua) || (android && /; wv\)/.test(ua));
+    // открыто из приложения во встроенной вкладке Chrome (вверху ✕ вместо адресной строки) — она не устанавливает
+    if (android && /^android-app:\/\//.test(document.referrer)) return { text: "Сайт открыт из другого приложения " +
+      "во встроенной вкладке — отсюда установить нельзя. Нажмите ⋮ (вверху справа) → «Открыть в Chrome» и установите там." };
     if (inApp) return { text: "Сайт открыт внутри другого приложения (Телеграм, ВК…) — отсюда установить нельзя. " +
       "Откройте его в браузере: меню ⋮ или ⋯ → «Открыть в браузере», и установите там." };
     if (ios) {
@@ -584,7 +587,9 @@
       if (/YaBrowser/.test(ua)) return { text: "Меню ⋮ → «Добавить ярлык» (или «Установить приложение»)." };
       if (/Firefox/.test(ua)) return { text: "Меню ⋮ → «Установить» (или «Добавить на главный экран»)." };
       if (/OPR|Opera/.test(ua)) return { text: "Меню ⋮ → «Главный экран» (или «Установить приложение»)." };
-      return { text: "Меню ⋮ (вверху справа) → «Установить приложение» или «Добавить на главный экран»." };
+      return { text: "Меню ⋮ (вверху справа) → «Установить приложение» или «Добавить на главный экран». " +
+        "Если вверху ✕ вместо адресной строки и пишет «нельзя установить» — сайт открыт из другого приложения: " +
+        "⋮ → «Открыть в Chrome», и установите уже там." };
     }
     if (/Firefox/.test(ua)) return { text: "Firefox на компьютере не устанавливает сайты как приложения — откройте сайт в Chrome, Edge или Яндекс Браузере." };
     if (/Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua)) return { text: "Safari на Mac: меню «Файл» → «Добавить в Dock»." };
