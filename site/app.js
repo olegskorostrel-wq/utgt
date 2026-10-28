@@ -776,6 +776,7 @@
         "<strong>" + esc(full || t) + "</strong>" + (full ? "<small>" + esc(t) + "</small>" : "") + "</button>";
     }).join("");
     var who = state.pickWho;
+    $("whoSeg").dataset.who = who;
     document.querySelectorAll("#whoSeg button").forEach(function (b) {
       b.setAttribute("aria-selected", String(b.dataset.who === who));
     });

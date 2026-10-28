@@ -47,13 +47,21 @@
 #pickerTitle:focus { outline: none; }
 
 /* выбор: студент / преподаватель */
-.seg { display: flex; gap: 4px; padding: 4px; margin: 10px 0 4px; border-radius: 12px; background: var(--bg); }
+.seg { position: relative; display: flex; gap: 4px; padding: 4px; margin: 10px 0 4px; border-radius: 12px; background: var(--bg); }
+/* белая плашка выбранного варианта переезжает от «Я студент» к «Я преподаватель» и обратно */
+.seg::before {
+  content: ""; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 6px);
+  border-radius: 9px; background: var(--card); box-shadow: 0 1px 3px rgb(0 0 0 / .15);
+  transition: transform .5s var(--ease);
+}
+.seg[data-who="teacher"]::before { transform: translateX(calc(100% + 4px)); }
 .seg button {
   flex: 1; padding: 8px 6px; border: 0; border-radius: 9px; background: none; color: var(--muted);
   font: inherit; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: background-color .3s var(--ease-io), color .3s var(--ease-io);
 }
-.seg button[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+.seg button { position: relative; }
+.seg button[aria-selected="true"] { color: var(--text); }
 .tlist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .tlist button {
   display: block; width: 100%; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
@@ -63,7 +71,7 @@
 .tlist button small { color: var(--muted); font-size: 12px; }
 .tlist button[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
 /* переключение «Я студент / Я преподаватель»: курсы и строки списка всплывают по очереди */
-.appear .course, .appear > button, .appear > .hint { animation: rise .6s var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.appear .course, .appear > button, .appear > .hint { animation: rise .6s var(--ease) both; animation-delay: calc(var(--i, 0) * 55ms + 200ms); }
 
 /* карточки преподавателя: группа заметнее, без раскрытия */
 .tlesson { cursor: default; }
