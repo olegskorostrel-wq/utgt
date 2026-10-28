@@ -2,8 +2,8 @@ name: Проверка замен и деплой сайта
 
 on:
   schedule:
-    # каждые 2 часа с 07:17 до 21:17 по Москве (cron в UTC)
-    - cron: "17 4-18/2 * * *"
+    # каждый час с 07:17 до 21:17 по Москве (cron в UTC)
+    - cron: "17 4-18 * * *"
   workflow_dispatch:
   push:
     branches: [main, "claude/**"]
