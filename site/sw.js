@@ -64,13 +64,13 @@ self.addEventListener("fetch", function (e) {
   }
   // страница (с любыми ?group=…) хранится под одним ключом
   var key = req.mode === "navigate" ? new URL("./", location.href).href : url.origin + url.pathname;
-  // медленный интернет: если сеть не ответила за 3 с (страница) или 2 с (данные), а сохранённая копия
+  // медленный интернет: если сеть не ответила за 2 с, а сохранённая копия
   // есть — сразу она. На обычном интернете ответ приходит быстрее, и показывается свежее.
   // (сеть при этом догружает свежее в кэш для следующего раза)
   var net = fromNetwork(req, key);
   // сохранённая копия с пометкой — сайт по ней показывает «Показано сохранённое»
   var saved = function () {
-    return caches.match(key).then(function (hit) { return hit || caches.match(new URL("./", location.href).href); })
+    return caches.match(key)
       .then(function (hit) {
         if (!hit) return hit;
         return hit.blob().then(function (body) {
@@ -84,7 +84,7 @@ self.addEventListener("fetch", function (e) {
     var done = false;
     var timer = setTimeout(function () {
       saved().then(function (hit) { if (hit && !done) { done = true; resolve(hit); } });
-    }, req.mode === "navigate" ? 3000 : 2000);
+    }, 2000);
     net.then(function (res) { if (!done) { done = true; clearTimeout(timer); resolve(res); } }, function () {
       clearTimeout(timer);
       saved().then(function (hit) { if (!done) { done = true; hit ? resolve(hit) : reject(new Error("нет сети")); } });

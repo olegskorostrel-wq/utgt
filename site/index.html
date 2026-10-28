@@ -18,9 +18,35 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#111317" media="(prefers-color-scheme: dark)">
+  <!-- defer: скрипты качаются сразу, параллельно с данными, а выполняются, когда страница разобрана -->
+  <script src="agenda.js" defer></script>
+  <script src="calendar.js" defer></script>
+  <script src="teachers.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="desktop.js" defer></script>
+  <script>
+    // Данные начинают грузиться сразу, вместе со стилями и скриптами, а не после них: на медленном
+    // интернете это экономит несколько «кругов» до сервера. Список групп и дней с заменами вписывает build_site.py
+    (function () {
+      var pre = window.__pre = {}; window.__preAt = Date.now(); var files = __GROUP_FILES__, days = __ZAMENY_DAYS__;
+      function go(u) { try { pre[u] = fetch(u, { cache: "no-cache" }); pre[u].catch(function () {}); } catch (e) {} }
+      function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+      ["data/groups/index.json", "data/bells.json", "data/zameny/index.json", "status.json", "data/calendar.json",
+        "data/news.json", "data/teachers.json", "data/info.json"].forEach(go);
+      var q = new URLSearchParams(location.search), g = q.get("group");
+      if (q.get("teacher") || (!g && get("utgt-who") === "teacher" && get("utgt-teacher"))) {
+        Object.keys(files).forEach(function (k) { go("data/groups/" + files[k]); });
+      } else if (files[g = g || get("utgt-group")]) go("data/groups/" + files[g]);
+      var d = q.get("date") ? new Date(q.get("date") + "T12:00:00Z") : new Date(Date.now() + 3 * 3600e3);
+      for (var i = 0; i < 2; i++) {
+        var iso = new Date(d.getTime() + i * 864e5).toISOString().slice(0, 10);
+        if (days.indexOf(iso) >= 0) go("data/zameny/" + iso + ".json");
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="groups.css">
-  <link rel="stylesheet" href="desktop.css">
+  <link rel="stylesheet" href="desktop.css" media="(min-width: 1024px)">
 </head>
 <body>
   <main class="wrap">
@@ -131,10 +157,5 @@
     </form>
   </dialog>
 
-  <script src="agenda.js"></script>
-  <script src="calendar.js"></script>
-  <script src="teachers.js"></script>
-  <script src="app.js"></script>
-  <script src="desktop.js"></script>
 </body>
 </html>

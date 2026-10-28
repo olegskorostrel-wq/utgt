@@ -46,7 +46,12 @@
   }
 
   function getJSON(url) {
-    return fetch(url, { cache: "no-cache" }).then(function (r) {
+    // запрос, начатый ещё в <head> (см. index.html), — забираем его ответ, второй раз не качаем
+    // (только в первые полминуты — позже это уже устаревший ответ)
+    var pre = window.__pre && window.__pre[url];
+    if (pre) delete window.__pre[url];
+    if (pre && Date.now() - window.__preAt > 30000) pre = null;
+    return (pre || fetch(url, { cache: "no-cache" })).then(function (r) {
       if (!r.ok) throw new Error(url + ": " + r.status);
       // ответ из сохранённой копии (нет сети или она слишком медленная) — показать это над расписанием
       if (r.headers.get("X-Utgt-Saved") && !state.savedHit) {

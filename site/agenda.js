@@ -160,15 +160,12 @@
   }
 
   // Текущие дата и время в Ухте (Europe/Moscow)
+  // В Москве всегда UTC+3 (переходов на летнее время нет с 2014 года) — считаем сдвигом, без Intl:
+  // его первый вызов на слабом телефоне заметно подтормаживает загрузку
   function moscowNow(d) {
-    var parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
-    }).formatToParts(d || new Date());
-    var v = {};
-    parts.forEach(function (p) { v[p.type] = p.value; });
-    return { date: v.year + "-" + v.month + "-" + v.day, minutes: +v.hour * 60 + +v.minute,
-      time: v.hour + ":" + v.minute };
+    var iso = new Date((d || new Date()).getTime() + 3 * 3600e3).toISOString();
+    var h = +iso.slice(11, 13), m = +iso.slice(14, 16);
+    return { date: iso.slice(0, 10), minutes: h * 60 + m, time: iso.slice(11, 16) };
   }
 
   // Иностранный язык подгруппы: «Иностранный язык (немецкий)» -> «немецкий», иначе null

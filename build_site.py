@@ -28,6 +28,25 @@ def bust_cache(out):
         page.write_text(html, encoding="utf-8")
 
 
+def minify_json(data_dir):
+    """JSON без отступов и пробелов — меньше качать и быстрее разбирать на слабом телефоне."""
+    for p in data_dir.rglob("*.json"):
+        p.write_text(json.dumps(json.loads(p.read_text(encoding="utf-8")), ensure_ascii=False, separators=(",", ":")),
+                     encoding="utf-8")
+
+
+def inline_preload(out):
+    """В index.html — какие файлы у групп и на какие дни есть замены: страница начинает грузить их сразу."""
+    groups = json.loads((out / "data" / "groups" / "index.json").read_text(encoding="utf-8"))["groups"]
+    days = json.loads((out / "data" / "zameny" / "index.json").read_text(encoding="utf-8"))["days"]
+    files = {g["group"]: g["file"] for g in groups}
+    page = out / "index.html"
+    html = page.read_text(encoding="utf-8")
+    html = html.replace("__GROUP_FILES__", json.dumps(files, ensure_ascii=False, separators=(",", ":")))
+    html = html.replace("__ZAMENY_DAYS__", json.dumps(days[-14:], separators=(",", ":")))
+    page.write_text(html, encoding="utf-8")
+
+
 def write_history(out_dir):
     """История замен из вечного архива (data/archive) -> data/history/all.json: все распоряжения
     по дням, от новых к старым, по всем группам; картинки — сжатые копии из архива."""
@@ -62,6 +81,8 @@ def build(out=ROOT / "_site", scrape_ok=True):
     if not (zameny / "index.json").exists():
         (zameny / "index.json").write_text('{"days": []}', encoding="utf-8")
     write_history(out / "data" / "history")
+    minify_json(out / "data")
+    inline_preload(out)
     bust_cache(out)
     # версия кэша для работы без интернета: меняется при любом изменении сайта или данных
     digest = hashlib.sha1()
