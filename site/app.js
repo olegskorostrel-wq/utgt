@@ -329,6 +329,7 @@
     var g = state.group || "", course = g.charAt(0);
     var cg = (state.data.calendar.groups || {})[g] || {};
     var o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
+    var curator = g && (info.curators || {})[g];
     var links = info.links.concat(info.by_course[course] || []);
     var gia = course === "4" && cg.specialty && info.gia_by_specialty[cg.specialty.code];
     if (gia) links.push({ title: "Программа ГИА " + cg.specialty.code + " (на " + info.gia_year + " уч. год)", url: gia });
@@ -344,6 +345,7 @@
       "<small>Кабинет " + esc(o.room) + ' · <a href="tel:' + esc(o.tel) + '">' + esc(o.phone) + "</a> · " +
       "пн–пт " + o.hours["1"].join("–") + ", сб " + o.hours["6"].join("–") + ", обед " + o.lunch.join("–") +
       "</small></div>" +
+      (curator ? '<div class="office"><strong>Куратор группы</strong><small>' + esc(teacherFull(curator) || curator) + "</small></div>" : "") +
       (cwHtml ? '<div class="office"><strong>Курсовые работы и проекты</strong><ul class="plain">' + cwHtml + "</ul></div>" : "") +
       "<ul>" + links.map(function (l) {
         var ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : "";
