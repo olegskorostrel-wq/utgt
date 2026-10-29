@@ -332,15 +332,25 @@
     var lines = C.countdown(today, state.data.calendar, state.group);
     drawNet();
     var ul = $("calendar");
-    ul.hidden = !lines.length;
-    if (!drawCalendar.shown && lines.length) { drawCalendar.shown = true; ul.classList.add("stagger"); }
-    else ul.classList.remove("stagger");
-    // на метке коротко (число дней или «4 ноября выходной»), полностью — в пояснении по нажатию
+    $("countdown").hidden = !lines.length;
+    if (!drawCalendar.shown && lines.length) { drawCalendar.shown = true; $("countdown").classList.add("stagger"); }
+    else $("countdown").classList.remove("stagger");
+    // на строке коротко, полностью — в пояснении по нажатию
     ul.innerHTML = lines.map(function (l, i) {
       var tip = l.text + (l.exams && l.exams.length ? ". Экзамены: " + l.exams.join(", ") : "");
       return '<li class="cal-' + l.kind + '" style="--i:' + i + '" role="button" tabindex="0" data-tip="' + esc(tip) +
         '" aria-label="' + esc(tip) + '">' + esc(l.short || l.text) + "</li>";
     }).join("");
+    // полоска: сколько прошло до каникул (или от идущего периода) — по первой строке, где это известно
+    var pl = lines.filter(function (l) { return l.progress != null; })[0], bar = $("cdBar");
+    bar.hidden = !pl;
+    if (pl) {
+      bar.className = "cd-bar cal-" + pl.kind;
+      bar.setAttribute("aria-label", "Прошло " + Math.round(pl.progress * 100) + "%");
+      var fill = bar.firstChild, w = (pl.progress * 100).toFixed(1) + "%";
+      if (!fill.style.width) requestAnimationFrame(function () { requestAnimationFrame(function () { fill.style.width = w; }); });
+      else fill.style.width = w;
+    }
   }
 
   // Пояснение к метке отсчёта: появляется под меткой, само пропадает через несколько секунд

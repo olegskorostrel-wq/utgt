@@ -139,12 +139,22 @@
 .listbox > .info-btn.warn { background: linear-gradient(var(--warn-soft), var(--warn-soft)) var(--card); }
 
 /* значок интернета у часов и пояснение по нажатию */
-/* значок интернета — слева от времени; под часами метки друг под другом */
+/* значок интернета — слева от времени */
+.clock { position: relative; }
 .clock-row { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
-.status-row { position: relative; display: flex; justify-content: flex-end; margin-top: 6px; }
-.status-row .calendar { margin: 0; flex-direction: column; flex-wrap: nowrap; align-items: flex-end; }
-.status-row .calendar li { max-width: 190px; text-align: left; border-radius: 14px; }
-@media (max-width: 360px) { .status-row .calendar li { max-width: 124px; } }
+
+/* под датой: «До каникул 61 день» слева, «4 ноября выходной» справа, под ними полоска до каникул */
+.countdown { grid-column: 1 / -1; grid-row: 6; margin-top: 6px; }
+.countdown[hidden] { display: none; }
+.countdown .calendar { margin: 0; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 14px; }
+.countdown .calendar li { padding: 0; border: 0; background: none; border-radius: 6px; font-size: 13.5px; color: var(--muted); }
+.countdown .calendar li::before { display: none; }
+.countdown.stagger li, .countdown.stagger .cd-bar { animation: rise .75s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 200ms); }
+.cd-bar { height: 6px; margin-top: 7px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.cd-bar[hidden] { display: none; }
+.cd-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); transition: width 1.1s var(--ease); }
+.cd-bar.cal-kanikuly i { background: var(--ok); }
+.cd-bar.cal-sessiya i { background: var(--warn); }
 .net-btn {
   display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: -4px -2px; padding: 0; flex: none;
   border: 0; background: none; color: var(--muted); cursor: pointer; -webkit-tap-highlight-color: transparent;

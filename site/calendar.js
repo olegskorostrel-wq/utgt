@@ -52,30 +52,38 @@
     return p ? { kind: "break", reason: p.name, until: p.to } : null;
   }
 
-  // Короткие строки для плашки вверху: что идёт сейчас и сколько осталось до ближайшего важного.
-  // text — полностью (в пояснении по нажатию), short — на самой метке: пока до события больше недели —
-  // только число дней, за неделю и ближе — словами («До каникул осталось 7 дней»); выходной — «4 ноября выходной».
+  // Строка под датой: что идёт сейчас и сколько осталось до ближайшего важного.
+  // text — полностью (в пояснении по нажатию), short — на самой строке: «До каникул 61 день»,
+  // за неделю и ближе — «До каникул осталось 7 дней»; выходной — «4 ноября выходной».
+  // progress (0…1) — для полоски под строкой: сколько прошло от начала учёбы (1 сентября или конца
+  // прошлых каникул/сессии) до каникул, или сколько прошло от идущего периода.
   function leftText(n) { return (n % 10 === 1 && n % 100 !== 11 ? "остался " : "осталось ") + daysText(n); }
+  function untilText(what, n) { return what + " " + (n > 7 ? daysText(n) : leftText(n)); }
+  function yearStart(today) {
+    var y = +today.slice(0, 4);
+    return (+today.slice(5, 7) >= 9 ? y : y - 1) + "-09-01";
+  }
   function countdown(today, cal, group) {
     var out = [], ps = periods(cal, group);
     var now = ps.filter(function (p) { return p.from <= today && today <= p.to; })[0];
     if (now) {
       var left = days(today, now.to);
-      out.push({ kind: now.type, text: now.name + " до " + dayMonth(now.to) +
-        (left > 0 ? " — ещё " + daysText(left) : " — последний день"), exams: now.exams || null,
-        short: left > 7 ? String(left) : now.name + (left > 0 ? " — ещё " + daysText(left) : " — последний день") });
+      var tail = left > 0 ? " — ещё " + daysText(left) : " — последний день";
+      out.push({ kind: now.type, text: now.name + " до " + dayMonth(now.to) + tail, exams: now.exams || null,
+        short: now.name + tail, progress: (days(now.from, today) + 1) / (days(now.from, now.to) + 1) });
     }
     var nextBreak = ps.filter(function (p) { return p.type === "kanikuly" && p.from > today; })[0];
     if (nextBreak && !(now && now.type === "kanikuly")) {
-      var kd = days(today, nextBreak.from);
+      var kd = days(today, nextBreak.from), start = yearStart(today);
+      ps.forEach(function (p) { if (p.to < today && p.to >= start) start = addDays(p.to, 1); });
       out.push({ kind: "kanikuly", text: "До каникул " + daysText(kd) + " (с " + dayMonth(nextBreak.from) + ")",
-        short: kd > 7 ? String(kd) : "До каникул " + leftText(kd) });
+        short: untilText("До каникул", kd), progress: Math.min(1, Math.max(0, days(start, today) / Math.max(1, days(start, nextBreak.from)))) });
     }
     var session = ps.filter(function (p) { return p.type === "sessiya" && p.from > today; })[0];
     if (session && days(today, session.from) <= 45) {
       var sd = days(today, session.from);
       out.push({ kind: "sessiya", text: "До сессии " + daysText(sd) + " (с " + dayMonth(session.from) + ")",
-        exams: session.exams || null, short: sd > 7 ? String(sd) : "До сессии " + leftText(sd) });
+        exams: session.exams || null, short: untilText("До сессии", sd) });
     }
     var h = (cal.holidays || []).filter(function (h) { return h.date > today; })[0];
     if (h && days(today, h.date) <= 14 && !dayOff(h.date, { groups: cal.groups }, group)) {

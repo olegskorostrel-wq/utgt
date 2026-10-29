@@ -50,8 +50,8 @@
 </head>
 <body>
   <main class="wrap">
-    <!-- телефон: слева группа и неделя, справа значок интернета и часы, под ними метки (друг под другом);
-         дата — во всю ширину ниже. Компьютер (desktop.css): всё колонкой, часы сверху -->
+    <!-- телефон: слева группа и неделя, справа значок интернета и часы; дата и строка «до каникул»
+         с полоской — во всю ширину ниже. Компьютер (desktop.css): всё колонкой, часы сверху -->
     <header class="top">
       <div class="top-l">
         <div class="chips">
@@ -62,13 +62,15 @@
         <p class="eyebrow">УТЖТ <span id="week"></span></p>
         <p class="specialty" id="specialty"></p>
         <h1 id="title">Расписание</h1>
+        <!-- под датой: сколько до каникул и ближайший выходной, полоска — сколько прошло до каникул -->
+        <div class="countdown" id="countdown" hidden>
+          <ul id="calendar" class="calendar"></ul>
+          <div class="cd-bar" id="cdBar" hidden><i></i></div>
+        </div>
       </div>
       <div class="clock">
         <div class="clock-row"><button type="button" id="netBtn" class="net-btn" hidden></button><span id="clock" aria-live="polite">--:--</span></div>
-        <div class="status-row">
-          <ul id="calendar" class="calendar" hidden></ul>
-          <div id="netTip" class="net-tip" role="status" hidden></div>
-        </div>
+        <div id="netTip" class="net-tip" role="status" hidden></div>
       </div>
     </header>
 
