@@ -87,6 +87,9 @@ const { URL, lastZ, launch, page, open, report } = require('./lib');
         await p.click('#whereList button[aria-current="true"]'); await p.waitForTimeout(300);
         ok((await p.innerHTML('#whereOut')) === '', T + 'повторное нажатие не убрало ответ');
       }
+      await p.fill('#whereInput', 'физ'); await p.waitForTimeout(200);
+      const bySubj = await p.$$eval('#whereList button small', (x) => x.map((e) => e.textContent));
+      ok(bySubj.length >= 2 && bySubj.every((t) => /физ/i.test(t)), T + 'поиск по предмету «физ» не нашёл преподавателей с предметом');
       await p.fill('#whereInput', 'ззззз'); await p.waitForTimeout(200);
       ok((await p.textContent('#whereList')).includes('Не нашлось'), T + 'нет надписи «не нашлось»');
       await p.fill('#whereInput', 'ё'); await p.fill('#whereInput', '');

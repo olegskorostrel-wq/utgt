@@ -484,21 +484,29 @@
       return "ауд. " + r + (f ? " (" + f + ")" : "");
     }).join(" / ");
   }
+  // Поиск: по фамилии или по предмету («физ» — физика и физкультура, «мдк» — все МДК). Под фамилией —
+  // какой предмет совпал. Без запроса — кнопки преподавателей своей группы.
   function drawWhereList() {
     var q = $("whereInput").value.trim().toLowerCase().replace(/ё/g, "е"), list = $("whereList");
     if (!state.teacherList) { list.innerHTML = '<small>Загрузка списка преподавателей…</small>'; return; }
-    var names;
+    var low = function (x) { return String(x).toLowerCase().replace(/ё/g, "е"); };
+    var hits;
     if (q) {
-      names = state.teacherList.map(function (t) { return t.name || t; }).filter(function (n) {
-        var full = (teacherFull(n) || n).toLowerCase().replace(/ё/g, "е");
-        return full.split(" ").some(function (w) { return w.indexOf(q) === 0; }) || n.toLowerCase().replace(/ё/g, "е").indexOf(q) === 0;
-      }).slice(0, 8);
-      if (!names.length) { list.innerHTML = "<small>Не нашлось — проверьте фамилию.</small>"; return; }
+      hits = state.teacherList.map(function (t) { return t.name || t; }).map(function (n) {
+        var byName = low(teacherFull(n) || n).split(" ").some(function (w) { return w.indexOf(q) === 0; }) || low(n).indexOf(q) === 0;
+        var subj = byName ? null : ((state.whereSubj || {})[n] || []).filter(function (x) {
+          return low(x).split(/[^а-яa-z0-9.]+/).some(function (w) { return w.indexOf(q) === 0; }) || (q.length >= 3 && low(x).indexOf(q) >= 0);
+        });
+        var cut = function (x) { return x.length > 48 ? x.slice(0, 46).replace(/\s+\S*$/, "") + "…" : x; };
+        return byName || (subj && subj.length) ? { n: n, subj: byName ? "" : subj.slice(0, 2).map(cut).join(", ") + (subj.length > 2 ? " и др." : "") } : null;
+      }).filter(Boolean).slice(0, 12);
+      if (!hits.length) { list.innerHTML = "<small>Не нашлось — проверьте фамилию или название предмета.</small>"; return; }
     } else {
-      names = state.whereMine || [];
+      hits = (state.whereMine || []).map(function (n) { return { n: n, subj: "" }; });
     }
-    list.innerHTML = names.map(function (n) {
-      return '<button type="button" data-where="' + esc(n) + '"' + (n === state.whereT ? ' aria-current="true"' : "") + ">" + esc(n) + "</button>";
+    list.innerHTML = hits.map(function (h) {
+      return '<button type="button" data-where="' + esc(h.n) + '"' + (h.n === state.whereT ? ' aria-current="true"' : "") + ">" + esc(h.n) +
+        (h.subj ? "<small>" + esc(h.subj) + "</small>" : "") + "</button>";
     }).join("");
   }
   function drawWhere() {
@@ -549,10 +557,27 @@
     initWhere();
     $("whereD").hidden = false;
     loadTeacherList().then(function () {
-      return state.group ? allGroups() : null;
+      return allGroups();
     }).then(function (gs) {
+      // предметы каждого преподавателя — для поиска по предмету
+      if (!state.whereSubj) {
+        var subj = {};
+        gs.forEach(function (x) {
+          Object.keys(x.schedule.days || {}).forEach(function (d) {
+            x.schedule.days[d].forEach(function (l) {
+              var ts = String(l.teacher || "").split(" / "), ss = String(l.subject || "").split(" / ");
+              ts.forEach(function (t, i) {
+                t = t.trim(); var sj = nice((ss[i] || ss[0]).trim());
+                if (!t || !sj) return;
+                (subj[t] = subj[t] || []).indexOf(sj) < 0 && subj[t].push(sj);
+              });
+            });
+          });
+        });
+        state.whereSubj = subj;
+      }
       var mine = [];
-      (gs || []).filter(function (x) { return x.group === state.group; }).forEach(function (x) {
+      gs.filter(function (x) { return x.group === state.group; }).forEach(function (x) {
         Object.keys(x.schedule.days || {}).forEach(function (d) {
           x.schedule.days[d].forEach(function (l) {
             String(l.teacher || "").split(" / ").forEach(function (t) { t = t.trim(); if (t && mine.indexOf(t) < 0) mine.push(t); });
