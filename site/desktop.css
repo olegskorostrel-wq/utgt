@@ -35,3 +35,11 @@
 .desk .tlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* раскрытый день остаётся на своём месте и просто становится выше */
 .desk .wday[role="button"]:hover { border-color: var(--accent); }
+
+/* на компьютере места много: плашка о заменах сразу открыта (кнопка «i» не нужна),
+   распоряжение — весь лист целиком, а не только таблица */
+.desk #banner { display: block !important; }
+.desk .listbox > .info-btn { display: none; }
+.desk .listbox { margin-top: 0; }
+.desk .images a.crop { aspect-ratio: auto !important; }
+.desk .images a.crop img { width: 100% !important; margin: 0 !important; display: block; }
