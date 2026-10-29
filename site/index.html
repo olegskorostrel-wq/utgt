@@ -59,11 +59,15 @@
         <p class="specialty" id="specialty"></p>
         <h1 id="title">Расписание</h1>
       </div>
-      <div class="clock"><span id="clock" aria-live="polite">--:--</span><small><button type="button" id="netBtn" class="net-btn" hidden></button>Ухта</small>
-        <div id="netTip" class="net-tip" role="status" hidden></div></div>
+      <div class="clock"><span id="clock" aria-live="polite">--:--</span></div>
     </header>
 
-    <ul id="calendar" class="calendar" hidden></ul>
+    <!-- под часами: значок интернета и метки отсчёта (до каникул, выходной) -->
+    <div class="status-row">
+      <button type="button" id="netBtn" class="net-btn" hidden></button>
+      <ul id="calendar" class="calendar" hidden></ul>
+      <div id="netTip" class="net-tip" role="status" hidden></div>
+    </div>
 
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" data-day="0">Сегодня</button>

@@ -130,8 +130,8 @@
 .listbox > .info-btn.warn { background: linear-gradient(var(--warn-soft), var(--warn-soft)) var(--card); }
 
 /* значок интернета у часов и пояснение по нажатию */
-.clock { position: relative; }
-.clock small { display: inline-flex; align-items: center; gap: 6px; }
+.status-row { position: relative; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 8px; }
+.status-row .calendar { margin: 0; justify-content: flex-end; }
 .net-btn {
   display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: -4px -2px; padding: 0; flex: none;
   border: 0; background: none; color: var(--muted); cursor: pointer; -webkit-tap-highlight-color: transparent;

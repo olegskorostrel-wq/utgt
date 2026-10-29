@@ -85,7 +85,6 @@ h1::first-letter { text-transform: uppercase; }
 .clock .roll { display: inline-block; animation: roll .6s var(--ease) both; }
 .clock { text-align: right; font-variant-numeric: tabular-nums; }
 .clock span { display: block; font-size: 28px; font-weight: 650; white-space: nowrap; }
-.clock small { color: var(--muted); }
 
 /* вкладки всегда видны вверху экрана — из длинной недели можно сразу вернуться */
 .tabs { display: flex; gap: 6px; margin: 10px 0 6px; padding: 8px 0; position: sticky; top: 0; z-index: 5; background: var(--bg); }

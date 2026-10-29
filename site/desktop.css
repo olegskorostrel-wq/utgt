@@ -6,7 +6,8 @@
 .desk .desk-side .clock #clock { font-size: 44px; line-height: 1; }
 .desk .desk-side .net-tip { right: auto; left: 0; }
 .desk .desk-side h1 { font-size: 26px; }
-.desk .desk-side .calendar { flex-direction: column; align-items: flex-start; }
+.desk .desk-side .status-row, .desk .desk-side .calendar { justify-content: flex-start; }
+.desk .desk-side .top > .status-row { order: -1; margin: 0 0 8px; }
 .desk .desk-side .news { margin-top: 14px; }
 .desk .desk-side .foot { font-size: 12.5px; }
 
