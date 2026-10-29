@@ -274,6 +274,28 @@ def subject_fixer(all_days):
     return fix_days
 
 
+def apply_popravki(name, days, popravki):
+    """Ручные поправки (data/popravki.json): переименования предметов и правки отдельных пар."""
+    done = []
+    names = popravki.get("subjects", {})
+    for entries in days.values():
+        for e in entries:
+            new = " / ".join(names.get(x, x) for x in e["subject"].split(" / "))
+            if new != e["subject"]:
+                done.append(f"{e['subject']} -> {new}")
+                e["subject"] = new
+    for p in popravki.get("entries", []):
+        if p["group"] != name:
+            continue
+        for e in days.get(p["day"], []):
+            if e["lessons"] == p["lessons"]:
+                e.update(p["set"])
+                if p.get("note"):
+                    e["note"] = p["note"]
+                done.append(f"{p['day']} {p['lessons']}: {p['set']}")
+    return done
+
+
 def group_slug(name):
     """«11-А» -> «11a» (латиница для имён файлов и ссылок)."""
     return name[:2] + LATIN.get(name[-1], name[-1].lower())
@@ -308,12 +330,16 @@ def main():
     index = []
     parsed = {name: sheet.group(name) for name in sheet.groups}
     fix_subjects = subject_fixer([days for days, _ in parsed.values()])
+    pop_path = ROOT / "data" / "popravki.json"
+    popravki = json.loads(pop_path.read_text(encoding="utf-8")) if pop_path.exists() else {}
     for name in sheet.groups:
         days, warnings = parsed[name]
         for f in fix_days(days):
             print(f"{name}: исправлены инициалы {f}")
         for f in fix_subjects(days):
             print(f"{name}: исправлен предмет {f}")
+        for f in apply_popravki(name, days, popravki):
+            print(f"{name}: ручная поправка {f}")
         slug = group_slug(name)
         data = build_group_file(name, days, warnings)
         (OUT / f"{slug}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")

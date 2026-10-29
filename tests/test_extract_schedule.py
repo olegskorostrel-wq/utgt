@@ -88,3 +88,17 @@ def test_teacher_initials_typo_fixed_by_staff_list():
             "3": [{"teacher": "Баякчан Л.А. / Канева О.В.", "subject": "А / Б"}, {"teacher": "", "subject": "РоВ"}]}
     assert fix(days) == ["Канева О.В. -> Канева О.П.", "Баякчан Л.А. / Канева О.В. -> Баякчан Л.А. / Канева О.П."]
     assert days["2"][0]["teacher"] == "Канева О.П."
+
+
+def test_popravki_rename_subject_and_fix_room():
+    days = {"2": [{"lessons": [3, 4], "subject": "Иностранный язык (английский)", "teacher": "Баякчан Л.А.", "room": "1-15"}],
+            "4": [{"lessons": [5, 6], "subject": "МДК.02.01 Основы технического обслуживания устройств и систем СЦБ и ЖАТ",
+                   "teacher": "Туйманов Ю.Н.", "room": "1-30"}]}
+    pop = json.loads((ROOT / "data" / "popravki.json").read_text(encoding="utf-8"))
+    E.apply_popravki("21-Л", days, pop)
+    assert days["2"][0]["room"] == "2-15" and "Баякчан" in days["2"][0]["note"]
+    assert days["4"][0]["subject"] == "МДК.02.01 Основы технического обслуживания устройств систем СЦБ и ЖАТ"
+    other = {"2": [{"lessons": [3, 4], "subject": "Физика", "teacher": "", "room": "1-15"}]}
+    E.apply_popravki("31-Д", other, pop)
+    assert other["2"][0]["room"] == "1-15"  # поправка только для своей группы
+
