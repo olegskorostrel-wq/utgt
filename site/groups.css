@@ -122,6 +122,9 @@
 
 /* кнопка «i» в правом верхнем углу рамки с парами (на её линии): плашка о заменах по нажатию */
 .listbox { position: relative; }
+/* сразу под вкладками (они прилипают к верху и с фоном) — отступ, чтобы «i» не пряталась под ними */
+.listbox { margin-top: 12px; }
+.base:not([hidden]) ~ .listbox, .banner:not([hidden]) ~ .listbox { margin-top: 0; }
 .listbox > .info-btn { position: absolute; top: -11px; right: 14px; margin: 0; z-index: 1; }
 .listbox > .info-btn.warn { background: linear-gradient(var(--warn-soft), var(--warn-soft)) var(--card); }
 .listbox > .info-btn.ok { background: linear-gradient(var(--ok-soft), var(--ok-soft)) var(--card); }
