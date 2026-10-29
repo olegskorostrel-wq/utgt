@@ -675,6 +675,19 @@
     window.addEventListener("load", function () {
       setTimeout(function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }, 2500);
     });
+    // Новая версия сайта: на медленном интернете страница открывается из сохранённой копии (старой), а новая
+    // докачивается в фоне. Как только она сохранена и вступила в силу — тихо перезагружаем страницу, чтобы
+    // правки дошли сразу, а не при следующем заходе. Первый заход (кеша ещё не было) не трогаем;
+    // открытое окно (выбор группы, история) не прерываем — ждём, пока закроют.
+    var hadWorker = !!navigator.serviceWorker.controller, reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (!hadWorker || reloading) return;
+      reloading = true;
+      (function go() {
+        if (document.querySelector("dialog[open]") || document.documentElement.classList.contains("snake-on")) { setTimeout(go, 1500); return; }
+        location.reload();
+      })();
+    });
   }
 
   // ---------- режим преподавателя ----------
