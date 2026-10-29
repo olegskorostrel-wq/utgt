@@ -268,6 +268,14 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
   .history th:first-child, .history td:first-child { padding-left: 8px; }
   .history td.u { white-space: normal; }
 }
+/* совсем узкий экран (или крупный масштаб в настройках телефона) — ещё плотнее, чтобы таблица влезала */
+@media (max-width: 330px) {
+  .history table { font-size: 12px; }
+  .history th { font-size: 10.5px; }
+  .history th, .history td { padding-left: 3px; padding-right: 3px; }
+  .history th:first-child, .history td:first-child { padding-left: 6px; }
+  .history th:last-child, .history td:last-child { padding-right: 6px; }
+}
 .history tr.mine td { background: var(--accent-soft); }
 .history tr.mine td.g { color: var(--accent); }
 .history .himg { margin: 6px 12px 10px; font-size: 13px; }
