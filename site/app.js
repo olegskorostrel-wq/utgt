@@ -287,18 +287,19 @@
     return ag;
   }
 
-  // Значок интернета у часов, как на телефоне: все полоски — данные только что с сервера,
-  // часть полосок — медленный интернет и показано сохранённое, перечёркнут — интернета нет.
-  // Нажатие — пояснение рядом, само пропадает через несколько секунд.
-  var NET_SVG = '<svg viewBox="0 0 17 12" aria-hidden="true"><rect x="0" y="8.5" width="3" height="3.5" rx=".8"/>' +
-    '<rect x="4.5" y="6" width="3" height="6" rx=".8"/><rect x="9" y="3" width="3" height="9" rx=".8"/>' +
-    '<rect x="13.5" y="0" width="3" height="12" rx=".8"/><path class="x" d="M1.5 .8l14 10.4"/></svg>';
+  // Значок интернета у часов (вайфай в круглой кнопке): все дуги — интернет в порядке и данные свежие,
+  // одна дуга — медленный интернет или показано сохранённое, перечёркнут — интернета нет.
+  // Нажатие — пояснение рядом, само пропадает через несколько секунд. Состояние проверяется каждые 15 с.
+  var NET_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="a3" d="M2.8 9.2a13 13 0 0 1 18.4 0"/>' +
+    '<path class="a2" d="M6.1 12.6a8.3 8.3 0 0 1 11.8 0"/><path class="a1" d="M9.4 15.9a3.6 3.6 0 0 1 5.2 0"/>' +
+    '<circle cx="12" cy="19.4" r="1.8"/><path class="x" d="M4.5 3.5l15 17"/></svg>';
   function drawNet() {
     var b = $("netBtn"), st = state.data.status.checked_at, kind, text;
     var saved = st ? " (данные от " + st.slice(8, 10) + "." + st.slice(5, 7) + " " + st.slice(11, 16) + ")" : "";
-    if (!navigator.onLine) { kind = "off"; text = "Нет интернета — показано сохранённое" + saved; }
+    if (!navigator.onLine || state.net === "off") { kind = "off"; text = "Нет интернета — показано сохранённое" + saved; }
     else if (state.savedHit) { kind = "slow"; text = "Медленный интернет — показано сохранённое" + saved; }
-    else if (state.loadedAt) { kind = "full"; text = "Интернет есть — обновлено в " + state.loadedAt; }
+    else if (state.net === "slow") { kind = "slow"; text = "Медленный интернет" + (state.loadedAt ? " — данные обновлены в " + state.loadedAt : ""); }
+    else if (state.loadedAt) { kind = "full"; text = "Интернет в порядке — данные обновлены в " + state.loadedAt; }
     else { b.hidden = true; return; }
     if (!b.firstChild) b.innerHTML = NET_SVG;
     b.hidden = false;
@@ -860,6 +861,31 @@
     // медленный интернет: сначала быстро показали сохранённое — через несколько секунд тихо подтягиваем свежее
     // (сеть за это время успевает догрузить, плашка сменится на «Обновлено в …»)
     setTimeout(function () { if (state.savedHit && navigator.onLine) refresh(); }, 5000);
+    // Проверка интернета для значка: каждые 15 с, пока страница на экране, — крошечный запрос одних
+    // заголовков мимо офлайн-кеша. Ответил быстро — всё хорошо, медленно — «медленный», не ответил — «нет».
+    // Показано сохранённое, а связь появилась — сразу подтягиваем свежие данные.
+    var probing = false;
+    function setNet(v) { if (state.net !== v) { state.net = v; if (state.data) drawNet(); } }
+    function probe() {
+      if (probing || document.hidden) return;
+      if (!navigator.onLine) { setNet("off"); return; }
+      probing = true;
+      var t0 = Date.now(), ctl = window.AbortController ? new AbortController() : null;
+      var stop = setTimeout(function () { if (ctl) ctl.abort(); }, 6000);
+      fetch("data/health.json?net=" + t0, { method: "HEAD", cache: "no-store", signal: ctl ? ctl.signal : undefined })
+        .then(function (r) {
+          if (!r.ok) throw new Error(r.status);
+          setNet(Date.now() - t0 > 1500 ? "slow" : "full");
+          if (state.savedHit && Date.now() - loaded > 15000) refresh();
+        })
+        .catch(function () { setNet("off"); })
+        .then(function () { clearTimeout(stop); probing = false; });
+    }
+    setTimeout(probe, 3000);
+    setInterval(probe, 15000);
+    document.addEventListener("visibilitychange", probe);
+    window.addEventListener("online", probe);
+    window.addEventListener("offline", function () { setNet("off"); });
     function tick() {
       var now = A.moscowNow();
       if (now.time === shown) return;

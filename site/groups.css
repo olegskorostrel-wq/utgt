@@ -128,19 +128,22 @@
 
 /* значок интернета у часов и пояснение по нажатию */
 .clock { position: relative; }
+.clock small { display: inline-flex; align-items: center; gap: 6px; }
 .net-btn {
-  display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; margin: 0 2px 0 0; padding: 0;
-  border: 0; background: none; color: var(--muted); vertical-align: -5px; cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: transform .22s var(--ease), color .3s var(--ease-io);
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; flex: none;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--card); color: var(--text);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .22s var(--ease), color .3s var(--ease-io), background-color .3s var(--ease-io), border-color .3s var(--ease-io);
 }
 .net-btn[hidden] { display: none; }
-.net-btn:active { transform: scale(.88); }
-.net-btn svg { width: 17px; height: 12px; fill: currentColor; overflow: visible; }
-.net-btn rect { transition: opacity .3s var(--ease-io); }
-.net-btn .x { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; opacity: 0; }
-.net-btn.slow, .net-btn.off { color: var(--warn); }
-.net-btn.slow rect:nth-child(n+3) { opacity: .28; }
-.net-btn.off rect { opacity: .28; }
+.net-btn:active { transform: scale(.9); }
+.net-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; overflow: visible; }
+.net-btn circle { fill: currentColor; stroke: none; }
+.net-btn path, .net-btn circle { transition: opacity .35s var(--ease-io); }
+.net-btn .x { opacity: 0; stroke-width: 2.2; }
+.net-btn.slow, .net-btn.off { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: var(--warn-soft); }
+.net-btn.slow .a3, .net-btn.slow .a2 { opacity: .3; }
+.net-btn.off .a3, .net-btn.off .a2, .net-btn.off .a1, .net-btn.off circle { opacity: .3; }
 .net-btn.off .x { opacity: 1; }
 .net-tip {
   position: absolute; right: 0; top: 100%; margin-top: 6px; z-index: 6; width: max-content; max-width: min(260px, calc(100vw - 32px));
