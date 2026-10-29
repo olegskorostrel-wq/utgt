@@ -42,7 +42,8 @@
 .office ul.plain { list-style: disc; padding: 4px 0 0 18px; font-size: 14px; }
 .office ul.plain li { border: 0; padding: 2px 0; }
 /* «Где сейчас преподаватель» */
-.where { border-top: 0; }
+.where { padding: 0 0 14px; }
+.where > small { display: block; color: var(--muted); font-size: 13px; }
 .where input {
   display: block; width: 100%; box-sizing: border-box; margin: 10px 0 8px; padding: 9px 12px;
   border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 16px;

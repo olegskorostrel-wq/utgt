@@ -531,8 +531,9 @@
     $("whereList").addEventListener("click", function (e) {
       var b = e.target.closest("button[data-where]");
       if (!b) return;
-      state.whereT = b.dataset.where;
-      store(WHERE_KEY, state.whereT);
+      // повторное нажатие на выбранную фамилию — убрать ответ
+      state.whereT = b.dataset.where === state.whereT ? null : b.dataset.where;
+      store(WHERE_KEY, state.whereT || "");
       $("whereInput").value = "";
       drawWhereList();
       drawWhere();
@@ -541,6 +542,7 @@
   // при каждом обновлении «Полезного»: свои преподаватели для быстрых кнопок и свежий ответ раз в минуту
   function refreshWhere(now) {
     initWhere();
+    $("whereD").hidden = false;
     loadTeacherList().then(function () {
       return state.group ? allGroups() : null;
     }).then(function (gs) {

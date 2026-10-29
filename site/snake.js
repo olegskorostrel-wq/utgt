@@ -3,7 +3,7 @@
 // Управление: стрелки (и WASD) или свайпы. Собрал 7 — на весь экран «67».
 (function () {
   "use strict";
-  var N = 15, GOAL = 7, el, cv, ctx, info, timer, snake, dir, nextDir, food, eaten, state, cell, touch;
+  var N = 15, GOAL = 7, el, cv, ctx, info, timer, snake, dir, queue, food, eaten, state, cell, touch;
 
   function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#2456c7"; }
 
@@ -50,10 +50,12 @@
       if (state === "play") turn(d);
     } else if ((e.key === " " || e.key === "Enter") && state !== "play") { e.preventDefault(); start(); }
   }
+  // Повороты — очередью (до 3): быстрые «вверх, влево» за один шаг не теряются. Каждый поворот
+  // сверяется с предыдущим в очереди: развернуться назад в себя нельзя, повтор того же направления не нужен.
   function turn(d) {
-    // развернуться назад в себя нельзя
-    if (d[0] === -dir[0] && d[1] === -dir[1]) return;
-    nextDir = d;
+    var last = queue.length ? queue[queue.length - 1] : dir;
+    if ((d[0] === -last[0] && d[1] === -last[1]) || (d[0] === last[0] && d[1] === last[1])) return;
+    if (queue.length < 3) queue.push(d);
   }
 
   function size() {
@@ -73,7 +75,8 @@
 
   function start() {
     snake = [[7, 7], [6, 7], [5, 7]];
-    dir = nextDir = [1, 0];
+    dir = [1, 0];
+    queue = [];
     eaten = 0;
     state = "play";
     place();
@@ -85,13 +88,14 @@
   function step() {
     if (state !== "play") return;
     if (document.hidden) { timer = setTimeout(step, 400); return; } // вкладка в фоне — пауза
-    dir = nextDir;
+    if (queue.length) dir = queue.shift();
     var head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
     var hit = head[0] < 0 || head[1] < 0 || head[0] >= N || head[1] >= N ||
       snake.some(function (p, i) { return i < snake.length - 1 && p[0] === head[0] && p[1] === head[1]; });
     if (hit) {
       state = "over";
-      el.querySelector(".snake-hint").textContent = "Не вышло — нажмите или свайпните, чтобы заново";
+      el.querySelector(".snake-hint").textContent = matchMedia("(hover: hover)").matches
+        ? "Пробел, Enter или нажатие на поле — заново" : "Нажмите на поле или свайпните — заново";
       draw();
       return;
     }
@@ -127,6 +131,19 @@
       ctx.fill();
     });
     ctx.globalAlpha = 1;
+    // проигрыш — крупно на поле, чтобы не казалось, что змейка просто зависла
+    if (state === "over") {
+      ctx.fillStyle = "rgba(0, 0, 0, .45)";
+      ctx.fillRect(0, 0, w, w);
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "700 " + Math.round(w / 9) + "px system-ui, sans-serif";
+      ctx.fillText("Врезалась!", w / 2, w / 2 - w / 14);
+      ctx.font = "500 " + Math.round(w / 20) + "px system-ui, sans-serif";
+      ctx.fillText(matchMedia("(hover: hover)").matches ? "Ещё раз — пробел или клик" : "Ещё раз — нажмите на поле",
+        w / 2, w / 2 + w / 12, w - 24);
+    }
     info.textContent = "Собрано " + eaten + " из " + GOAL;
   }
 
