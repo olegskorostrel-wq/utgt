@@ -935,14 +935,20 @@
     if (!sum || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !sum.parentElement.animate) return;
     var d = sum.parentElement;
     e.preventDefault();
-    if (d._anim) d._anim.cancel();
-    var from = d.offsetHeight, opening = !d.open, to;
+    // нажатие посреди анимации: продолжаем с текущей высоты, а направление берём из того,
+    // куда блок ехал (при закрытии он до конца анимации остаётся open)
+    var from = d.getBoundingClientRect().height, opening = !d.open || !!d._closing, to;
+    if (d._anim) { var old = d._anim; d._anim = null; old.cancel(); }
     if (opening) { d.open = true; to = d.offsetHeight; }
     else { d.open = false; to = d.offsetHeight; d.open = true; }
+    d._closing = !opening;
     d.style.overflow = "hidden";
-    d._anim = d.animate({ height: [from + "px", to + "px"] }, { duration: 600, easing: "cubic-bezier(.33, 1, .68, 1)" });
-    d._anim.onfinish = d._anim.oncancel = function () {
+    var a = d._anim = d.animate({ height: [from + "px", to + "px"] }, { duration: 600, easing: "cubic-bezier(.33, 1, .68, 1)" });
+    // отмена старой анимации приходит позже запуска новой — её не слушаем, иначе она снимет обрезку у новой
+    a.onfinish = a.oncancel = function () {
+      if (d._anim !== a) return;
       d._anim = null;
+      d._closing = false;
       d.style.overflow = "";
       if (!opening) d.open = false;
     };
