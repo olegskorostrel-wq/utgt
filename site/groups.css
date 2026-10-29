@@ -148,11 +148,13 @@
 .wday[role="button"] h3::after { content: "▾"; margin-left: 4px; color: var(--muted); font-size: 13px; transition: transform .35s var(--ease); }
 .wday[role="button"] h3:not(:has(.cnt))::after { margin-left: auto; }
 .wday.open h3::after { transform: rotate(180deg); }
-.wday .det {
-  display: block; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45;
-  max-height: 0; opacity: 0; overflow: hidden; transition: max-height .6s var(--ease), opacity .45s var(--ease-io), margin .6s var(--ease);
+/* подробности пары: высота по тексту (0fr -> 1fr), без предела — длинный текст не обрезается */
+.wday .det, .base li .det {
+  display: grid; grid-template-rows: 0fr; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45;
+  opacity: 0; transition: grid-template-rows .6s var(--ease), opacity .45s var(--ease-io), margin .6s var(--ease);
 }
-.wday.open .det { max-height: 140px; opacity: 1; margin-top: 2px; }
+.det > span { overflow: hidden; min-height: 0; }
+.wday.open .det { grid-template-rows: 1fr; opacity: 1; margin-top: 2px; }
 .wday li { transition: padding .6s var(--ease); }
 .wday.open li { padding: 8px 0; }
 .wday.open { border-color: var(--accent); }
@@ -242,11 +244,7 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 /* «Обычное расписание»: нажатие на пару раскрывает подробности */
 .base li[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; row-gap: 0; }
 .base li .s .nm { display: inline; }
-.base li .det {
-  display: block; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45;
-  max-height: 0; opacity: 0; overflow: hidden; transition: max-height .6s var(--ease), opacity .45s var(--ease-io), margin .6s var(--ease);
-}
-.base li.open .det { max-height: 140px; opacity: 1; margin-top: 4px; }
+.base li.open .det { grid-template-rows: 1fr; opacity: 1; margin-top: 4px; }
 .base li.gone .det { text-decoration: none; }
 
 /* Пасхалка-змейка */

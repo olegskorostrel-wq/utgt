@@ -253,7 +253,7 @@
     var n = it.lessons && it.lessons.length ? (it.lessons[0] === 0 ? "классный час"
       : it.lessons.length > 1 ? "уроки " + it.lessons[0] + "–" + it.lessons[it.lessons.length - 1] : "урок " + it.lessons[0]) : "";
     var parts = [it.startText + "–" + it.endText + (n ? " · " + n : "")].concat(lines.filter(Boolean));
-    return '<span class="det">' + parts.map(esc).join("<br>") + "</span>";
+    return '<span class="det"><span>' + parts.map(esc).join("<br>") + "</span></span>";
   }
   // Шапка дня — дата (при смене недели «печатается» вместе с появлением карточки) и метки
   function weekDayHTML(date, i, now, tagsHTML, body, count) {
