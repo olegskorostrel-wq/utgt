@@ -27,6 +27,16 @@ test("27 октября: до зимних каникул и ближайший 
   assert.deepStrictEqual(texts("2026-11-03"), ["До каникул 56 дней (с 29 декабря)", "Завтра выходной — День народного единства"]);
 });
 
+test("метки: больше недели — число, неделя и меньше — словами; выходной — коротко", () => {
+  const short = (d) => C.countdown(d, cal, G).map((l) => l.short);
+  assert.deepStrictEqual(short("2026-10-27"), ["63", "4 ноября выходной"]);
+  assert.deepStrictEqual(short("2026-11-03"), ["56", "Завтра выходной"]);
+  assert.deepStrictEqual(short("2026-12-21")[0], "8");
+  assert.deepStrictEqual(short("2026-12-22")[0], "До каникул осталось 7 дней");
+  assert.deepStrictEqual(short("2026-12-28")[0], "До каникул остался 1 день");
+  assert.deepStrictEqual(short("2027-01-05")[0], "Зимние каникулы — ещё 6 дней");
+});
+
 test("праздники и каникулы — занятий нет", () => {
   assert.deepStrictEqual(C.dayOff("2026-11-04", cal, G), { kind: "holiday", reason: "День народного единства" });
   assert.strictEqual(C.dayOff("2027-01-05", cal, G).reason, "Зимние каникулы");

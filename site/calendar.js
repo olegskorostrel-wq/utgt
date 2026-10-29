@@ -52,29 +52,35 @@
     return p ? { kind: "break", reason: p.name, until: p.to } : null;
   }
 
-  // Короткие строки для плашки вверху: что идёт сейчас и сколько осталось до ближайшего важного
+  // Короткие строки для плашки вверху: что идёт сейчас и сколько осталось до ближайшего важного.
+  // text — полностью (в пояснении по нажатию), short — на самой метке: пока до события больше недели —
+  // только число дней, за неделю и ближе — словами («До каникул осталось 7 дней»); выходной — «4 ноября выходной».
+  function leftText(n) { return (n % 10 === 1 && n % 100 !== 11 ? "остался " : "осталось ") + daysText(n); }
   function countdown(today, cal, group) {
     var out = [], ps = periods(cal, group);
     var now = ps.filter(function (p) { return p.from <= today && today <= p.to; })[0];
     if (now) {
       var left = days(today, now.to);
       out.push({ kind: now.type, text: now.name + " до " + dayMonth(now.to) +
-        (left > 0 ? " — ещё " + daysText(left) : " — последний день"), exams: now.exams || null });
+        (left > 0 ? " — ещё " + daysText(left) : " — последний день"), exams: now.exams || null,
+        short: left > 7 ? String(left) : now.name + (left > 0 ? " — ещё " + daysText(left) : " — последний день") });
     }
     var nextBreak = ps.filter(function (p) { return p.type === "kanikuly" && p.from > today; })[0];
     if (nextBreak && !(now && now.type === "kanikuly")) {
-      out.push({ kind: "kanikuly", text: "До каникул " + daysText(days(today, nextBreak.from)) +
-        " (с " + dayMonth(nextBreak.from) + ")" });
+      var kd = days(today, nextBreak.from);
+      out.push({ kind: "kanikuly", text: "До каникул " + daysText(kd) + " (с " + dayMonth(nextBreak.from) + ")",
+        short: kd > 7 ? String(kd) : "До каникул " + leftText(kd) });
     }
     var session = ps.filter(function (p) { return p.type === "sessiya" && p.from > today; })[0];
     if (session && days(today, session.from) <= 45) {
-      out.push({ kind: "sessiya", text: "До сессии " + daysText(days(today, session.from)) +
-        " (с " + dayMonth(session.from) + ")", exams: session.exams || null });
+      var sd = days(today, session.from);
+      out.push({ kind: "sessiya", text: "До сессии " + daysText(sd) + " (с " + dayMonth(session.from) + ")",
+        exams: session.exams || null, short: sd > 7 ? String(sd) : "До сессии " + leftText(sd) });
     }
     var h = (cal.holidays || []).filter(function (h) { return h.date > today; })[0];
     if (h && days(today, h.date) <= 14 && !dayOff(h.date, { groups: cal.groups }, group)) {
-      var d = days(today, h.date);
-      out.push({ kind: "holiday", text: (d === 1 ? "Завтра" : dayMonth(h.date)) + " выходной — " + h.name });
+      var d = days(today, h.date), when = d === 1 ? "Завтра" : dayMonth(h.date);
+      out.push({ kind: "holiday", text: when + " выходной — " + h.name, short: when + " выходной" });
     }
     return out;
   }

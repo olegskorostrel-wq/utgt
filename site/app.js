@@ -335,11 +335,45 @@
     ul.hidden = !lines.length;
     if (!drawCalendar.shown && lines.length) { drawCalendar.shown = true; ul.classList.add("stagger"); }
     else ul.classList.remove("stagger");
+    // на метке коротко (число дней или «4 ноября выходной»), полностью — в пояснении по нажатию
     ul.innerHTML = lines.map(function (l, i) {
-      return '<li class="cal-' + l.kind + '" style="--i:' + i + '">' + esc(l.text) +
-        (l.exams ? "<small>Экзамены: " + l.exams.map(esc).join(", ") + "</small>" : "") + "</li>";
+      var tip = l.text + (l.exams && l.exams.length ? ". Экзамены: " + l.exams.join(", ") : "");
+      return '<li class="cal-' + l.kind + '" style="--i:' + i + '" role="button" tabindex="0" data-tip="' + esc(tip) +
+        '" aria-label="' + esc(tip) + '">' + esc(l.short || l.text) + "</li>";
     }).join("");
   }
+
+  // Пояснение к метке отсчёта: появляется под меткой, само пропадает через несколько секунд
+  var popTimer;
+  function popTip(anchor) {
+    var t = $("popTip");
+    clearTimeout(popTimer);
+    if (!anchor || (t.forEl === anchor && !t.hidden && !t.classList.contains("out"))) {
+      if (!t.hidden) {
+        t.classList.add("out");
+        popTimer = setTimeout(function () { t.hidden = true; t.classList.remove("out"); t.forEl = null; }, 250);
+      }
+      return;
+    }
+    t.forEl = anchor;
+    t.textContent = anchor.dataset.tip;
+    t.classList.remove("out");
+    t.hidden = false;
+    var r = anchor.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+    t.style.left = Math.max(16, Math.min(r.left, vw - t.offsetWidth - 16)) + window.scrollX + "px";
+    t.style.top = r.bottom + window.scrollY + 6 + "px";
+    popTimer = setTimeout(function () { popTip(null); }, 5000);
+  }
+  function calTap(e) {
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    var li = e.target.closest("li[data-tip]");
+    if (!li) return;
+    e.preventDefault();
+    popTip(li);
+  }
+  $("calendar").addEventListener("click", calTap);
+  $("calendar").addEventListener("keydown", calTap);
+  document.addEventListener("click", function (e) { if (!e.target.closest("#calendar li")) popTip(null); });
 
   // «Изъюрова Н.М.» -> полное ФИО и как обращаться (по имени-отчеству)
   function teacherInfo(teacher) {

@@ -191,7 +191,10 @@ h1::first-letter { text-transform: uppercase; }
   font-size: 13px; font-weight: 500; color: var(--muted); line-height: 1.4;
 }
 .calendar.stagger li { animation: rise .75s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 200ms); }
-.calendar li small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+/* метки нажимаются — под ними пояснение (полный текст) */
+.calendar li[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .22s var(--ease), border-color .3s var(--ease-io); }
+.calendar li[role="button"]:active { transform: scale(.94); }
+.calendar li[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .calendar li::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: var(--line); }
 .calendar .cal-kanikuly::before { background: var(--ok); }
 .calendar .cal-sessiya::before { background: var(--warn); }
