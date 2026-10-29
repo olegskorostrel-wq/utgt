@@ -393,8 +393,7 @@
     return teacher.split(" / ").map(function (t) {
       var full = byShort[t.trim()];
       if (!full) return esc(t) + " — полного имени нет в списке преподавателей на сайте техникума.";
-      var p = full.split(" ");
-      return "<strong>" + esc(full) + "</strong><small>Обращаться: " + esc(p.slice(1).join(" ")) + "</small>";
+      return "<strong>" + esc(full) + "</strong>";
     }).join("");
   }
 
@@ -426,6 +425,7 @@
     var cw = cg.courseworks || {}, cwHtml = Object.keys(cw).map(function (sem) {
       return "<li>" + sem + " семестр: " + cw[sem].map(esc).join("; ") + "</li>";
     }).join("");
+    refreshWhere(now);
     $("usefulBody").innerHTML =
       installHTML() +
       '<button type="button" class="history-btn" id="historyBtn">История замен' +
@@ -466,6 +466,96 @@
         return '<li' + (x.groups.indexOf(mine) >= 0 ? ' class="mine"' : "") + '><b class="lt">' + esc(x.letter) + "</b>" +
           "<span><b>" + esc(x.code) + "</b> " + esc(x.name) + "<small>" + x.groups.map(esc).join(", ") + "</small></span></li>";
       }).join("") + "</ul></div>";
+  }
+
+  // «Где сейчас преподаватель» (в «Полезном»): поиск по фамилии, быстрые кнопки — преподаватели своей группы.
+  // Ответ — по расписаниям всех групп и заменам на сегодня: пара сейчас и следующая, с этажом кабинета.
+  var WHERE_KEY = "utgt-where";
+  function placeText(room) {
+    if (!room) return "кабинет не указан";
+    return String(room).split(" / ").map(function (r) {
+      if (r === "?") return "кабинет на уточнении";
+      var f = ((state.data.rooms || {}).rooms || {})[r];
+      return "ауд. " + r + (f ? " (" + f + ")" : "");
+    }).join(" / ");
+  }
+  function drawWhereList() {
+    var q = $("whereInput").value.trim().toLowerCase().replace(/ё/g, "е"), list = $("whereList");
+    if (!state.teacherList) { list.innerHTML = '<small>Загрузка списка преподавателей…</small>'; return; }
+    var names;
+    if (q) {
+      names = state.teacherList.map(function (t) { return t.name || t; }).filter(function (n) {
+        var full = (teacherFull(n) || n).toLowerCase().replace(/ё/g, "е");
+        return full.split(" ").some(function (w) { return w.indexOf(q) === 0; }) || n.toLowerCase().replace(/ё/g, "е").indexOf(q) === 0;
+      }).slice(0, 8);
+      if (!names.length) { list.innerHTML = "<small>Не нашлось — проверьте фамилию.</small>"; return; }
+    } else {
+      names = state.whereMine || [];
+    }
+    list.innerHTML = names.map(function (n) {
+      return '<button type="button" data-where="' + esc(n) + '"' + (n === state.whereT ? ' aria-current="true"' : "") + ">" + esc(n) + "</button>";
+    }).join("");
+  }
+  function drawWhere() {
+    var t = state.whereT, out = $("whereOut");
+    if (!t) { out.innerHTML = ""; return; }
+    var now = A.moscowNow();
+    Promise.all([allGroups(), zamenaFor(now.date)]).then(function (r) {
+      if (state.whereT !== t) return;
+      var off = C.dayOff(now.date, state.data.calendar, (r[0][0] || {}).group);
+      var w = Teachers.whereIs(t, now.date, now.minutes, r[0], state.data.bells, state.data.calendar,
+        function (g) { return zamenaForGroup(r[1], g); });
+      var html = "<strong>" + esc(teacherFull(t) || t) + "</strong>";
+      if (A.isoWeekday(now.date) === 7 || (off && off.kind === "holiday")) {
+        html += "<p>Сегодня выходной.</p>";
+      } else if (!w.lessons.length) {
+        html += "<p>Сегодня по расписанию пар нет.</p>";
+      } else {
+        html += w.now
+          ? '<p><span class="lbl">Сейчас</span>пара у ' + esc(w.now.group) + " до " + w.now.endText + " — " + esc(placeText(w.now.room)) + "</p>"
+          : '<p><span class="lbl">Сейчас</span>пары нет</p>';
+        html += w.next
+          ? '<p><span class="lbl">Дальше</span>в ' + w.next.startText + " у " + esc(w.next.group) + " — " +
+            (w.now && w.now.room === w.next.room ? "там же" : esc(placeText(w.next.room))) + "</p>"
+          : (w.now ? '<p><span class="lbl">Дальше</span>на сегодня последняя</p>' : '<p><span class="lbl">Дальше</span>сегодня пар больше нет</p>');
+      }
+      out.innerHTML = html;
+      out.dataset.minute = now.date + " " + now.minutes;
+    }).catch(function () { out.innerHTML = "<p>Не удалось загрузить расписания — нет интернета?</p>"; });
+  }
+  function initWhere() {
+    if (initWhere.done) return;
+    initWhere.done = true;
+    state.whereT = store(WHERE_KEY) || null;
+    $("whereInput").addEventListener("input", drawWhereList);
+    $("whereList").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-where]");
+      if (!b) return;
+      state.whereT = b.dataset.where;
+      store(WHERE_KEY, state.whereT);
+      $("whereInput").value = "";
+      drawWhereList();
+      drawWhere();
+    });
+  }
+  // при каждом обновлении «Полезного»: свои преподаватели для быстрых кнопок и свежий ответ раз в минуту
+  function refreshWhere(now) {
+    initWhere();
+    loadTeacherList().then(function () {
+      return state.group ? allGroups() : null;
+    }).then(function (gs) {
+      var mine = [];
+      (gs || []).filter(function (x) { return x.group === state.group; }).forEach(function (x) {
+        Object.keys(x.schedule.days || {}).forEach(function (d) {
+          x.schedule.days[d].forEach(function (l) {
+            String(l.teacher || "").split(" / ").forEach(function (t) { t = t.trim(); if (t && mine.indexOf(t) < 0) mine.push(t); });
+          });
+        });
+      });
+      state.whereMine = mine.sort(function (a, b) { return a.localeCompare(b, "ru"); });
+      if (!$("whereInput").value) drawWhereList();
+    }, function () { drawWhereList(); });
+    if (state.whereT && $("whereOut").dataset.minute !== now.date + " " + now.minutes) drawWhere();
   }
 
   // На всякий случай и на самом сайте: без новостей про СВО, беспилотники, военную службу

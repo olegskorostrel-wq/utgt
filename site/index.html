@@ -119,6 +119,16 @@
 
     <details id="useful" class="news" hidden>
       <summary>Полезное</summary>
+      <!-- «Где сейчас преподаватель» — отдельно от usefulBody: тот перерисовывается каждую минуту,
+           а здесь поле ввода, которое не должно сбрасываться -->
+      <div id="whereBox" class="office where">
+        <strong>Где сейчас преподаватель</strong>
+        <small>По расписанию и заменам: где у преподавателя пара сейчас и где следующая. В перемену или окно
+          он может быть в другом месте — например, в учительской.</small>
+        <input type="search" id="whereInput" placeholder="Фамилия преподавателя" autocomplete="off" enterkeyhint="search">
+        <div id="whereList" class="where-list"></div>
+        <div id="whereOut" class="where-out" aria-live="polite"></div>
+      </div>
       <div id="usefulBody"></div>
     </details>
 

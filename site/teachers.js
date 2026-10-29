@@ -110,11 +110,15 @@
   // Где сейчас и где следующая пара — для подсказки в карточке урока
   function whereIs(teacher, date, minutes, schedules, bells, calendar, zamena) {
     var lessons = day(teacher, date, schedules, bells, calendar, zamena).items.map(function (l) {
-      return { group: l.groups.join(", "), subject: l.subject, room: l.rooms.join(" / "),
+      return { group: l.groups.join(", "), subject: l.subject, room: l.rooms.join(" / "), guessed: !!l.guessed,
         start: l.start, end: l.end, startText: l.startText, endText: l.endText };
     });
-    var now = lessons.filter(function (l) { return l.start <= minutes && minutes < l.end; })[0] || null;
-    var next = lessons.filter(function (l) { return l.start > minutes && (!now || l.start >= now.end); })[0] || null;
+    // две пары в одно время (по расписанию и по замене, где преподаватель угадан) — верим расписанию
+    function pick(ls) {
+      return ls.filter(function (l) { return l.start === ls[0].start && !l.guessed; })[0] || ls[0] || null;
+    }
+    var now = pick(lessons.filter(function (l) { return l.start <= minutes && minutes < l.end; }));
+    var next = pick(lessons.filter(function (l) { return l.start > minutes && (!now || l.start >= now.end); }));
     return { now: now, next: next, lessons: lessons };
   }
 
