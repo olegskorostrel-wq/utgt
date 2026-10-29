@@ -74,6 +74,7 @@
       return r.json();
     });
   }
+  var COUNTER = "https://script.google.com/macros/s/AKfycbxkVNaEgJqjMkCRt3MrcpXpaPKZ1DfhEt3qnq1Uv9LedPD5AfvjnugSVbdtS1OsFXNB/exec";
   function store(key, value) {
     try {
       if (value === undefined) return localStorage.getItem(key);
@@ -944,6 +945,15 @@
     // медленный интернет: сначала быстро показали сохранённое — через несколько секунд тихо подтягиваем свежее
     // (сеть за это время успевает догрузить, плашка сменится на «Обновлено в …»)
     setTimeout(function () { if (state.savedHit && navigator.onLine) refresh(); }, 5000);
+    // Анонимный счётчик устройств (tools/schetchik.gs, таблица на почте расписания): раз в день «+1»
+    // и открыт ли сайт как приложение. Ни меток, ни адресов — на устройстве хранится только дата
+    // последней отметки (см. privacy.html). Автопроверки (Playwright) не считаются.
+    setTimeout(function () {
+      var today = A.moscowNow().date;
+      if (navigator.webdriver || !navigator.onLine || store("utgt-counted") === today) return;
+      store("utgt-counted", today);
+      fetch(COUNTER + "?app=" + (standalone() ? 1 : 0), { mode: "no-cors", cache: "no-store", keepalive: true }).catch(function () {});
+    }, 4000);
     // Проверка интернета для значка: каждые 15 с, пока страница на экране, — крошечный запрос одних
     // заголовков мимо офлайн-кеша. Ответил быстро — всё хорошо, медленно — «медленный», не ответил — «нет».
     // Показано сохранённое, а связь появилась — сразу подтягиваем свежие данные.
