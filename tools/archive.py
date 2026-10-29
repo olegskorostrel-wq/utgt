@@ -20,7 +20,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 ZAMENY = ROOT / "data" / "zameny"
 ARCHIVE = ROOT / "data" / "archive"
-FIELDS = ("title", "po_raspisaniyu", "ocr_ok", "ocr_uncertain", "fetched_at", "first_seen", "all_changes")
+FIELDS = ("title", "po_raspisaniyu", "ocr_ok", "ocr_uncertain", "fetched_at", "first_seen", "updated_at", "all_changes")
 
 
 def record(meta):

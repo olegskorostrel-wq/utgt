@@ -100,9 +100,11 @@ h1::first-letter { text-transform: uppercase; }
 .tabs { display: flex; gap: 6px; margin: 10px 0 6px; padding: 8px 0; position: sticky; top: 0; z-index: 5; background: var(--bg); }
 .tabs button {
   flex: 1 1 0; min-width: 0; padding: 9px 6px; border: 1px solid var(--line); border-radius: 10px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
   background: var(--card); color: var(--text); font: inherit; cursor: pointer;
 }
+/* многоточие — у текста, а не у кнопки: точка «есть замены» может выступать за угол */
+.tabs button .t { display: block; overflow: hidden; text-overflow: ellipsis; }
 .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 .week { display: flex; flex-direction: column; gap: 10px; }

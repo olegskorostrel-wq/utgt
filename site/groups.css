@@ -360,3 +360,23 @@ html.snake-on { overflow: hidden; }
 }
 .snake-win[hidden] { display: none; }
 @keyframes win-in { from { opacity: 0; transform: scale(.4) rotate(-8deg); } }
+
+/* точка на «Завтра»: на завтра вышли замены — как уведомление у значка приложения, чуть за краем */
+.tabs button { position: relative; }
+.tab-dot {
+  position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--warn); border: 2px solid var(--bg); box-sizing: border-box; animation: dot-in .45s var(--ease) both;
+}
+@keyframes dot-in { from { transform: scale(0); } }
+
+/* замены перевыложили: «i» красная, исправленные пары отмечены */
+.info-btn.upd, .listbox > .info-btn.upd { border-color: var(--bad); color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, var(--card)); }
+.tag.upd { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.lesson.upd { border-color: var(--accent); }
+.was-upd { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+/* окно между парами (час и больше) */
+.gap { display: flex; align-items: center; gap: 10px; padding: 0 6px; color: var(--muted); font-size: 13.5px; }
+.gap::before, .gap::after { content: ""; flex: 1; border-top: 1.5px dashed var(--frame); }
+.gap.now { color: var(--accent); font-weight: 600; }
+.gap.now::before, .gap.now::after { border-color: var(--accent); }

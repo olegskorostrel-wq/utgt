@@ -140,6 +140,57 @@
   }
 
   // animate — плавно показать карточки (при открытии и смене вкладки, но не при ежеминутном обновлении)
+  // Окно между парами — час и больше (обычные перемены и большой перерыв не отмечаем)
+  function gapHTML(prev, it, date, now) {
+    var gap = it.start - prev.end;
+    if (gap < 60) return "";
+    if (date === now.date && now.minutes >= prev.end && now.minutes < it.start)
+      return '<div class="gap now">Сейчас окно · ещё ' + C.minutesText(it.start - now.minutes) + "</div>";
+    return '<div class="gap">Окно ' + C.minutesText(gap) + "</div>";
+  }
+
+  // Замены перевыложили (scraper.py пишет updated_at и prev_all_changes): что поменялось у группы —
+  // по номерам уроков. null или { at: "16:40", rows: [{ lessons, was }] }
+  function zamenaUpdate(z, g) {
+    if (!z || !z.updated_at || !z.prev_all_changes) return null;
+    var prev = z.prev_all_changes[g] || [], cur = z.changes || [], rows = [];
+    var key = function (r) { return (r.lessons || []).join(","); };
+    cur.forEach(function (r) {
+      var o = prev.filter(function (x) { return key(x) === key(r); })[0];
+      if (!o || o.subject !== r.subject || (o.room || "") !== (r.room || "")) rows.push({ lessons: r.lessons || [], was: o || null });
+    });
+    prev.forEach(function (o) {
+      if (!cur.some(function (r) { return key(r) === key(o); })) rows.push({ lessons: o.lessons || [], was: o });
+    });
+    return rows.length ? { at: z.updated_at.slice(11, 16), rows: rows } : null;
+  }
+  function updRow(upd, it) {
+    if (!upd) return null;
+    return upd.rows.filter(function (r) { return r.lessons.some(function (l) { return it.lessons.indexOf(l) >= 0; }); })[0] || null;
+  }
+
+  // Точка на вкладке «Завтра» (как уведомление у значка приложения): на завтра вышли замены для группы
+  // или преподавателя, а вкладку с тех пор не открывали. Открыл «Завтра» — точка пропадает.
+  var SEEN_KEY = "utgt-seen";
+  function drawTomorrowDot(now) {
+    var who = state.group || state.teacher, btn = document.querySelector('.tabs button[data-day="1"]');
+    if (!who || !btn) return;
+    var date = A.addDays(params.get("date") || now.date, 1);
+    zamenaFor(date).then(function (z) {
+      if (!z || z.po_raspisaniyu) return false;
+      if (state.teacher) return teacherDay(date).then(function (d) { return d.removed.length > 0 || d.items.some(function (i) { return i.changed; }); });
+      return (zamenaForGroup(z, state.group).changes || []).length > 0;
+    }).then(function (mine) {
+      var key = who + "|" + date + "|" + (state.zamena[date] ? (state.zamena[date].images || []).map(function (i) { return i.sha1 || i.file; }).join(",") : "");
+      if (mine && state.offset === 1) store(SEEN_KEY, key);
+      var show = !!mine && state.offset !== 1 && store(SEEN_KEY) !== key, dot = btn.querySelector(".tab-dot");
+      if (show && !dot) {
+        dot = document.createElement("span"); dot.className = "tab-dot"; dot.setAttribute("aria-hidden", "true"); btn.appendChild(dot);
+        btn.setAttribute("aria-label", "Завтра — есть замены");
+      } else if (!show && dot) { dot.remove(); btn.removeAttribute("aria-label"); }
+    }).catch(function () {});
+  }
+
   function render(animate) {
     var now = A.moscowNow();
     setClock(now.time);
@@ -158,6 +209,7 @@
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(b.dataset.day === String(state.offset)));
     });
+    drawTomorrowDot(now);
     $("langSwitch").hidden = !!state.teacher;
     $("langToggle").checked = lang() === "немецкий";
     $("dayView").hidden = state.offset === "week";
@@ -643,7 +695,15 @@
     } else {
       html = "<strong>Замен на этот день пока нет</strong>Обычно их публикуют накануне. Сайт проверяет страницу замен несколько раз в день.";
     }
+    // замены перевыложили и у группы что-то поменялось — плашка об этом, «i» красная, пары отмечены
+    var upd = zamenaUpdate(z, g);
+    if (upd) {
+      cls = "warn";
+      html = "<strong>Замены обновлены в " + upd.at + "</strong>Учебная часть выложила исправленное распоряжение — для " + esc(g) +
+        " изменилось: " + upd.rows.length + " " + C.plural(upd.rows.length, "место", "места", "мест") + " (отмечено ниже). Расписание уже с учётом исправлений.";
+    }
     showBanner(cls, html);
+    $("infoBtn").classList.toggle("upd", !!upd);
     drawBase(ag, z, date, schedule);
 
     var list = $("list");
@@ -659,12 +719,17 @@
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
         var key = it.startText + " " + it.subject;
-        return '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") +
+        var fix = updRow(upd, it), wasLine = "";
+        if (fix) {
+          tags += '<span class="tag upd">исправлено в ' + upd.at + "</span>";
+          wasLine = '<div class="was-upd">до исправления: ' + (fix.was ? "<s>" + esc(fix.was.subject === A.CANCEL ? "отмена" : nice(fix.was.subject) + (fix.was.room ? ", ауд. " + fix.was.room : "")) + "</s>" : "замены не было") + "</div>";
+        }
+        return (idx ? gapHTML(ag.items[idx - 1], it, date, now) : "") + '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") + (fix ? " upd" : "") +
           (state.open[key] ? " open" : "") + '" style="--i:' + idx + '" data-key="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' +
           !!state.open[key] + '">' +
           '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
           '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
-          '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
+          '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div>" + wasLine + "</div>" +
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
           '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
             (roomPlaces(it.room).length ? '<small class="place">' + roomPlaces(it.room).map(esc).join("<br>") + "</small>" : "") +
@@ -947,12 +1012,13 @@
 
       var list = $("list");
       list.innerHTML = d.items.length ? d.items.map(function (it, idx) {
+        var gapRow = idx ? gapHTML(d.items[idx - 1], it, date, now) : "";
         var tags = "";
         if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + C.minutesText(it.end - now.minutes) + "</span>";
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var n = lessonsLabel(it.lessons);
-        return '<article class="lesson tlesson ' + (it.state || "") + (it.changed ? " changed" : "") + '" style="--i:' + idx + '">' +
+        return gapRow + '<article class="lesson tlesson ' + (it.state || "") + (it.changed ? " changed" : "") + '" style="--i:' + idx + '">' +
           '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
           '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
           '<div class="who"><span class="groups">' + it.groups.map(esc).join(", ") + "</span>" +
@@ -1359,10 +1425,11 @@
     if (wanted && groupInfo(wanted)) {
       state.group = wanted;
       store(STORE_KEY, wanted);
-      return scheduleFor(wanted).then(function (s) {
-        var now = A.moscowNow();
+      // пары на сегодня закончились (с учётом замен) — молча открываем «Завтра»
+      return Promise.all([scheduleFor(wanted), params.get("date") ? null : zamenaFor(A.moscowNow().date)]).then(function (r) {
+        var s = r[0], now = A.moscowNow();
         if (!params.get("date")) {
-          var today = build(now.date, s, null);
+          var today = build(now.date, s, zamenaForGroup(r[1], wanted));
           var last = today.items[today.items.length - 1];
           if (today.weekday === 7 || !last || now.minutes >= last.end) state.offset = 1;
         }
