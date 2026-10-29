@@ -46,14 +46,14 @@
     var parts = String(room).split(" / ").map(roomLabel);
     return parts.length < 2 ? (/^корп/.test(parts[0]) ? "" : "ауд. ") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
   }
-  // Где кабинет: «Корпус 1, ул. Мира, 11 · 1 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора)
+  // Где кабинет: «Корпус 1 · 1 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора)
   function roomPlaces(room) {
     var R = state.data.rooms || {}, B = R.buildings || {};
     return String(room || "").split(" / ").filter(Boolean).map(function (r) {
       var b = B[r.charAt(0)];
       if (!b) return "";
       var floor = /-\?$/.test(r) ? "кабинет уточняется" : (R.rooms || {})[r];
-      return (/-\?$/.test(r) ? "" : "Ауд. " + r + ": ") + b.name + ", " + b.address + (floor ? " · " + floor : "");
+      return (/-\?$/.test(r) ? "" : "Ауд. " + r + ": ") + b.name + (floor ? " · " + floor : "");
     }).filter(Boolean);
   }
 
