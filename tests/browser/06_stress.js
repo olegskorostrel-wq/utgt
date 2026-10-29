@@ -6,7 +6,9 @@ const STEPS = +(process.env.STEPS || 700);
 function rnd(seed) { let x = seed; return () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648; }
 (async () => {
   const b = await launch(); const problems = []; let actions = 0;
-  for (const [seed, s] of [[1, { w: 393, mob: true }], [2, { w: 1366, mob: false }], [3, { w: 320, mob: true, dark: true }]]) {
+  const PASSES = [[1, { w: 393, mob: true }], [2, { w: 1366, mob: false }], [3, { w: 320, mob: true, dark: true }], [4, { w: 280, mob: true }], [5, { w: 1024, mob: false, dark: true }]]
+    .filter((x) => !process.env.SEEDS || process.env.SEEDS.split(',').includes(String(x[0])));
+  for (const [seed, s] of PASSES) {
     const R = rnd(seed), pick = (a) => a[Math.floor(R() * a.length)];
     const p = await page(b, { w: s.w, h: 800, mob: s.mob, dark: s.dark });
     await p.goto(URL + '?group=11-%D0%90'); await p.waitForSelector('#list .lesson, #list .empty');
@@ -38,11 +40,17 @@ function rnd(seed) { let x = seed; return () => (x = (x * 1103515245 + 12345) % 
       if (i % 50 === 49) {
         await p.waitForTimeout(900);
         const st = await p.evaluate(() => ({
-          wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+          wide: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+            ? [...document.querySelectorAll('body *')].filter((e) => {
+                if (e.getBoundingClientRect().right <= document.documentElement.clientWidth + 1) return false;
+                for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) if (getComputedStyle(a).overflowX !== 'visible') return false;
+                return true;
+              }).slice(0, 4).map((e) => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + '.' + String(e.className).split(' ')[0] + ' «' + (e.innerText || '').trim().slice(0, 30) + '» до ' + Math.round(e.getBoundingClientRect().right)).join(', ')
+              || ('ширина ' + document.documentElement.scrollWidth + ', видно ' + document.documentElement.clientWidth + ' из ' + innerWidth + ', html: ' + getComputedStyle(document.documentElement).overflowY + '/' + document.documentElement.className + ', вылезают: ' + [...document.querySelectorAll('*')].filter((e) => e.getBoundingClientRect().right > document.documentElement.clientWidth + 1).slice(0, 6).map((e) => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + '.' + String(e.className).split(' ')[0] + ' до ' + Math.round(e.getBoundingClientRect().right) + ' ' + getComputedStyle(e).position).join(', ')) : '',
           content: !!document.querySelector('#list .lesson, #list .empty, .tlesson, .empty, .wday'),
           dialogs: document.querySelectorAll('dialog[open]').length,
         }));
-        if (st.wide) problems.push(`проход ${seed} (${s.w}px), шаг ${i + 1}: страница стала шире экрана`);
+        if (st.wide) { problems.push(`проход ${seed} (${s.w}px), шаг ${i + 1}: страница стала шире экрана — ${st.wide}`); await p.screenshot({ path: require('./lib').SHOTS + `/stress_${seed}_${i + 1}.png` }); }
         if (!st.content) problems.push(`проход ${seed} (${s.w}px), шаг ${i + 1}: пропало расписание`);
         if (st.dialogs > 1) problems.push(`проход ${seed} (${s.w}px), шаг ${i + 1}: открыто ${st.dialogs} окна сразу`);
         // всё ли закрывается и возвращается

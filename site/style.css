@@ -66,6 +66,9 @@ body {
   color: var(--text);
   font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+/* анимации смены дня (свайп) выезжают сбоку — по краю экрана обрезаем, чтобы страница не дёргалась вбок;
+   clip, а не hidden: прилипающие вкладки продолжают работать */
+html, body { overflow-x: clip; }
 a { color: var(--accent); }
 .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
 

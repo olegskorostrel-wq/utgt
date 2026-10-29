@@ -89,7 +89,14 @@
   font: inherit; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: background-color .3s var(--ease-io), color .3s var(--ease-io);
 }
-.seg button { position: relative; }
+.seg button { position: relative; min-width: 0; }
+/* очень узкий экран (крупный масштаб в настройках телефона) — окно шире, отступы и надписи меньше */
+@media (max-width: 300px) {
+  .picker { width: calc(100vw - 16px); }
+  .picker-inner { padding: 14px 12px 0; }
+  .picker-inner > #courses, .picker-inner > #teacherList, .picker-inner > #historyList { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+  .seg button { font-size: 13px; padding: 8px 4px; }
+}
 .seg button[aria-selected="true"] { color: var(--text); }
 .tlist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .tlist > * { flex-shrink: 0; }
@@ -328,6 +335,7 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
 /* «Обычное расписание»: нажатие на пару раскрывает подробности */
 .base li[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; row-gap: 0; }
 .base li .s .nm { display: inline; }
+.base li .s { min-width: 0; overflow-wrap: anywhere; } /* очень длинные слова (МДК…) на узком экране переносятся */
 .base li.open .det { grid-template-rows: 1fr; opacity: 1; margin-top: 4px; }
 .base li.gone .det { text-decoration: none; }
 

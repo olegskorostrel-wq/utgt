@@ -52,7 +52,8 @@ const openAll = (p) => p.evaluate(() => {
   const b = await launch(); const problems = [];
   // крупный масштаб в настройках телефона («Размер экрана») = экран для сайта уже: 393 px при ×1.3 и ×1.6
   const sets = WIDTHS.map((x) => ({ ...x, scale: 1 })).concat([{ w: 302, h: 615, mob: true, scale: 1.3 }, { w: 246, h: 500, mob: true, scale: 1.6, dark: true }]);
-  for (const s of sets) {
+  // W=280,246 — только выбранные ширины
+  for (const s of sets.filter((x) => !process.env.W || process.env.W.split(',').includes(String(x.w)))) {
     const p = await page(b, { w: s.w, h: s.h, mob: s.mob, dark: s.dark || s.w === 1920 || s.w === 280, scale: 1 });
     const tag = s.w + 'px' + (s.scale !== 1 ? ' (393 при масштабе ×' + s.scale + ')' : '');
     const check = async (where) => { await p.waitForTimeout(800); await openAll(p); await p.waitForTimeout(900); (await p.evaluate(layoutCheck)).forEach((x) => problems.push(tag + ', ' + where + ': ' + x)); };
