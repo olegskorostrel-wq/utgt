@@ -3,7 +3,8 @@
 .desk .desk-side { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
 .desk .desk-side .top { flex-direction: column; align-items: flex-start; }
 .desk .desk-side .clock { text-align: left; order: -1; margin-bottom: 6px; }
-.desk .desk-side .clock span { font-size: 44px; line-height: 1; }
+.desk .desk-side .clock #clock { font-size: 44px; line-height: 1; }
+.desk .desk-side .net-tip { right: auto; left: 0; }
 .desk .desk-side h1 { font-size: 26px; }
 .desk .desk-side .calendar { flex-direction: column; align-items: flex-start; }
 .desk .desk-side .news { margin-top: 14px; }

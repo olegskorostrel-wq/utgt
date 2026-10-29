@@ -287,19 +287,49 @@
     return ag;
   }
 
+  // Значок интернета у часов, как на телефоне: все полоски — данные только что с сервера,
+  // часть полосок — медленный интернет и показано сохранённое, перечёркнут — интернета нет.
+  // Нажатие — пояснение рядом, само пропадает через несколько секунд.
+  var NET_SVG = '<svg viewBox="0 0 17 12" aria-hidden="true"><rect x="0" y="8.5" width="3" height="3.5" rx=".8"/>' +
+    '<rect x="4.5" y="6" width="3" height="6" rx=".8"/><rect x="9" y="3" width="3" height="9" rx=".8"/>' +
+    '<rect x="13.5" y="0" width="3" height="12" rx=".8"/><path class="x" d="M1.5 .8l14 10.4"/></svg>';
+  function drawNet() {
+    var b = $("netBtn"), st = state.data.status.checked_at, kind, text;
+    var saved = st ? " (данные от " + st.slice(8, 10) + "." + st.slice(5, 7) + " " + st.slice(11, 16) + ")" : "";
+    if (!navigator.onLine) { kind = "off"; text = "Нет интернета — показано сохранённое" + saved; }
+    else if (state.savedHit) { kind = "slow"; text = "Медленный интернет — показано сохранённое" + saved; }
+    else if (state.loadedAt) { kind = "full"; text = "Интернет есть — обновлено в " + state.loadedAt; }
+    else { b.hidden = true; return; }
+    if (!b.firstChild) b.innerHTML = NET_SVG;
+    b.hidden = false;
+    b.className = "net-btn " + kind;
+    b.setAttribute("aria-label", text);
+    b.dataset.text = text;
+    if (!$("netTip").hidden) $("netTip").textContent = text;
+  }
+  var netTimer;
+  function netTip(show) {
+    var t = $("netTip");
+    clearTimeout(netTimer);
+    if (show) {
+      t.textContent = $("netBtn").dataset.text;
+      t.classList.remove("out");
+      t.hidden = false;
+      netTimer = setTimeout(function () { netTip(false); }, 4500);
+    } else if (!t.hidden) {
+      t.classList.add("out");
+      netTimer = setTimeout(function () { t.hidden = true; t.classList.remove("out"); }, 250);
+    }
+  }
+  $("netBtn").addEventListener("click", function () { netTip($("netTip").hidden || $("netTip").classList.contains("out")); });
+  document.addEventListener("click", function (e) { if (!e.target.closest("#netBtn")) netTip(false); });
+
   function drawCalendar(today) {
     var key = [today, state.group, navigator.onLine, state.data.status.checked_at, state.savedHit, state.loadedAt].join("|");
     if (drawCalendar.key === key) return;
     drawCalendar.key = key;
     var lines = C.countdown(today, state.data.calendar, state.group);
-    // свежесть данных: только что загружено с сервера или показана сохранённая копия
-    if (!navigator.onLine || state.savedHit) {
-      var st = state.data.status.checked_at;
-      lines.unshift({ kind: "offline", text: (navigator.onLine ? "Медленный интернет" : "Нет интернета") +
-        " — показано сохранённое" + (st ? " (данные от " + st.slice(8, 10) + "." + st.slice(5, 7) + " " + st.slice(11, 16) + ")" : "") });
-    } else if (state.loadedAt) {
-      lines.unshift({ kind: "fresh", text: "Обновлено в " + state.loadedAt });
-    }
+    drawNet();
     var ul = $("calendar");
     ul.hidden = !lines.length;
     if (!drawCalendar.shown && lines.length) { drawCalendar.shown = true; ul.classList.add("stagger"); }
@@ -491,7 +521,7 @@
     }).join("") : '<li class="none">По расписанию пар нет</li>';
   }
 
-  // Плашка о заменах спрятана за кнопкой «i» у даты: цвет кнопки — есть ли замены
+  // Плашка о заменах спрятана за кнопкой «i» в углу рамки с парами: цвет кнопки — есть ли замены
   function showBanner(cls, html) {
     var banner = $("banner"), btn = $("infoBtn");
     banner.className = "banner " + cls;

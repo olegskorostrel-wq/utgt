@@ -120,7 +120,38 @@
 .base li.gone .tag { font-size: 11px; padding: 0 6px; text-decoration: none; }
 .base li.none { display: block; color: var(--muted); }
 
-/* кнопка «i» у даты: плашка о заменах по нажатию */
+/* кнопка «i» в правом верхнем углу рамки с парами (на её линии): плашка о заменах по нажатию */
+.listbox { position: relative; }
+.listbox > .info-btn { position: absolute; top: -11px; right: 14px; margin: 0; z-index: 1; }
+.listbox > .info-btn.warn { background: linear-gradient(var(--warn-soft), var(--warn-soft)) var(--card); }
+.listbox > .info-btn.ok { background: linear-gradient(var(--ok-soft), var(--ok-soft)) var(--card); }
+
+/* значок интернета у часов и пояснение по нажатию */
+.clock { position: relative; }
+.net-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; margin: 0 2px 0 0; padding: 0;
+  border: 0; background: none; color: var(--muted); vertical-align: -5px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .22s var(--ease), color .3s var(--ease-io);
+}
+.net-btn[hidden] { display: none; }
+.net-btn:active { transform: scale(.88); }
+.net-btn svg { width: 17px; height: 12px; fill: currentColor; overflow: visible; }
+.net-btn rect { transition: opacity .3s var(--ease-io); }
+.net-btn .x { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; opacity: 0; }
+.net-btn.slow, .net-btn.off { color: var(--warn); }
+.net-btn.slow rect:nth-child(n+3) { opacity: .28; }
+.net-btn.off rect { opacity: .28; }
+.net-btn.off .x { opacity: 1; }
+.net-tip {
+  position: absolute; right: 0; top: 100%; margin-top: 6px; z-index: 6; width: max-content; max-width: min(260px, calc(100vw - 32px));
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text);
+  font-size: 13px; line-height: 1.4; text-align: left; box-shadow: 0 6px 20px rgb(0 0 0 / .14);
+  animation: rise .35s var(--ease) both;
+}
+.net-tip.out { animation: tip-out .25s var(--ease-io) both; }
+@keyframes tip-out { to { opacity: 0; transform: translateY(-4px); } }
+
+/* (старое место кнопки «i» — у даты) */
 .info-btn {
   display: inline-block; width: 24px; height: 24px; margin-left: 6px; vertical-align: 1px; padding: 0; border-radius: 50%; border: 1.5px solid var(--line);
   background: var(--card); color: var(--muted); font: 700 14px/1 Georgia, "Times New Roman", serif; font-style: italic;
@@ -227,14 +258,10 @@ html.theme-anim .tabs button, html.theme-anim .news, html.theme-anim .base, html
   font: inherit; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .22s var(--ease);
 }
 .install button:active { transform: scale(.95); }
-.calendar .cal-offline::before { background: var(--warn); }
-.calendar .cal-offline { color: var(--warn); border-color: var(--warn); }
 .install .plus { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 8px; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
 .install .plus li { border: 0; padding: 0; }
 .install .plus li::before { content: "✓ "; color: var(--ok); font-weight: 700; }
 .tlesson.past .who { display: block; }
-.calendar .cal-fresh::before { background: var(--ok); }
-.calendar .cal-fresh { color: var(--ok); }
 
 /* новое содержимое: скрыто, пока не готово; свайп — въезжает целиком один раз */
 #dayView.pending, #weekView.pending { opacity: 0; }

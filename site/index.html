@@ -55,13 +55,12 @@
         <button type="button" id="groupBtn" class="group-chip" aria-haspopup="dialog">
           <span id="groupName">Группа</span><span class="chev" aria-hidden="true">▾</span>
         </button><button type="button" id="themeBtn" class="theme-btn" aria-label="Тема оформления"><span class="ico" aria-hidden="true"></span><span class="lbl"></span></button>
-        <p class="eyebrow">УТЖТ <span id="week"></span>
-          <button type="button" id="infoBtn" class="info-btn" aria-controls="banner" aria-expanded="false"
-            aria-label="Замены на этот день" hidden>i</button></p>
+        <p class="eyebrow">УТЖТ <span id="week"></span></p>
         <p class="specialty" id="specialty"></p>
         <h1 id="title">Расписание</h1>
       </div>
-      <div class="clock" aria-live="polite"><span id="clock">--:--</span><small>Ухта</small></div>
+      <div class="clock"><span id="clock" aria-live="polite">--:--</span><small><button type="button" id="netBtn" class="net-btn" hidden></button>Ухта</small>
+        <div id="netTip" class="net-tip" role="status" hidden></div></div>
     </header>
 
     <ul id="calendar" class="calendar" hidden></ul>
@@ -76,12 +75,16 @@
     <section id="weekView" class="week" hidden></section>
 
     <div id="dayView">
-    <section id="banner" class="banner" hidden></section>
     <details id="base" class="base" hidden>
       <summary id="baseTitle"></summary>
       <ul id="baseList"></ul>
     </details>
-    <section id="list" class="list" aria-label="Уроки"></section>
+    <section id="banner" class="banner" hidden></section>
+    <div class="listbox">
+      <button type="button" id="infoBtn" class="info-btn" aria-controls="banner" aria-expanded="false"
+        aria-label="Замены на этот день" hidden>i</button>
+      <section id="list" class="list" aria-label="Уроки"></section>
+    </div>
     <section id="cancelled" class="cancelled" hidden></section>
     <p class="hint small" id="lessonHint">Если нажать на урок, можно увидеть полное имя преподавателя.</p>
     <label class="switch" id="langSwitch" hidden>
