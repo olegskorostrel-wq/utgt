@@ -426,10 +426,35 @@
       "</small></div>" +
       (curator ? '<div class="office"><strong>Куратор группы</strong><small>' + esc(teacherFull(curator) || curator) + "</small></div>" : "") +
       (cwHtml ? '<div class="office"><strong>Курсовые работы и проекты</strong><ul class="plain">' + cwHtml + "</ul></div>" : "") +
+      codesHTML(g) +
       "<ul>" + links.map(function (l) {
         var ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : "";
         return '<li><a href="' + esc(l.url) + '"' + ext + ">" + esc(l.title) + "</a></li>";
       }).join("") + "</ul>";
+  }
+
+  // «Шифры специальностей»: буква в названии группы — специальность, первая цифра — курс.
+  // У одной буквы на разных курсах может быть разный шифр (новые стандарты) — показываем каждый.
+  function codesHTML(mine) {
+    var groups = (state.data.calendar.groups || {}), by = {}, order = [];
+    Object.keys(groups).sort(function (a, b) { return a.localeCompare(b, "ru"); }).forEach(function (g) {
+      var sp = groups[g].specialty, letter = g.split("-")[1];
+      if (!sp || !letter) return;
+      var k = letter + "|" + sp.code + "|" + sp.name;
+      if (!by[k]) { by[k] = { letter: letter, code: sp.code, name: sp.name, groups: [] }; order.push(k); }
+      by[k].groups.push(g);
+    });
+    if (!order.length) return "";
+    order.sort(function (a, b) { return by[a].letter.localeCompare(by[b].letter, "ru") || by[a].groups[0].localeCompare(by[b].groups[0], "ru"); });
+    var own = mine && groups[mine] && groups[mine].specialty;
+    return '<div class="office codes"><strong>Шифры специальностей</strong>' +
+      (own ? "<p class=\"own\">Группа " + esc(mine) + ": <b>" + esc(own.code) + "</b> " + esc(own.name) + "</p>" : "") +
+      "<small>Буква в названии группы — специальность, первая цифра — курс.</small><ul class=\"plain\">" +
+      order.map(function (k) {
+        var x = by[k];
+        return '<li' + (x.groups.indexOf(mine) >= 0 ? ' class="mine"' : "") + '><b class="lt">' + esc(x.letter) + "</b>" +
+          "<span><b>" + esc(x.code) + "</b> " + esc(x.name) + "<small>" + x.groups.map(esc).join(", ") + "</small></span></li>";
+      }).join("") + "</ul></div>";
   }
 
   // На всякий случай и на самом сайте: без новостей про СВО, беспилотники, военную службу
@@ -449,8 +474,8 @@
     typeInto($("groupName"), g);
     setTitle(A.humanDate(date));
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
-    var spec = ((state.data.calendar.groups || {})[g] || {}).specialty;
-    $("specialty").textContent = spec ? spec.code + " " + spec.name : "";
+    // шифр и название специальности — не в шапке, а в «Полезном» («Шифры специальностей»)
+    $("specialty").hidden = true;
 
     var banner = $("banner"), cls = "info", html;
     if (z) {
@@ -746,6 +771,7 @@
     document.title = "Расписание УТЖТ · " + t;
     typeInto($("groupName"), t);
     $("specialty").textContent = (full ? full + " · " : "") + "расписание преподавателя";
+    $("specialty").hidden = false;
   }
 
   function lessonsLabel(ls) {
