@@ -433,7 +433,7 @@
       }).join("") + "</ul>";
   }
 
-  // «Шифры специальностей»: буква в названии группы — специальность, первая цифра — курс.
+  // «Расшифровка групп»: буква в названии группы — специальность, первая цифра — курс.
   // У одной буквы на разных курсах может быть разный шифр (новые стандарты) — показываем каждый.
   function codesHTML(mine) {
     var groups = (state.data.calendar.groups || {}), by = {}, order = [];
@@ -447,7 +447,7 @@
     if (!order.length) return "";
     order.sort(function (a, b) { return by[a].letter.localeCompare(by[b].letter, "ru") || by[a].groups[0].localeCompare(by[b].groups[0], "ru"); });
     var own = mine && groups[mine] && groups[mine].specialty;
-    return '<div class="office codes"><strong>Шифры специальностей</strong>' +
+    return '<div class="office codes"><strong>Расшифровка групп</strong>' +
       (own ? "<p class=\"own\">Группа " + esc(mine) + ": <b>" + esc(own.code) + "</b> " + esc(own.name) + "</p>" : "") +
       "<small>Буква в названии группы — специальность, первая цифра — курс.</small><ul class=\"plain\">" +
       order.map(function (k) {
@@ -474,7 +474,7 @@
     typeInto($("groupName"), g);
     setTitle(A.humanDate(date));
     $("week").textContent = ag.weekday === 7 ? "" : ag.week + "-я неделя";
-    // шифр и название специальности — не в шапке, а в «Полезном» («Шифры специальностей»)
+    // шифр и название специальности — не в шапке, а в «Полезном» («Расшифровка групп»)
     $("specialty").hidden = true;
 
     var banner = $("banner"), cls = "info", html;

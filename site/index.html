@@ -50,24 +50,27 @@
 </head>
 <body>
   <main class="wrap">
+    <!-- телефон: слева группа и неделя, справа значок интернета и часы, под ними метки (друг под другом);
+         дата — во всю ширину ниже. Компьютер (desktop.css): всё колонкой, часы сверху -->
     <header class="top">
-      <div>
-        <button type="button" id="groupBtn" class="group-chip" aria-haspopup="dialog">
+      <div class="top-l">
+        <div class="chips">
+          <button type="button" id="groupBtn" class="group-chip" aria-haspopup="dialog">
           <span id="groupName">Группа</span><span class="chev" aria-hidden="true">▾</span>
         </button><button type="button" id="themeBtn" class="theme-btn" aria-label="Тема оформления"><span class="ico" aria-hidden="true"></span><span class="lbl"></span></button>
+        </div>
         <p class="eyebrow">УТЖТ <span id="week"></span></p>
         <p class="specialty" id="specialty"></p>
         <h1 id="title">Расписание</h1>
       </div>
-      <div class="clock"><span id="clock" aria-live="polite">--:--</span></div>
+      <div class="clock">
+        <div class="clock-row"><button type="button" id="netBtn" class="net-btn" hidden></button><span id="clock" aria-live="polite">--:--</span></div>
+        <div class="status-row">
+          <ul id="calendar" class="calendar" hidden></ul>
+          <div id="netTip" class="net-tip" role="status" hidden></div>
+        </div>
+      </div>
     </header>
-
-    <!-- под часами: значок интернета и метки отсчёта (до каникул, выходной) -->
-    <div class="status-row">
-      <button type="button" id="netBtn" class="net-btn" hidden></button>
-      <ul id="calendar" class="calendar" hidden></ul>
-      <div id="netTip" class="net-tip" role="status" hidden></div>
-    </div>
 
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" data-day="0">Сегодня</button>

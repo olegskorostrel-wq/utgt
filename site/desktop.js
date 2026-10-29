@@ -15,13 +15,10 @@
     side.className = "desk-side";
     main = document.createElement("div");
     main.className = "desk-main";
-    [".top", ".status-row", "#news", "#useful", ".foot"].forEach(function (s) {
+    [".top", "#news", "#useful", ".foot"].forEach(function (s) {
       var el = wrap.querySelector(s);
       if (el) side.appendChild(el);
     });
-    // значок интернета и метки — сразу под часами (часы в колонке сверху)
-    var top = side.querySelector(".top"), sr = side.querySelector(".status-row");
-    if (top && sr) top.appendChild(sr);
     [".tabs", "#weekView", "#dayView"].forEach(function (s) {
       var el = wrap.querySelector(s);
       if (el) main.appendChild(el);

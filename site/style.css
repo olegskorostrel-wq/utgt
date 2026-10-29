@@ -69,7 +69,14 @@ body {
 a { color: var(--accent); }
 .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
 
-.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+/* шапка (телефон): слева группа и неделя, справа часы и под ними метки; дата — во всю ширину ниже */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
+.top-l { display: contents; }
+.top .chips { grid-column: 1; grid-row: 1; }
+.top .eyebrow { grid-column: 1; grid-row: 2; align-self: start; }
+.top .clock { grid-column: 2; grid-row: 1 / 4; }
+.top .specialty { grid-column: 1 / -1; grid-row: 4; }
+.top h1 { grid-column: 1 / -1; grid-row: 5; }
 .eyebrow { margin: 0; color: var(--muted); font-size: 14px; }
 #week:not(:empty)::before { content: "· "; }
 h1 { margin: 2px 0 0; font-size: 24px; line-height: 1.2; }
