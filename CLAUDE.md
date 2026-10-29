@@ -37,6 +37,10 @@
 `update.yml` в GitHub Actions. Если наберётся много поздних (вечером или в тот же день) — предложить
 пользователю очень вежливое письмо в учебную часть с рассказом о сайте (черновик был в разговоре 29.10.2026).
 
+## Полная проверка
+
+По словам «полная проверка» — скилл `.claude/skills/polnaya-proverka` (набор `tests/browser/`, запуск `bash tests/browser/run.sh`).
+
 ## Перед тем как выкладывать
 
 1. `python3 -m pytest -q`, `node tests/*.test.js`, `python3 tools/check_data.py`.
