@@ -46,14 +46,13 @@
     var parts = String(room).split(" / ").map(roomLabel);
     return parts.length < 2 ? (/^корп/.test(parts[0]) ? "" : "ауд. ") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
   }
-  // Где кабинет: «Корпус 1 · 1 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора)
+  // Где кабинет: «Ауд. 1-28: 2 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора;
+  // корпус и так виден по первой цифре номера)
   function roomPlaces(room) {
-    var R = state.data.rooms || {}, B = R.buildings || {};
+    var R = (state.data.rooms || {}).rooms || {};
     return String(room || "").split(" / ").filter(Boolean).map(function (r) {
-      var b = B[r.charAt(0)];
-      if (!b) return "";
-      var floor = /-\?$/.test(r) ? "кабинет уточняется" : (R.rooms || {})[r];
-      return (/-\?$/.test(r) ? "" : "Ауд. " + r + ": ") + b.name + (floor ? " · " + floor : "");
+      if (/-\?$/.test(r)) return "Корпус " + r.charAt(0) + ", кабинет уточняется";
+      return R[r] ? "Ауд. " + r + ": " + R[r] : "";
     }).filter(Boolean);
   }
 
