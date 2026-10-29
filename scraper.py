@@ -139,14 +139,15 @@ def known_rooms():
                 rooms |= {r.strip() for r in str(l.get("room") or "").split(" / ") if r.strip()}
     extra = ROOT / "data" / "rooms.json"
     if extra.exists():
-        rooms |= set(json.loads(extra.read_text(encoding="utf-8")).get("rooms", {}))
+        extra_data = json.loads(extra.read_text(encoding="utf-8"))
+        rooms |= set(extra_data.get("rooms", {})) | set(extra_data.get("other_rooms", []))
     return rooms
 
 
 def snap_room(room, known):
     """Черта таблицы сразу за номером читается как «1»: «1-8|» -> «1-81». Такого кабинета нет,
     а «1-8» есть — берём его."""
-    if room and known and room not in known and room[:-1] in known:
+    if room and known and room not in known and room[-1].isdigit() and room[:-1] in known:
         return room[:-1]
     return room
 

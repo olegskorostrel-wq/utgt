@@ -74,6 +74,7 @@ def test_snap_room_drops_table_line_read_as_one():
     assert scraper.snap_room("2-18", known) == "2-18"  # настоящий кабинет не трогаем
     assert scraper.snap_room("1-1", known) == "1-1"
     assert scraper.snap_room("3-77", known) == "3-77"  # незнакомый и без подходящей замены — как есть
+    assert scraper.snap_room("2-1Е", known | {"2-1"}) == "2-1Е"  # буква в конце — не черта таблицы
 
 
 @needs_tesseract

@@ -39,19 +39,21 @@
     if (parts.length < 2) return subjectHTML(parts[0]);
     return parts.map(function (x) { return '<span class="sg">' + subjectHTML(x) + "</span>"; }).join("");
   }
-  // «2-?» — корпус известен, кабинет уточняется
+  // Кабинет на уточнении: «?» — неизвестен, «2-?» — известен только корпус
+  // (в узкой колонке — коротко «ауд. ?», полностью «Кабинет на уточнении» — при нажатии на пару)
   function roomLabel(r) { return /-\?$/.test(r) ? "корп. " + r.charAt(0) : r; }
   function roomsHTML(room) {
     if (!room) return "";
     var parts = String(room).split(" / ").map(roomLabel);
-    return parts.length < 2 ? (/^корп/.test(parts[0]) ? "" : "ауд. ") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
+    return parts.length < 2 ? (/^(\d|\?)/.test(parts[0]) ? "ауд. " : "") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
   }
   // Где кабинет: «Ауд. 1-28: 2 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора;
   // корпус и так виден по первой цифре номера)
   function roomPlaces(room) {
     var R = (state.data.rooms || {}).rooms || {};
     return String(room || "").split(" / ").filter(Boolean).map(function (r) {
-      if (/-\?$/.test(r)) return "Корпус " + r.charAt(0) + ", кабинет уточняется";
+      if (r === "?") return "Кабинет на уточнении";
+      if (/-\?$/.test(r)) return "Корпус " + r.charAt(0) + ", кабинет на уточнении";
       return R[r] ? "Ауд. " + r + ": " + R[r] : "";
     }).filter(Boolean);
   }
