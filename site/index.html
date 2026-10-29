@@ -38,6 +38,7 @@
         Object.keys(files).forEach(function (k) { go("data/groups/" + files[k]); });
       } else if (files[g = g || get("utgt-group")]) go("data/groups/" + files[g]);
       var d = q.get("date") ? new Date(q.get("date") + "T12:00:00Z") : new Date(Date.now() + 3 * 3600e3);
+      if (isNaN(d.getTime())) d = new Date(Date.now() + 3 * 3600e3); // неправильная дата в адресе
       for (var i = 0; i < 2; i++) {
         var iso = new Date(d.getTime() + i * 864e5).toISOString().slice(0, 10);
         if (days.indexOf(iso) >= 0) go("data/zameny/" + iso + ".json");

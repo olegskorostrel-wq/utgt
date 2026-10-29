@@ -232,7 +232,8 @@
   display: grid; grid-template-rows: 0fr; grid-column: 2 / -1; color: var(--muted); font-size: 13px; line-height: 1.45;
   opacity: 0; transition: grid-template-rows .6s var(--ease), opacity .45s var(--ease-io), margin .6s var(--ease);
 }
-.det > span { overflow: hidden; min-height: 0; }
+.det > span { overflow: hidden; min-height: 0; overflow-wrap: anywhere; }
+.wday .det, .base li .det { min-width: 0; }
 .wday.open .det { grid-template-rows: 1fr; opacity: 1; margin-top: 2px; }
 .wday li { transition: padding .6s var(--ease); }
 .wday.open li { padding: 8px 0; }

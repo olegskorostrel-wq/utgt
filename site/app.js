@@ -5,6 +5,11 @@
   var STORE_KEY = "utgt-group", WHO_KEY = "utgt-who", TEACHER_KEY = "utgt-teacher", LANG_KEY = "utgt-lang";
   var state = { weekOpen: {}, infoOpen: false, offset: 0, data: null, zamena: {}, group: null, teacher: null, schedules: {}, open: {}, pickWho: "group" };
   var params = new URLSearchParams(location.search);
+  // неправильная дата в адресе (?date=2026-13-45) — не ломаем сайт, а показываем сегодня
+  (function () {
+    var d = params.get("date"), t = d && Date.parse(d);
+    if (d !== null && !(/^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(t) && new Date(t).toISOString().slice(0, 10) === d)) params.delete("date");
+  })();
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
