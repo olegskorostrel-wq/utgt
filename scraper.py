@@ -320,6 +320,9 @@ def process_block(block, session, vocab, out_dir=OUT_DIR, log=print):
         "group": GROUP,
         "source": URL,
         "fetched_at": dt.datetime.now(TZ).isoformat(timespec="minutes"),
+        # когда распоряжение впервые появилось на сайте техникума (по нашим проверкам; не меняется,
+        # даже если потом перевыложат исправленное) — для tools/publish_times.py
+        "first_seen": (old or {}).get("first_seen") or (old or {}).get("fetched_at") or dt.datetime.now(TZ).isoformat(timespec="minutes"),
         "images": images,
         "title": next((t["title"] for t in tables if t.get("title")), ""),
         "po_raspisaniyu": not images,
