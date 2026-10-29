@@ -39,10 +39,22 @@
     if (parts.length < 2) return subjectHTML(parts[0]);
     return parts.map(function (x) { return '<span class="sg">' + subjectHTML(x) + "</span>"; }).join("");
   }
+  // «2-?» — корпус известен, кабинет уточняется
+  function roomLabel(r) { return /-\?$/.test(r) ? "корп. " + r.charAt(0) : r; }
   function roomsHTML(room) {
     if (!room) return "";
-    var parts = String(room).split(" / ");
-    return parts.length < 2 ? "ауд. " + esc(room) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
+    var parts = String(room).split(" / ").map(roomLabel);
+    return parts.length < 2 ? (/^корп/.test(parts[0]) ? "" : "ауд. ") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
+  }
+  // Где кабинет: «Корпус 1, ул. Мира, 11 · 1 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора)
+  function roomPlaces(room) {
+    var R = state.data.rooms || {}, B = R.buildings || {};
+    return String(room || "").split(" / ").filter(Boolean).map(function (r) {
+      var b = B[r.charAt(0)];
+      if (!b) return "";
+      var floor = /-\?$/.test(r) ? "кабинет уточняется" : (R.rooms || {})[r];
+      return (/-\?$/.test(r) ? "" : "Ауд. " + r + ": ") + b.name + ", " + b.address + (floor ? " · " + floor : "");
+    }).filter(Boolean);
   }
 
   function getJSON(url) {
@@ -78,10 +90,11 @@
       getJSON("data/calendar.json").catch(function () { return {}; }),
       getJSON("data/news.json").catch(function () { return { items: [] }; }),
       getJSON("data/teachers.json").catch(function () { return { by_short: {} }; }),
-      getJSON("data/info.json").catch(function () { return null; })
+      getJSON("data/info.json").catch(function () { return null; }),
+      getJSON("data/rooms.json").catch(function () { return {}; })
     ]).then(function (r) {
       state.data = { groups: r[0].groups, bells: r[1], index: r[2], status: r[3], calendar: r[4], news: r[5],
-        teachers: r[6], info: r[7] };
+        teachers: r[6], info: r[7], rooms: r[8] };
       state.zamena = {};
       state.loadedAt = A.moscowNow().time;
     });
@@ -225,8 +238,8 @@
           var who = String(it.teacher || "").split(" / ").map(function (t) { return by[t.trim()] || t.trim(); }).filter(Boolean).join(" / ");
           return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
             '<span class="s">' + esc(nice(it.subject)) + (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
-            '<span class="r">' + esc(it.room || "") + "</span>" +
-            detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who, it.was ? "Было по расписанию: " + nice(it.was) : ""]) + "</li>";
+            '<span class="r">' + esc(String(it.room || "").split(" / ").map(roomLabel).join(" / ")) + "</span>" +
+            detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who, it.was ? "Было по расписанию: " + nice(it.was) : ""].concat(roomPlaces(it.room))) + "</li>";
         }).join("") : '<li class="none">' + (ag.off ? esc(ag.off.reason) : "Занятий нет") + "</li>";
         return weekDayHTML(d, i, now, d === now.date ? ' <span class="tag state">сегодня</span>' : "", body, ag.items.length);
       }).join("") + '<p class="hint">Замены показаны только на дни, на которые их уже опубликовали.</p>';
@@ -430,6 +443,7 @@
           '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div></div>" +
           '<div class="room">' + roomsHTML(it.room) + "</div>" +
           '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
+            (roomPlaces(it.room).length ? '<small class="place">' + roomPlaces(it.room).map(esc).join("<br>") + "</small>" : "") +
             "</div></div></div>" +
           (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' : "") + "</article>";
       }).join("");
@@ -471,8 +485,8 @@
       return '<li class="' + (kept ? "" : "gone") + '" tabindex="0" role="button"><span class="t">' + it.startText + "</span>" +
         '<span class="s"><span class="nm">' + esc(nice(it.subject)) + "</span>" + (it.teacher ? "<small>" + esc(it.teacher) + "</small>" : "") +
         (kept ? "" : ' <span class="tag">изменено</span>') + "</span>" +
-        '<span class="r">' + esc(it.room || "") + "</span>" +
-        detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who]) + "</li>";
+        '<span class="r">' + esc(String(it.room || "").split(" / ").map(roomLabel).join(" / ")) + "</span>" +
+        detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "", who].concat(roomPlaces(it.room))) + "</li>";
     }).join("") : '<li class="none">По расписанию пар нет</li>';
   }
 
@@ -705,7 +719,7 @@
           '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
           '<div class="who"><span class="groups">' + it.groups.map(esc).join(", ") + "</span>" +
           (n ? ' · <span class="nw">' + n + "</span>" : "") + "</div></div>" +
-          '<div class="room">' + (it.rooms.length ? "ауд. " + it.rooms.map(esc).join(", ") : "") + "</div>" +
+          '<div class="room">' + (it.rooms.length ? (it.rooms.every(function (r) { return /-\?$/.test(r); }) ? "" : "ауд. ") + it.rooms.map(roomLabel).map(esc).join(", ") : "") + "</div>" +
           (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' : "") + "</article>";
       }).join("") : '<div class="empty">' + (d.holiday ? esc(d.holiday.name) : d.weekday === 7 ? "Выходной" : "Пар нет") + "</div>";
 
@@ -740,9 +754,9 @@
             return '<li class="' + (it.changed ? "changed" : "") + '"><span class="t">' + it.startText + "</span>" +
               '<span class="s">' + esc(nice(it.subject)) + ' <span class="g">' + it.groups.map(esc).join(", ") + "</span>" +
               (it.changed ? ' <span class="tag">замена</span>' : "") + "</span>" +
-              '<span class="r">' + it.rooms.map(esc).join(", ") + "</span>" +
+              '<span class="r">' + it.rooms.map(roomLabel).map(esc).join(", ") + "</span>" +
               detHTML(it, [nice(it.subject) !== it.subject ? it.subject : "",
-                (it.groups.length > 1 ? "Поток: " : "Группа: ") + it.groups.join(", ")]) + "</li>";
+                (it.groups.length > 1 ? "Поток: " : "Группа: ") + it.groups.join(", ")].concat(roomPlaces(it.rooms.join(" / ")))) + "</li>";
           }).join("") : '<li class="none">' + (d.holiday ? esc(d.holiday.name) : "Пар нет") + "</li>";
           return weekDayHTML(date, i, now, (date === now.date ? ' <span class="tag state">сегодня</span>' : "") +
             (d.items.length ? ' <span class="cnt">' + d.items.length + " " + C.plural(d.items.length, "пара", "пары", "пар") + "</span>" : ""),

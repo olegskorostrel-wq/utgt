@@ -6,7 +6,7 @@ var CACHE = "utgt-__BUILD__";
 // Сразу при установке сохраняем всё, что нужно для работы без интернета: страницу, стили и скрипты
 // (их адреса с ?v=… берём из самой страницы), общие данные, расписания всех групп и последние замены.
 var CORE = ["data/groups/index.json", "data/bells.json", "data/zameny/index.json", "status.json", "data/calendar.json",
-  "data/news.json", "data/teachers.json", "data/info.json", "manifest.webmanifest", "icons/icon-192.png"];
+  "data/news.json", "data/teachers.json", "data/info.json", "data/rooms.json", "manifest.webmanifest", "icons/icon-192.png"];
 
 function keyOf(u) { var x = new URL(u, location.href); return x.searchParams.has("v") ? x.href : x.origin + x.pathname; }
 

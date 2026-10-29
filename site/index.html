@@ -32,7 +32,7 @@
       function go(u) { try { pre[u] = fetch(u, { cache: "no-cache" }); pre[u].catch(function () {}); } catch (e) {} }
       function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
       ["data/groups/index.json", "data/bells.json", "data/zameny/index.json", "status.json", "data/calendar.json",
-        "data/news.json", "data/teachers.json", "data/info.json"].forEach(go);
+        "data/news.json", "data/teachers.json", "data/info.json", "data/rooms.json"].forEach(go);
       var q = new URLSearchParams(location.search), g = q.get("group");
       if (q.get("teacher") || (!g && get("utgt-who") === "teacher" && get("utgt-teacher"))) {
         Object.keys(files).forEach(function (k) { go("data/groups/" + files[k]); });
