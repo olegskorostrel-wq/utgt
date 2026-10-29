@@ -129,6 +129,28 @@ def normalize_group(text):
     return (group, True) if group in KNOWN_GROUPS else (group, False)
 
 
+def known_rooms():
+    """Кабинеты из расписаний групп и data/rooms.json — чтобы ловить мусор распознавания."""
+    rooms = set()
+    for path in sorted((ROOT / "data" / "groups").glob("*.json")):
+        sched = json.loads(path.read_text(encoding="utf-8"))
+        for day in sched.get("days", {}).values():
+            for l in day:
+                rooms |= {r.strip() for r in str(l.get("room") or "").split(" / ") if r.strip()}
+    extra = ROOT / "data" / "rooms.json"
+    if extra.exists():
+        rooms |= set(json.loads(extra.read_text(encoding="utf-8")).get("rooms", {}))
+    return rooms
+
+
+def snap_room(room, known):
+    """Черта таблицы сразу за номером читается как «1»: «1-8|» -> «1-81». Такого кабинета нет,
+    а «1-8» есть — берём его."""
+    if room and known and room not in known and room[:-1] in known:
+        return room[:-1]
+    return room
+
+
 def fix_digits(text):
     """OCR путает цифры в номере кабинета: «2-]2» -> «2-12», «1-З» -> «1-3»."""
     return text.translate(str.maketrans({"]": "1", "[": "1", "|": "1", "l": "1", "I": "1", "З": "3", "О": "0", "о": "0"}))
@@ -165,8 +187,9 @@ def snap_subject(text, vocab):
     return text, False
 
 
-def ocr_table(path, vocab=EXTRA_SUBJECTS):
+def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
     """Находит сетку таблицы и распознаёт её построчно, ячейка за ячейкой."""
+    rooms = known_rooms() if rooms is None else rooms
     im = Image.open(path).convert("L")
     ink = np.array(im) < 128
     hlines = [(s + e) // 2 for s, e in _runs(ink.mean(1) > 0.5)]
@@ -225,6 +248,7 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS):
             room = m.group(1) if m else ""
             if m:
                 subject = subject[:m.start()]
+        room = snap_room(room, rooms)
         subject = subject.strip(" |]")
         subject, s_ok = snap_subject(subject, vocab)
         if not lessons and not time:

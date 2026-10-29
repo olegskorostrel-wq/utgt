@@ -68,6 +68,21 @@ def test_ocr_reads_all_groups_27_10():
     assert t["title"] == "Вторник, 2-я неделя"
 
 
+def test_snap_room_drops_table_line_read_as_one():
+    known = {"1-8", "1-1", "2-18"}
+    assert scraper.snap_room("1-81", known) == "1-8"   # «1-8|» — черта таблицы прочитана как «1»
+    assert scraper.snap_room("2-18", known) == "2-18"  # настоящий кабинет не трогаем
+    assert scraper.snap_room("1-1", known) == "1-1"
+    assert scraper.snap_room("3-77", known) == "3-77"  # незнакомый и без подходящей замены — как есть
+
+
+@needs_tesseract
+def test_ocr_room_next_to_table_line_29_10():
+    t = scraper.ocr_table(FIX / "29.10.2026.png", scraper.subject_vocab())
+    rows = [r for r in t["rows"] if r["group"] == "41-С" and r["lessons"] == [9, 10]]
+    assert rows and rows[0]["room"] == "1-8"
+
+
 @needs_tesseract
 def test_process_block_writes_json_and_skips_unchanged(tmp_path):
     png = (FIX / "24.10.2026.png").read_bytes()
