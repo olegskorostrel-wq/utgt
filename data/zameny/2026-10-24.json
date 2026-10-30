@@ -233,5 +233,6 @@
     "uncertain": false
    }
   ]
- }
+ },
+ "ocr_group_doubt": false
 }

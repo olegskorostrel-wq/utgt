@@ -134,8 +134,9 @@
     var mine = all ? (all[group] || []) : (group === z.group ? z.changes : []);
     return Object.assign({}, z, {
       changes: mine,
-      // не по всем строкам распознана группа, или распоряжение старое (без разбивки по группам)
-      ocr_uncertain: !all || !!all["?"] || mine.some(function (c) { return c.uncertain; })
+      // не по всем строкам распознана группа (или название группы прочитано криво — строка может быть чьей угодно),
+      // или распоряжение старое (без разбивки по группам)
+      ocr_uncertain: !all || !!all["?"] || !!z.ocr_group_doubt || mine.some(function (c) { return c.uncertain; })
     });
   }
 
@@ -668,22 +669,22 @@
     // шифр и название специальности — не в шапке, а в «Полезном» («Расшифровка групп»)
     $("specialty").hidden = true;
 
-    var banner = $("banner"), cls = "info", html;
+    var banner = $("banner"), cls = "info", html, where = isDesk() ? "справа" : "ниже"; // где картинка распоряжения
     if (z) {
       if (z.po_raspisaniyu) {
         cls = "ok";
         html = "<strong>Замен нет</strong>На сайте техникума: занятия по расписанию.";
       } else if (!z.ocr_ok) {
         cls = "warn";
-        html = "<strong>Замены опубликованы, но таблицу распознать не удалось</strong>Посмотрите картинку ниже.";
+        html = "<strong>Замены опубликованы, но таблицу распознать не удалось</strong>Посмотрите картинку " + where + ".";
       } else if (z.changes.length) {
         cls = "warn";
         html = "<strong>Есть замены для " + esc(g) + "</strong>Расписание ниже уже с их учётом." +
-          (z.ocr_uncertain ? " Часть текста распознана неуверенно — сверьтесь с картинкой." : "");
+          (z.ocr_uncertain ? " Часть текста распознана неуверенно — сверьтесь с картинкой " + where + "." : "");
       } else {
         cls = z.ocr_uncertain ? "warn" : "ok";
         html = "<strong>Замены опубликованы — " + esc(g) + " в них нет</strong>" +
-          (z.ocr_uncertain ? "Но часть строк распознана неуверенно — проверьте картинку." : "Занятия по обычному расписанию.");
+          (z.ocr_uncertain ? "Но часть строк распознана неуверенно — проверьте по картинке " + where + "." : "Занятия по обычному расписанию.");
       }
     } else if (ag.off) {
       cls = "ok";
@@ -887,7 +888,7 @@
           src + '" alt="' + alt + '"' + (style ? ' style="' + style + '"' : "") + "></picture>";
       };
       var t = i.table;
-      if (!t) return '<a href="' + esc(i.url) + '">' + img("") + "</a>";
+      if (!t) return '<a class="whole" href="' + src + '">' + img("") + "</a>";
       var pad = 6, x0 = Math.max(0, t[0] - pad), y0 = Math.max(0, t[1] - pad),
         w = Math.min(t[4], t[2] + pad) - x0, h = Math.min(t[5], t[3] + pad) - y0;
       var pct = function (v) { return (100 * v / w).toFixed(3) + "%"; };
@@ -1075,7 +1076,7 @@
         else if (!nextFound) { it.state = "next"; nextFound = true; }
       });
 
-      var banner = $("banner"), cls = "info", html;
+      var banner = $("banner"), cls = "info", html, where = isDesk() ? "справа" : "ниже"; // где картинка распоряжения
       if (d.z && !d.z.po_raspisaniyu) {
         var touched = d.removed.length || d.items.some(function (i) { return i.changed; });
         cls = touched ? "warn" : "ok";
@@ -1340,6 +1341,19 @@
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
+  // Распоряжение открывается поверх сайта, с крестиком: раньше картинка открывалась вместо сайта,
+  // и в установленном приложении (без кнопки «назад») из неё было не выйти
+  $("imageList").addEventListener("click", function (e) {
+    var a = e.target.closest("a");
+    if (!a || a.classList.contains("full-link")) return;
+    e.preventDefault();
+    var v = $("viewer");
+    $("viewerImg").src = a.getAttribute("href");
+    $("viewerImg").alt = (a.querySelector("img") || {}).alt || "Распоряжение о замене";
+    if (v.showModal) v.showModal(); else v.setAttribute("open", "");
+  });
+  $("viewerClose").addEventListener("click", function () { $("viewer").close(); });
+  $("viewer").addEventListener("click", function (e) { if (e.target === this || e.target.classList.contains("viewer-body")) this.close(); });
   $("nextList").addEventListener("click", toggleLesson);
   $("nextList").addEventListener("keydown", toggleLesson);
 

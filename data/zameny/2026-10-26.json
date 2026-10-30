@@ -10,7 +10,7 @@
    "sha1": "93989a4e6772dc421032d3a3129de8506c73de8c",
    "table": [
     39,
-    38,
+    168,
     507,
     664,
     538,
@@ -378,5 +378,6 @@
     "uncertain": false
    }
   ]
- }
+ },
+ "ocr_group_doubt": false
 }

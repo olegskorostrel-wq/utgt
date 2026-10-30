@@ -167,6 +167,12 @@
   </main>
   <div id="popTip" class="net-tip pop-tip" role="status" hidden></div>
 
+  <!-- распоряжение о замене целиком — поверх сайта, с крестиком -->
+  <dialog id="viewer" class="viewer" aria-label="Распоряжение о замене">
+    <button type="button" class="viewer-close" id="viewerClose" aria-label="Закрыть">✕</button>
+    <div class="viewer-body"><img id="viewerImg" alt=""></div>
+  </dialog>
+
   <dialog id="history" class="picker history" aria-labelledby="historyTitle">
     <form method="dialog" class="picker-inner">
       <div class="picker-head">

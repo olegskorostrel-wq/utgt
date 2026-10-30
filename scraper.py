@@ -194,6 +194,17 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
     im = Image.open(path).convert("L")
     ink = np.array(im) < 128
     hlines = [(s + e) // 2 for s, e in _runs(ink.mean(1) > 0.5)]
+    # на картинке может быть всё распоряжение: длинные линии бланка над таблицей мешают найти столбцы —
+    # берём самую большую группу близко стоящих линий (это и есть таблица)
+    if len(hlines) > 3:
+        step, groups = np.median(np.diff(hlines)), [[hlines[0]]]
+        for a, b in zip(hlines, hlines[1:]):
+            if b - a > 4 * step:
+                groups.append([])
+            groups[-1].append(b)
+        best = max(groups, key=len)
+        if len(best) >= 3:
+            hlines = best
     if len(hlines) < 3:
         return {"ok": False, "error": "таблица не найдена", "rows": []}
     band = ink[hlines[0]:hlines[-1]]
@@ -212,7 +223,7 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
         c = c.resize((c.width * k, c.height * k), Image.LANCZOS)
         return _tesseract(c, psm), dark
 
-    title, rows, in_table, group, uncertain = "", [], False, None, False
+    title, rows, in_table, group, uncertain, group_doubt = "", [], False, None, False, False
     for y0, y1 in zip(hlines, hlines[1:]):
         if y1 - y0 < 8:
             continue
@@ -237,10 +248,11 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
         if g:
             group = g
             row_uncertain = not g_ok
+            group_doubt |= not g_ok  # название группы прочитано криво — строка может быть чьей угодно
         elif not g_ok:
             # в ячейке группы что-то написано, но прочитать не вышло:
             # не приписываем строку предыдущей группе молча
-            group, row_uncertain = "?", True
+            group, row_uncertain, group_doubt = "?", True, True
         lessons, time = parse_lessons(raw[1] if len(raw) > 1 else "")
         subject = raw[2] if len(raw) > 2 else ""
         room = fix_digits(raw[3]) if len(raw) > 3 else ""
@@ -254,13 +266,15 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
         subject, s_ok = snap_subject(subject, vocab)
         if not lessons and not time:
             row_uncertain = True
+        if len(lessons) >= 7 and lessons[0] == 1:  # «1-8» на мелкой картинке — обычно неверно прочитанное «7-8»
+            row_uncertain = True
         rows.append({"group": group, "lessons": lessons, "time": time, "subject": subject,
                      "room": room, "uncertain": row_uncertain or not s_ok, "raw": raw})
         uncertain |= row_uncertain and (group or "").startswith(("1", "?"))
     return {"ok": in_table and bool(rows), "title": title, "rows": rows,
             # рамка таблицы на картинке: сайт показывает только её, крупно (x0, y0, x1, y1, ширина, высота)
             "box": [int(vlines[0]), int(hlines[0]), int(vlines[-1]), int(hlines[-1]), im.width, im.height],
-            "uncertain_course1": uncertain,
+            "uncertain_course1": uncertain, "group_doubt": group_doubt,
             "error": None if in_table else "не найдена шапка таблицы"}
 
 
@@ -332,6 +346,7 @@ def process_block(block, session, vocab, out_dir=OUT_DIR, log=print):
         "po_raspisaniyu": not images,
         "ocr_ok": all(t["ok"] for t in tables),
         "ocr_uncertain": any(t.get("uncertain_course1") for t in tables) or any(c["uncertain"] for c in changes),
+        "ocr_group_doubt": any(t.get("group_doubt") for t in tables),
         "groups_in_order": sorted({r["group"] for t in tables for r in t["rows"] if r["group"]}),
         "changes": changes,
         "all_changes": all_group_changes(tables),
@@ -356,6 +371,7 @@ def reprocess(out_dir=OUT_DIR, vocab=None, log=print):
         meta.update(title=next((t["title"] for t in tables if t.get("title")), "") or meta.get("title", ""),
                     ocr_ok=all(t["ok"] for t in tables),
                     ocr_uncertain=any(t.get("uncertain_course1") for t in tables) or any(c["uncertain"] for c in changes),
+                    ocr_group_doubt=any(t.get("group_doubt") for t in tables),
                     groups_in_order=sorted({r["group"] for t in tables for r in t["rows"] if r["group"]}),
                     changes=changes, all_changes=all_group_changes(tables))
         path.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")

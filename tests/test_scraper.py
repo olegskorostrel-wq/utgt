@@ -177,3 +177,15 @@ def test_all_groups_26_10_room_and_dangling_dash():
 
 def test_fix_digits():
     assert scraper.fix_digits("2-]2") == "2-12" and scraper.fix_digits("1-З") == "1-3"
+
+
+@needs_tesseract
+def test_ocr_whole_order_small_image_31_10():
+    """Картинка — всё распоряжение целиком, мелко: линии бланка над таблицей не мешают найти таблицу,
+    а криво прочитанное название группы и «1-8» вместо «7-8» помечаются как неуверенные."""
+    t = scraper.ocr_table(FIX / "31.10.2026.png", scraper.subject_vocab())
+    assert t["ok"]
+    assert "Суббота" in t["title"]
+    assert scraper.group_changes(t) == []  # у 11-А замен нет
+    assert t["group_doubt"]  # «11-П» прочитано как «11-И» — сайт попросит сверить с картинкой
+    assert all(r["uncertain"] for r in t["rows"] if len(r["lessons"]) >= 7 and r["lessons"][0] == 1)

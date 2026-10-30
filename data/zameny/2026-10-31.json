@@ -10,14 +10,144 @@
   {
    "url": "https://utgt-pgups.ru/images/31.10.2024.png",
    "file": "2026-10-31-1.png",
-   "sha1": "82f2f82d9a53e827a55ac2f68df4f5f04d107bc2"
+   "sha1": "82f2f82d9a53e827a55ac2f68df4f5f04d107bc2",
+   "table": [
+    39,
+    279,
+    577,
+    430,
+    621,
+    454
+   ]
   }
  ],
- "title": "",
+ "title": "Суббота, 2-я неделя",
  "po_raspisaniyu": false,
- "ocr_ok": false,
- "ocr_uncertain": false,
- "groups_in_order": [],
+ "ocr_ok": true,
+ "ocr_uncertain": true,
+ "groups_in_order": [
+  "11-Д",
+  "11-И",
+  "11-Л",
+  "21-Д",
+  "21-С",
+  "41-А",
+  "41-С"
+ ],
  "changes": [],
- "all_changes": {}
+ "all_changes": {
+  "11-И": [
+   {
+    "lessons": [
+     1,
+     2
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": true
+   }
+  ],
+  "11-Д": [
+   {
+    "lessons": [
+     5,
+     6
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "11-Л": [
+   {
+    "lessons": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Биология",
+    "room": "2-1",
+    "uncertain": true
+   }
+  ],
+  "21-Д": [
+   {
+    "lessons": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": true
+   }
+  ],
+  "21-С": [
+   {
+    "lessons": [
+     3,
+     4,
+     5,
+     6
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "41-А": [
+   {
+    "lessons": [
+     1,
+     2
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   }
+  ],
+  "41-С": [
+   {
+    "lessons": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "time": null,
+    "subject": "Отменить",
+    "room": "",
+    "uncertain": false
+   },
+   {
+    "lessons": [
+     5,
+     6,
+     7,
+     8
+    ],
+    "time": null,
+    "subject": "МДК.03.01 Технологии программирования, инсталляции и ввода в действие транспорт. радиоэлектрон. оборуд. (по видам тр.-та)",
+    "room": "1-30",
+    "uncertain": false
+   }
+  ]
+ },
+ "ocr_group_doubt": true
 }
