@@ -31,7 +31,7 @@ function rnd(seed) { let x = seed; return () => (x = (x * 1103515245 + 12345) % 
           await p.dispatchEvent('#list', 'touchend', { touches: [], changedTouches: [{ identifier: 1, clientX: 200 + dx, clientY: 500 + dy }] }).catch(() => {});
           actions++;
         } else if (r < 0.97) {
-          await p.fill('#whereInput', pick(['', 'ба', 'рыж', 'ззз', 'Е', 'ё'])).catch(() => {}); actions++;
+          await p.fill('#whereInput', pick(['', 'ба', 'рыж', 'ззз', 'Е', 'ё']), { timeout: 1500 }).catch(() => {}); actions++;
         } else {
           await p.mouse.wheel(0, pick([-600, 600])); actions++;
         }
