@@ -13,7 +13,8 @@ const { ROOT, URL, launch, page, open, report } = require('./lib');
   for (const f of walk(path.join(ROOT, 'data')).filter((x) => x.endsWith('.json'))) { try { JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { P.push('не читается ' + path.relative(ROOT, f) + ': ' + e.message); } }
   const html = fs.readFileSync(path.join(site, 'index.html'), 'utf8'), app = fs.readFileSync(path.join(site, 'app.js'), 'utf8');
   const ids = new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
-  const made = new Set([...app.matchAll(/\.id = ["']([^"']+)/g)].map((m) => m[1]));
+  // элементы, которые app.js создаёт сам: через .id = "…" или вставкой разметки с id="…"
+  const made = new Set([...app.matchAll(/\.id = ["']([^"']+)/g), ...app.matchAll(/id=\\?"([\w-]+)\\?"/g)].map((m) => m[1]));
   for (const m of new Set([...app.matchAll(/\$\("([\w-]+)"\)/g)].map((m) => m[1]))) if (!ids.has(m) && !made.has(m)) P.push('app.js ищет #' + m + ', а на странице его нет');
   // выкладка: файлы, на которые ссылается страница, существуют; секретов нет
   const built = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
