@@ -86,7 +86,7 @@ def main(argv):
         sys.argv = sys.argv[:1]
         scraper.main()
     date = dt.date.fromisoformat(argv[0]) if argv else dt.datetime.now(ZoneInfo("Europe/Moscow")).date()
-    schedule, bells = load(DATA / "schedule_11A.json"), load(DATA / "bells.json")
+    schedule, bells = load(DATA / "groups" / "11a.json"), load(DATA / "bells.json")
     zpath = DATA / "zameny" / f"{date}.json"
     zamena = load(zpath) if zpath.exists() else None
 

@@ -67,7 +67,7 @@ def match(short, full):
 
 def schedule_teachers():
     names = set()
-    for path in [ROOT / "data" / "schedule_11A.json", *sorted((ROOT / "data" / "groups").glob("*.json"))]:
+    for path in sorted((ROOT / "data" / "groups").glob("*.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
         for day in data.get("days", {}).values():
             for e in day:

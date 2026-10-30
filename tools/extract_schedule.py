@@ -4,7 +4,7 @@
     python tools/extract_schedule.py rasp.pdf            # -> data/groups/*.json
     python tools/extract_schedule.py rasp.pdf --print 21-С
 
-Формат файла группы — как data/schedule_11A.json. Ячейка, разделённая чертой
+Формат файла группы — как data/groups/11a.json. Ячейка, разделённая чертой
 внутри пары, = чередование недель: верх — 1-я неделя, низ — 2-я.
 """
 import argparse

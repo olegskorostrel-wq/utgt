@@ -284,7 +284,7 @@ def all_group_changes(tables):
 
 def subject_vocab():
     names = set()
-    for path in [ROOT / "data" / "schedule_11A.json", *sorted((ROOT / "data" / "groups").glob("*.json"))]:
+    for path in sorted((ROOT / "data" / "groups").glob("*.json")):
         sched = json.loads(path.read_text(encoding="utf-8"))
         names |= {l["subject"] for day in sched.get("days", {}).values() for l in day}
     return sorted(names | set(EXTRA_SUBJECTS))

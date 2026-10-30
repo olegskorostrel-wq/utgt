@@ -84,7 +84,12 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "Замены и новости: обновление $(TZ=Europe/Moscow date '+%Y-%m-%d %H:%M')"
-            git push
+            # если за время проверки в main успели что-то отправить — подтянуть и отправить снова
+            for i in 1 2 3; do
+              git push && exit 0
+              git pull --rebase origin main || { git rebase --abort; exit 1; }
+            done
+            exit 1
           fi
 
       - name: Собрать сайт

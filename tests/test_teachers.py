@@ -28,7 +28,7 @@ def test_match_short_names():
 
 def test_every_11A_teacher_has_full_name():
     by_short = json.loads((ROOT / "data" / "teachers.json").read_text(encoding="utf-8"))["by_short"]
-    sched = json.loads((ROOT / "data" / "schedule_11A.json").read_text(encoding="utf-8"))
+    sched = json.loads((ROOT / "data" / "groups" / "11a.json").read_text(encoding="utf-8"))
     for day in sched["days"].values():
         for e in day:
             assert not e["teacher"] or e["teacher"] in by_short, e["teacher"]

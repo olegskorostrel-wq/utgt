@@ -12,7 +12,6 @@
 | Файл | Источник |
 |---|---|
 | `data/groups/*.json` | [Расписание учебных занятий, 1 семестр 2026/2027](https://utgt-pgups.ru/raspisaniya-i-grafiki.html) (PDF), все 19 групп — `tools/extract_schedule.py`, сверены вручную |
-| `data/schedule_11A.json` | то же для 11-А (исходный файл; консольный `today_agenda.py`) |
 | `data/calendar.json` | Календарный учебный график: каникулы, практики, сессии, праздники — `tools/extract_calendar.py` |
 | `data/bells.json` | [Расписание звонков 2026/2027](https://utgt-pgups.ru/raspisaniya-i-grafiki.html) (PDF) |
 | `data/zameny/` | [Замена уроков](https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html), обновляет `scraper.py` |
@@ -51,7 +50,7 @@ python -m pytest tests -q && node --test tests/agenda.test.js tests/calendar.tes
 
 Посмотреть любой день: `index.html?group=11-А&date=2026-10-24`.
 
-Данные расписания и звонков совпадают с присланными `schedule_11A.json` / `bells.json`
+Данные расписания 11-А и звонков совпадают с присланными исходными файлами
 (проверено программно), формат приведён к одному для сайта и консоли.
 
 ## Когда начнётся новый семестр

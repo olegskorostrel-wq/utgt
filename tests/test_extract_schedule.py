@@ -29,7 +29,7 @@ def test_all_groups_found(sheet):
 def test_11A_matches_hand_checked_schedule(sheet):
     days, warnings = sheet.group("11-А")
     assert warnings == []
-    assert days == json.loads((ROOT / "data" / "schedule_11A.json").read_text(encoding="utf-8"))["days"]
+    assert days == json.loads((ROOT / "data" / "groups" / "11a.json").read_text(encoding="utf-8"))["days"]
 
 
 def test_21P_matches_pdf_by_eye(sheet):

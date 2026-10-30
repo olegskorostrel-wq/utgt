@@ -178,7 +178,7 @@ class Page:
         rowh = (tops[-1] - tops[0]) / 6
         out = {}
         for w in self.words:
-            cx, cy = (w["x0"] + w["x1"]) / 2, (w["top"] + w["bottom"]) / 2
+            cx = (w["x0"] + w["x1"]) / 2
             if cx < self.week_x[1] - self.step / 2 or cx > self.week_x[52] + self.step / 2:
                 continue
             day = min(range(7), key=lambda i: abs(tops[i] - w["top"]))

@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const A = require("../site/agenda.js");
 
 const root = path.join(__dirname, "..");
-const schedule = JSON.parse(fs.readFileSync(path.join(root, "data/schedule_11A.json"), "utf8"));
+const schedule = JSON.parse(fs.readFileSync(path.join(root, "data/groups/11a.json"), "utf8"));
 const bells = JSON.parse(fs.readFileSync(path.join(root, "data/bells.json"), "utf8"));
 const brief = (ag) => ag.items.map((i) => `${i.startText}-${i.endText} ${i.subject} ${i.room}${i.changed ? " *" : ""}`);
 
