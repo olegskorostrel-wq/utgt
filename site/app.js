@@ -648,6 +648,9 @@
     var items = (state.data.news.items || []).filter(function (n) { return !NEWS_BLOCK.test(n.title); }).slice(0, 5);
     $("news").hidden = !items.length;
     $("newsList").innerHTML = items.map(function (n) {
+      // пост ВК: сам текст (короткий — целиком, длинный — первая строка), ниже ссылка на пост
+      if (n.from === "vk") return '<li class="vk"><span>' + esc(n.title) + "</span><small>" + (n.date ? esc(n.date) + " · " : "") +
+        '<a href="' + esc(n.url) + '" target="_blank" rel="noopener">пост ВКонтакте</a></small></li>';
       return '<li><a href="' + esc(n.url) + '" target="_blank" rel="noopener">' + esc(n.title) + "</a>" +
         (n.date ? "<small>" + esc(n.date) + "</small>" : "") + "</li>";
     }).join("");

@@ -218,6 +218,8 @@ h1::first-letter { text-transform: uppercase; }
 .news li { padding: 8px 0; border-top: 1px solid var(--line); }
 .news li a { color: var(--text); text-decoration: none; }
 .news li small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.news li.vk span { overflow-wrap: anywhere; }
+.news li.vk small a { color: var(--accent); }
 .news-more { margin: 4px 0 12px; font-size: 14px; }
 #useful { margin-top: 10px; }
 #useful ul { padding-bottom: 8px; }

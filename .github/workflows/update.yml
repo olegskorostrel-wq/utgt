@@ -55,6 +55,8 @@ jobs:
       - name: Новости техникума
         id: news
         continue-on-error: true
+        env:
+          VK_SERVICE_TOKEN: ${{ secrets.VK_SERVICE_TOKEN }}
         run: python tools/news.py
 
       - name: Полные ФИО преподавателей

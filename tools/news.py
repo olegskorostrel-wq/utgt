@@ -1,13 +1,18 @@
-"""Последние новости с сайта УТЖТ -> data/news.json (заголовок, дата, ссылка).
+"""Последние новости с сайта УТЖТ и посты сообщества ВКонтакте -> data/news.json (заголовок, дата, ссылка).
+
+Посты ВК берутся, только если задан ключ доступа VK_SERVICE_TOKEN (сервисный ключ приложения ВК,
+хранится в секретах GitHub). Без ключа — только новости сайта, прежние посты ВК остаются.
 
     python tools/news.py
     python tools/news.py --html сохранённая_страница.html
 """
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urljoin
 
 import requests
@@ -20,6 +25,11 @@ LIMIT = 10
 BLOCK = re.compile(r"\bСВО\b|специальн\w*\s+военн\w*\s+операц|беспилот|\bБПЛА\b|\bБАС\b|\bдрон|"
                    r"военн\w*\s+служб\w*\s+по\s+контракт|контрактн\w*\s+служб|мобилизац|Минобороны|"
                    r"Министерств\w*\s+обороны|участник\w*\s+СВО|зон\w*\s+СВО", re.I)
+VK_GROUP = 214137  # https://vk.com/club214137 — официальное сообщество УТЖТ
+SHORT = 200  # пост короче — показывается целиком, длиннее — только первая строка
+MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября",
+          "ноября", "декабря"]
+MSK = timezone(timedelta(hours=3))
 UA = {"User-Agent": "Mozilla/5.0 (utgt schedule bot; +https://github.com/raspisanie-utgt/raspisanie-utgt.github.io)"}
 
 
@@ -45,6 +55,54 @@ def article_text(url):
     soup = BeautifulSoup(r.text, "html.parser")
     body = soup.select_one(".com-content-article, .item-page, article") or soup
     return " ".join(body.get_text(" ").split())
+
+
+def day_of(date):
+    """«05 октября 2026» -> «2026-10-05» (для сортировки вместе с постами ВК)."""
+    m = re.match(r"(\d{1,2})\s+([а-яё]+)\s+(\d{4})", date or "", re.I)
+    if not m or m.group(2).lower() not in MONTHS:
+        return ""
+    return f"{m.group(3)}-{MONTHS.index(m.group(2).lower()) + 1:02d}-{int(m.group(1)):02d}"
+
+
+def vk_title(text):
+    """Короткий пост — весь текст, длинный — первая строка. Без хэштегов и разметки ссылок ВК."""
+    text = re.sub(r"\[(?:club|public|id)\d+\|([^\]]+)\]", r"\1", text or "")
+    text = re.sub(r"#[\w@]+", "", text)
+    lines = [" ".join(x.split()) for x in text.splitlines()]
+    lines = [x for x in lines if x]
+    if not lines:
+        return ""
+    whole = " ".join(lines)
+    if len(whole) <= SHORT:
+        return whole
+    first = lines[0]
+    return first if len(first) <= SHORT else first[:SHORT].rsplit(" ", 1)[0] + "…"
+
+
+def vk_parse(posts):
+    items = []
+    for p in posts:
+        if p.get("marked_as_ads"):
+            continue
+        text = p.get("text") or ((p.get("copy_history") or [{}])[0].get("text") or "")
+        title = vk_title(text)
+        if not title:
+            continue
+        d = datetime.fromtimestamp(p["date"], MSK)
+        items.append({"title": title, "date": f"{d.day:02d} {MONTHS[d.month - 1]} {d.year}", "day": d.strftime("%Y-%m-%d"),
+                      "url": f"https://vk.com/wall-{VK_GROUP}_{p['id']}", "from": "vk", "text": text})
+    return items
+
+
+def vk_posts(token):
+    r = requests.get("https://api.vk.com/method/wall.get", timeout=60, headers=UA,
+                     params={"owner_id": -VK_GROUP, "count": 15, "v": "5.199", "access_token": token})
+    r.raise_for_status()
+    data = r.json()
+    if "error" in data:
+        raise RuntimeError(data["error"].get("error_msg", "ошибка ВК"))
+    return vk_parse(data["response"]["items"])
 
 
 def blocked(item, text):
@@ -83,7 +141,22 @@ def main():
     for it in items:
         if blocked(it, ""):
             hidden.add(it["url"])
-    shown = [it for it in items if it["url"] not in hidden]
+    for it in items:
+        it["day"] = day_of(it["date"])
+    # посты ВК: текст уже есть, проверяется сразу; если ВК не ответил — остаются прежние посты
+    token = os.environ.get("VK_SERVICE_TOKEN")
+    vk = [it for it in old.get("items", []) if it.get("from") == "vk"]
+    if token and not args.html:
+        try:
+            vk = vk_posts(token)
+        except (requests.RequestException, RuntimeError, KeyError, ValueError) as e:
+            print(f"ВК не ответил: {e}", file=sys.stderr)
+        else:
+            for it in vk:
+                if blocked(it, it.pop("text")):
+                    hidden.add(it["url"])
+    items = sorted(items + vk, key=lambda it: it["day"], reverse=True)
+    shown = [it for it in items if it["url"] not in hidden][:LIMIT]
     urls = {it["url"] for it in items}
     new = json.dumps({"source": URL, "items": shown, "hidden": sorted(hidden & urls), "checked": sorted(checked & urls)},
                      ensure_ascii=False, indent=1)
