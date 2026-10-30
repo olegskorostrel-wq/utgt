@@ -104,6 +104,8 @@ h1::first-letter { text-transform: uppercase; }
   background: var(--card); color: var(--text); font: inherit; cursor: pointer;
 }
 /* многоточие — у текста, а не у кнопки: точка «есть замены» может выступать за угол */
+/* полоса дней — только на компьютере (desktop.css) */
+.tabs .strip { display: none; }
 .tabs button .t { display: block; overflow: hidden; text-overflow: ellipsis; }
 .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
@@ -122,6 +124,8 @@ h1::first-letter { text-transform: uppercase; }
 /* строка с заменой в неделе — оранжевая подсветка, как карточка с заменой в дне */
 .wday li.changed { margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 8px; background: var(--warn-soft); border-top-color: transparent; }
 .wday li.changed + li { border-top-color: transparent; }
+/* подписи столбцов и рамка-таймер идущей пары — только на компьютере */
+.col-head, .lesson .timer { display: none; }
 .banner { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 15px; }
 .banner strong { display: block; }
 .banner.info { background: var(--accent-soft); }

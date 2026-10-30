@@ -1,45 +1,166 @@
-/* Раскладка для компьютера (включает desktop.js: класс .desk на <html>) */
-.desk .wrap { max-width: 1320px; padding: 28px 32px 48px; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 32px; align-items: start; }
-.desk .desk-side { position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
-.desk .desk-side .top { display: flex; flex-direction: column; align-items: flex-start; }
-.desk .desk-side .top-l { display: block; align-self: stretch; }
-.desk .desk-side .clock { text-align: left; order: -1; margin-bottom: 6px; }
-.desk .desk-side .clock #clock { font-size: 44px; line-height: 1; }
-.desk .desk-side .net-tip { right: auto; left: 0; }
-.desk .desk-side h1 { font-size: 26px; }
-.desk .desk-side .clock-row { justify-content: flex-start; }
-.desk .desk-side .news { margin-top: 14px; }
-.desk .desk-side .foot { font-size: 12.5px; }
+/* Раскладка для компьютера (включает desktop.js: класс .desk на <html>).
+   Сверху синяя полоса: часы, дата, группа, полоса дней и «до каникул»; ниже три столбца:
+   выбранный день, следующий учебный день, справа замены, новости, «Где преподаватель», «Полезное». */
+.desk { --bar1: #1d47a8; --bar2: #2f6be0; --bar3: #3b82f6; }
+@media (prefers-color-scheme: dark) { .desk:not([data-theme="light"]) { --bar1: #132c66; --bar2: #1d47a8; --bar3: #2a5bc4; } }
+.desk[data-theme="dark"] { --bar1: #132c66; --bar2: #1d47a8; --bar3: #2a5bc4; }
 
-.desk .desk-main .tabs { margin-top: 0; }
-.desk .tabs button { padding: 10px 14px; font-size: 16px; }
+/* ---------- синяя полоса ---------- */
+.desk .desk-bar { background: linear-gradient(120deg, var(--bar1), var(--bar2) 60%, var(--bar3)); color: #fff; }
+.desk .desk-bar-in {
+  max-width: 1760px; margin: 0 auto; padding: 22px 40px 18px;
+  display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); grid-template-rows: auto auto;
+  column-gap: 32px; row-gap: 10px; align-items: center;
+}
+.desk .desk-bar .top, .desk .desk-bar .top-l { display: contents; }
+.desk .desk-bar .clock { grid-column: 1; grid-row: 1 / 3; text-align: left; position: relative; }
+.desk .desk-bar .clock-row { display: flex; align-items: center; gap: 8px; }
+.desk .desk-bar #clock, .desk .desk-bar #clock span { font-size: 58px; font-weight: 800; letter-spacing: -2px; line-height: 1; color: #fff; }
+.desk .desk-bar .net-btn { color: #fff; }
+.desk .desk-bar .net-tip { left: 0; right: auto; color: var(--text); }
+.desk .desk-bar h1 { grid-column: 2; grid-row: 1; align-self: end; margin: 0; font-size: 28px; color: #fff; }
+.desk .desk-bar .eyebrow { grid-column: 2; grid-row: 2; align-self: start; color: rgba(255, 255, 255, .82); font-size: 15px; }
+.desk .desk-bar .specialty { display: none; }
+.desk .desk-bar .chips { grid-column: 3; grid-row: 1 / 3; display: flex; gap: 8px; align-items: center; }
+.desk .desk-bar .group-chip { background: rgba(255, 255, 255, .18); color: #fff; border-color: transparent; font-size: 20px; }
+.desk .desk-bar .theme-btn { background: rgba(255, 255, 255, .12); color: #fff; border-color: transparent; }
+.desk .desk-bar .group-chip:hover, .desk .desk-bar .theme-btn:hover { background: rgba(255, 255, 255, .28); }
+/* полоса дней — справа сверху, «до каникул» с полоской — под ней */
+.desk .desk-bar .tabs {
+  grid-column: 4; grid-row: 1; justify-self: end; position: static; margin: 0; padding: 0; background: none;
+  display: flex; gap: 6px;
+}
+.desk .tabs button:not(.strip) { display: none; }
+.desk .tabs .strip {
+  display: block; flex: 0 0 auto; width: 54px; padding: 5px 0; text-align: center; font-size: 13px; line-height: 1.25;
+  border-radius: 10px; border: 0; background: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .85);
+}
+.desk .tabs .strip b { display: block; font-size: 15px; color: #fff; }
+.desk .tabs .strip.off { opacity: .45; }
+.desk .tabs .strip.wk { width: auto; padding: 0 14px; display: flex; align-items: center; }
+.desk .tabs .strip:hover { background: rgba(255, 255, 255, .26); opacity: 1; }
+.desk .tabs .strip.today:not([aria-selected="true"]) { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7); }
+.desk .tabs .strip[aria-selected="true"] { background: #fff; color: var(--bar1); opacity: 1; }
+.desk .tabs .strip[aria-selected="true"] b { color: var(--bar1); }
+.desk .desk-bar .countdown { grid-column: 4; grid-row: 2; justify-self: end; width: min(560px, 100%); margin: 0; color: #fff; }
+.desk .desk-bar .countdown .calendar { color: rgba(255, 255, 255, .92); }
+.desk .desk-bar .countdown .calendar * { color: inherit; }
+.desk .desk-bar .cd-bar { background: rgba(255, 255, 255, .25); }
+.desk .desk-bar .cd-bar i { background: #7ee2a8; }
 
-/* день: пары слева, таблица замен справа */
-.desk #dayView:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: 24px; align-items: start; }
-.desk #dayView .images { position: sticky; top: 76px; }
-.desk #dayView .images h2 { margin-top: 0; }
-.desk #dayView .images[hidden] + * , .desk #dayView:has(.images[hidden]) { grid-template-columns: minmax(0, 1fr); }
-.desk #dayView:has(.images[hidden]) .desk-day { max-width: 760px; }
+/* ---------- три столбца ---------- */
+.desk .wrap {
+  max-width: 1760px; padding: 26px 40px 48px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 440px; column-gap: 30px; align-items: start;
+}
+.desk #dayView { grid-column: 1; grid-row: 1; }
+.desk .next-day { grid-column: 2; grid-row: 1; }
+.desk .wrap:has(.next-day[hidden]) #dayView { grid-column: 1 / 3; }
+.desk #weekView { grid-column: 1 / 3; grid-row: 1; }
+.desk .desk-side { grid-column: 3; grid-row: 1 / 3; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+
+.desk .col-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 0 14px; font-size: 24px; }
+.desk .col-head small { font-size: 15px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 
 /* неделя: все дни сразу, сеткой 3 × 2 */
 .desk #weekView:not([hidden]) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
 .desk #weekView > p { grid-column: 1 / -1; margin: 0; }
 
-/* наведение мышью */
+/* ---------- пары: время слева, цветная полоска предмета, кабинет плашкой ---------- */
+.desk .list { border: 0; background: none; padding: 0; gap: 12px; }
+.desk .lesson { grid-template-columns: 86px minmax(0, 1fr) auto; gap: 0 14px; padding: 16px 18px 16px 22px; border-radius: 16px; align-items: center; }
+/* полоска предмета — фоном, а не ::before: ::before у идущей и следующей пары занят метками «Сейчас» и «Следующая» */
+.desk .lesson { background-image: linear-gradient(90deg, var(--c, var(--accent)) 0 6px, transparent 6px); background-clip: padding-box; }
+/* идущая пара: рамка-таймер — бледная дорожка, синяя линия заполняется к концу пары (начало — левый верхний угол) */
+.desk .lesson.now { border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
+/* метка «Сейчас» — поверх линии; уголок не нужен — его роль играет рамка-таймер */
+.desk .lesson.now::before { z-index: 2; }
+.desk .lesson .corner { display: none; }
+.desk .lesson .timer { display: block; z-index: 1; position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); pointer-events: none; overflow: visible; }
+.desk .lesson .timer rect {
+  x: 1.25px; y: 1.25px; width: calc(100% - 2.5px); height: calc(100% - 2.5px); rx: 17px; ry: 17px;
+  fill: none; stroke: var(--accent); stroke-width: 2.5px; stroke-linecap: round; stroke-dasharray: 100;
+  transition: stroke-dashoffset 1s var(--ease-io);
+}
+/* следующая пара: сплошная бледная рамка вместо пунктира — пунктир поверх полоски предмета смотрится криво */
+.desk .lesson.next { border-style: solid; border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.desk .lesson .time { font-size: 19px; font-weight: 700; }
+.desk .lesson .time small { font-size: 14px; font-weight: 500; }
+.desk .lesson .subj { font-size: 19px; }
+.desk .lesson .room { align-self: center; font-weight: 800; font-size: 18px; color: var(--c, var(--accent)); background: var(--b, var(--accent-soft)); padding: 6px 12px; border-radius: 10px; }
+.desk .lesson .room:empty { display: none; }
 .desk .lesson:hover { border-color: var(--accent); }
-.desk .tabs button:hover:not([aria-selected="true"]) { border-color: var(--accent); }
-.desk .group-chip:hover, .desk .info-btn:hover { filter: brightness(1.08); }
+.desk .lesson.past { padding-top: 12px; padding-bottom: 12px; }
+/* цвета предметов: свои в светлой и тёмной теме */
+.desk .sc0 { --c: #2456c7; --b: #e6edfb; } .desk .sc1 { --c: #7a3fc2; --b: #f1e9fb; } .desk .sc2 { --c: #1f8a5b; --b: #e3f5ec; }
+.desk .sc3 { --c: #c0541d; --b: #fcebe1; } .desk .sc4 { --c: #0d7f95; --b: #ddf3f7; } .desk .sc5 { --c: #9a6a12; --b: #f8efdc; }
+.desk .sc6 { --c: #b3263a; --b: #fbe4e7; } .desk .sc7 { --c: #3d8a1f; --b: #e8f4e0; } .desk .sc8 { --c: #c2387e; --b: #fbe5f0; }
+.desk .sc9 { --c: #4b55c2; --b: #e8e9fb; }
+@media (prefers-color-scheme: dark) {
+  .desk:not([data-theme="light"]) .sc0 { --c: #8fb0ff; --b: #1e2c50; }
+  .desk:not([data-theme="light"]) .sc1 { --c: #c39bf2; --b: #2c2347; }
+  .desk:not([data-theme="light"]) .sc2 { --c: #6fd3a1; --b: #173a2d; }
+  .desk:not([data-theme="light"]) .sc3 { --c: #f2a37a; --b: #3d2618; }
+  .desk:not([data-theme="light"]) .sc4 { --c: #6fd0e2; --b: #15343d; }
+  .desk:not([data-theme="light"]) .sc5 { --c: #e8c27a; --b: #362b14; }
+  .desk:not([data-theme="light"]) .sc6 { --c: #f59aa6; --b: #3d1d23; }
+  .desk:not([data-theme="light"]) .sc7 { --c: #9ad87a; --b: #1f3517; }
+  .desk:not([data-theme="light"]) .sc8 { --c: #f294c3; --b: #3b1d2d; }
+  .desk:not([data-theme="light"]) .sc9 { --c: #a6adf5; --b: #24264a; }
+}
+.desk[data-theme="dark"] .sc0 { --c: #8fb0ff; --b: #1e2c50; }
+.desk[data-theme="dark"] .sc1 { --c: #c39bf2; --b: #2c2347; }
+.desk[data-theme="dark"] .sc2 { --c: #6fd3a1; --b: #173a2d; }
+.desk[data-theme="dark"] .sc3 { --c: #f2a37a; --b: #3d2618; }
+.desk[data-theme="dark"] .sc4 { --c: #6fd0e2; --b: #15343d; }
+.desk[data-theme="dark"] .sc5 { --c: #e8c27a; --b: #362b14; }
+.desk[data-theme="dark"] .sc6 { --c: #f59aa6; --b: #3d1d23; }
+.desk[data-theme="dark"] .sc7 { --c: #9ad87a; --b: #1f3517; }
+.desk[data-theme="dark"] .sc8 { --c: #f294c3; --b: #3b1d2d; }
+.desk[data-theme="dark"] .sc9 { --c: #a6adf5; --b: #24264a; }
+
+/* ---------- правый столбец ---------- */
+.desk .desk-side > * + * { margin-top: 14px; }
+.desk .desk-side .images { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.desk .desk-side .images h2 { margin: 0 0 10px; font-size: 18px; }
+.desk .desk-side .news { margin-top: 14px; }
+.desk .desk-side .foot { font-size: 12.5px; }
+.desk .images a.crop { aspect-ratio: auto !important; }
+.desk .images a.crop img { width: 100% !important; margin: 0 !important; display: block; }
+
+/* на компьютере места много: плашка о заменах сразу открыта (кнопка «i» не нужна) */
+.desk #banner { display: block !important; }
+.desk .listbox > .info-btn { display: none; }
+.desk .listbox { margin-top: 0; }
+
+/* наведение мышью и окна выбора */
 .desk .course button:hover, .desk .tlist button:hover { border-color: var(--accent); }
 .desk .picker { width: min(760px, calc(100vw - 64px)); }
 .desk .course .grid { grid-template-columns: repeat(6, 1fr); }
 .desk .tlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-/* раскрытый день остаётся на своём месте и просто становится выше */
 .desk .wday[role="button"]:hover { border-color: var(--accent); }
 
-/* на компьютере места много: плашка о заменах сразу открыта (кнопка «i» не нужна),
-   распоряжение — весь лист целиком, а не только таблица */
-.desk #banner { display: block !important; }
-.desk .listbox > .info-btn { display: none; }
-.desk .listbox { margin-top: 0; }
-.desk .images a.crop { aspect-ratio: auto !important; }
-.desk .images a.crop img { width: 100% !important; margin: 0 !important; display: block; }
+/* небольшой компьютер: правый столбец уже, полоса дней короче */
+@media (max-width: 1400px) {
+  .desk .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 340px; padding: 22px 24px 40px; column-gap: 22px; }
+  .desk .desk-bar-in { padding: 18px 24px 14px; column-gap: 22px; }
+  .desk .desk-bar #clock, .desk .desk-bar #clock span { font-size: 46px; }
+  .desk .desk-bar h1 { font-size: 23px; }
+  .desk .tabs .strip { width: 44px; font-size: 12px; }
+  .desk .tabs .strip.past, .desk .tabs .strip.far { display: none; }
+  .desk .lesson { grid-template-columns: 64px minmax(0, 1fr) auto; padding: 13px 14px 13px 18px; }
+  .desk .lesson .time, .desk .lesson .subj { font-size: 17px; }
+}
+/* маленький компьютер (до 1280): два столбца — дни друг под другом, справа замены и новости */
+@media (max-width: 1279px) {
+  .desk .wrap { grid-template-columns: minmax(0, 1fr) 320px; }
+  .desk #dayView, .desk .wrap:has(.next-day[hidden]) #dayView { grid-column: 1; }
+  .desk .next-day { grid-column: 1; grid-row: 2; margin-top: 28px; }
+  .desk #weekView { grid-column: 1; }
+  .desk #weekView:not([hidden]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .desk .desk-side { grid-column: 2; grid-row: 1 / 4; }
+  .desk .tabs .strip.far5 { display: none; }
+  .desk .desk-bar #clock, .desk .desk-bar #clock span { font-size: 40px; }
+  .desk .desk-bar h1 { font-size: 20px; }
+  .desk .desk-bar-in { column-gap: 16px; padding-left: 18px; padding-right: 18px; }
+}

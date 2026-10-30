@@ -1,6 +1,6 @@
 // Каждая функция сайта по отдельности, по нескольку раз: выбор группы/преподавателя, история замен,
 // кнопка «i», значок интернета, метки отсчёта, «где преподаватель», змейка, счётчик, свайпы, тема,
-// подгруппа, неправильные адреса.
+// подгруппа, неправильные адреса, часы после смены минуты.
 const { URL, lastZ, launch, page, open, report } = require('./lib');
 (async () => {
   const b = await launch(); const P = []; const ok = (c, msg) => { if (!c) P.push(msg); };
@@ -161,6 +161,23 @@ const { URL, lastZ, launch, page, open, report } = require('./lib');
     const q = await c2.newPage(); await q.goto(URL + '?group=11-%D0%90'); await q.waitForTimeout(5200);
     ok(h2 === 0, 'счётчик считает автопроверки'); await c2.close();
   })().catch((e) => P.push('счётчик: не удалось — ' + e.message));
+
+  // часы: после смены минуты новая цифра того же размера, что и остальные (на телефоне и компьютере, обе темы)
+  for (const s of [{ w: 393, mob: true }, { w: 1366, mob: false }, { w: 1920, mob: false, dark: true }]) {
+    await (async () => {
+      const p = await page(b, { w: s.w, h: 800, mob: s.mob, dark: s.dark });
+      await open(p);
+      for (let m = 0; m < 3; m++) {
+        await p.clock.runFor(60000); await p.waitForTimeout(400);
+        const sizes = await p.evaluate(() => {
+          const c = document.getElementById('clock');
+          return [c, ...c.querySelectorAll('span')].map((el) => getComputedStyle(el).fontSize);
+        });
+        ok(new Set(sizes).size === 1, s.w + 'px часы: после смены минуты цифры разного размера (' + [...new Set(sizes)].join(', ') + ')');
+      }
+      await p.ctx.close();
+    })().catch((e) => P.push(s.w + 'px часы: не удалось — ' + e.message));
+  }
 
   await b.close();
   report('Функции сайта', P);

@@ -206,10 +206,13 @@
     var g = state.group;
     drawCalendar(params.get("date") || now.date);
     drawUseful(now);
+    drawStrip(now);
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(b.dataset.day === String(state.offset)));
     });
     drawTomorrowDot(now);
+    if (state.offset === "week" || state.teacher || !isDesk()) $("nextDay").hidden = true;
+    $("dayHead").hidden = state.offset === "week";
     $("langSwitch").hidden = !!state.teacher;
     $("langToggle").checked = lang() === "немецкий";
     $("dayView").hidden = state.offset === "week";
@@ -709,37 +712,9 @@
     $("infoBtn").classList.toggle("upd", !!upd);
     drawBase(ag, z, date, schedule);
 
-    var list = $("list");
-    if (!ag.items.length) {
-      list.innerHTML = '<div class="empty">' + (ag.off ? esc(ag.off.reason) : ag.weekday === 7 ? "Выходной" : "Занятий нет") + "</div>";
-    } else {
-      list.innerHTML = ag.items.map(function (it, idx) {
-        var n = it.lessons.length ? (it.lessons[0] === 0 ? "классный час"
-          : (it.lessons.length > 1 ? "уроки " + it.lessons[0] + "–" + it.lessons[it.lessons.length - 1] : "урок " + it.lessons[0])) : "";
-        var tags = "";
-        if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + C.minutesText(it.end - now.minutes) + "</span>";
-        if (it.changed) tags += '<span class="tag">замена</span>';
-        if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
-        var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
-        var key = it.startText + " " + it.subject;
-        var fix = updRow(upd, it), wasLine = "";
-        if (fix) {
-          tags += '<span class="tag upd">исправлено в ' + upd.at + "</span>";
-          wasLine = '<div class="was-upd">до исправления: ' + (fix.was ? "<s>" + esc(fix.was.subject === A.CANCEL ? "отмена" : nice(fix.was.subject) + (fix.was.room ? ", ауд. " + fix.was.room : "")) + "</s>" : "замены не было") + "</div>";
-        }
-        return (idx ? gapHTML(ag.items[idx - 1], it, date, now) : "") + '<article class="lesson ' + (it.state || "") + (it.changed ? " changed" : "") + (fix ? " upd" : "") +
-          (state.open[key] ? " open" : "") + '" style="--i:' + idx + '" data-key="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' +
-          !!state.open[key] + '">' +
-          '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
-          '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
-          '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div>" + wasLine + "</div>" +
-          '<div class="room">' + roomsHTML(it.room) + "</div>" +
-          '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
-            (roomPlaces(it.room).length ? '<small class="place">' + roomPlaces(it.room).map(esc).join("<br>") + "</small>" : "") +
-            "</div></div></div>" +
-          (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' : "") + "</article>";
-      }).join("");
-    }
+    $("list").innerHTML = cardsHTML(ag, date, now, upd);
+    drawDayHead(ag, date, now);
+    if (isDesk() && !state.teacher) renderNext(date, now); else $("nextDay").hidden = true;
 
     animIn($("dayView"));
     var c = $("cancelled");
@@ -758,6 +733,111 @@
       ? "Страница замен проверена: " + st.checked_at.replace("T", " ").slice(0, 16) + " (МСК)" +
         (st.ok === false ? " — последняя проверка завершилась ошибкой" : "")
       : "";
+  }
+
+
+  // ---------- компьютер: столбцы «выбранный день» и «следующий учебный день», полоса дней в шапке ----------
+  function isDesk() { return document.documentElement.classList.contains("desk"); }
+  // цвет предмета (полоска сбоку и плашка кабинета на компьютере) — один и тот же у предмета везде
+  function subjColor(subject) {
+    var s = nice(String(subject).split(" / ")[0]).toLowerCase(), h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return "sc" + (h % 10);
+  }
+  function pairsMeta(ag, date, now) {
+    if (!ag.items.length) return "";
+    var n = ag.items.length, first = ag.items[0], last = ag.items[n - 1];
+    return n + " " + C.plural(n, "пара", "пары", "пар") + " · " +
+      (date === now.date && now.minutes >= first.start ? "до " + last.endText : "с " + first.startText);
+  }
+  function dayLabel(date, now) {
+    if (date === now.date) return "Сегодня";
+    if (date === A.addDays(now.date, 1)) return "Завтра";
+    var t = A.humanDate(date);
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+  function drawDayHead(ag, date, now) {
+    $("dayHeadT").textContent = dayLabel(date, now);
+    $("dayHeadM").textContent = pairsMeta(ag, date, now);
+  }
+  // следующий учебный день после date (пропуская воскресенья, праздники, каникулы) — вторым столбцом
+  function renderNext(date, now) {
+    var g = state.group, token = renderNext.token = (renderNext.token || 0) + 1;
+    scheduleFor(g).then(function (schedule) {
+      var d = null;
+      for (var i = 1; i <= 21 && !d; i++) {
+        var c = A.addDays(date, i);
+        if (A.isoWeekday(c) !== 7 && build(c, schedule, null).items.length) d = c;
+      }
+      if (!d) { $("nextDay").hidden = true; return; }
+      return zamenaFor(d).then(function (raw) {
+        if (token !== renderNext.token || !isDesk()) return;
+        var z = zamenaForGroup(raw, g), ag = build(d, schedule, z);
+        $("nextT").textContent = dayLabel(d, now);
+        $("nextM").textContent = pairsMeta(ag, d, now);
+        $("nextList").innerHTML = cardsHTML(ag, d, now, zamenaUpdate(z, g));
+        $("nextDay").hidden = false;
+      });
+    });
+  }
+  // полоса дней (две недели без воскресений и «Неделя») — на компьютере вместо вкладок
+  var WD_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+  function drawStrip(now) {
+    var nav = document.querySelector(".tabs");
+    nav.querySelectorAll(".strip").forEach(function (b) { b.remove(); });
+    if (!isDesk()) return;
+    var base = params.get("date") || now.date, wd = A.isoWeekday(base), mon = A.addDays(base, wd === 7 ? 1 : 1 - wd), html = "", ahead = 0;
+    for (var i = 0; i < 14; i++) {
+      var d = A.addDays(mon, i);
+      if (A.isoWeekday(d) === 7) continue;
+      var off = Math.round((Date.parse(d) - Date.parse(base)) / 864e5);
+      var dead = d < base || !!C.dayOff(d, state.data.calendar, state.group);
+      // past — прошедшие дни недели, far5/far — дальше 5/8 дней вперёд: на небольших экранах их не видно (desktop.css)
+      var cls = d < base ? " past" : ahead >= 8 ? " far" : ahead >= 5 ? " far5" : "";
+      if (d >= base) ahead++;
+      html += '<button type="button" role="tab" class="strip' + cls + (dead ? " off" : "") + (d === now.date ? " today" : "") +
+        '" data-day="' + off + '" aria-label="' + esc(A.humanDate(d)) + '"><b>' + WD_SHORT[A.isoWeekday(d) - 1] + "</b>" + Number(d.slice(8)) + "</button>";
+    }
+    nav.insertAdjacentHTML("beforeend", html + '<button type="button" role="tab" class="strip wk" data-day="week"><b>Неделя</b></button>');
+  }
+
+  // Рамка-таймер идущей пары (на компьютере): синяя линия обходит карточку по мере того, как идёт пара
+  function timerHTML(it, now) {
+    var done = Math.max(0, Math.min(1, (now.minutes - it.start) / Math.max(1, it.end - it.start)));
+    return '<svg class="timer" aria-hidden="true"><rect pathLength="100" style="stroke-dashoffset:' + (100 - done * 100).toFixed(1) + '"/></svg>';
+  }
+
+  // Карточки пар дня (и для основного столбца, и для «следующего дня» на компьютере)
+  function cardsHTML(ag, date, now, upd) {
+    if (!ag.items.length) {
+      return '<div class="empty">' + (ag.off ? esc(ag.off.reason) : ag.weekday === 7 ? "Выходной" : "Занятий нет") + "</div>";
+    }
+    return ag.items.map(function (it, idx) {
+      var n = it.lessons.length ? (it.lessons[0] === 0 ? "классный час"
+        : (it.lessons.length > 1 ? "уроки " + it.lessons[0] + "–" + it.lessons[it.lessons.length - 1] : "урок " + it.lessons[0])) : "";
+      var tags = "";
+      if (it.state === "now") tags += '<span class="tag state">идёт · ещё ' + C.minutesText(it.end - now.minutes) + "</span>";
+      if (it.changed) tags += '<span class="tag">замена</span>';
+      if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
+      var who = [it.teacher, it.was ? "вместо: " + it.was : ""].filter(Boolean).join(" · ");
+      var key = it.startText + " " + it.subject;
+      var fix = updRow(upd, it), wasLine = "";
+      if (fix) {
+        tags += '<span class="tag upd">исправлено в ' + upd.at + "</span>";
+        wasLine = '<div class="was-upd">до исправления: ' + (fix.was ? "<s>" + esc(fix.was.subject === A.CANCEL ? "отмена" : nice(fix.was.subject) + (fix.was.room ? ", ауд. " + fix.was.room : "")) + "</s>" : "замены не было") + "</div>";
+      }
+      return (idx ? gapHTML(ag.items[idx - 1], it, date, now) : "") + '<article class="lesson ' + subjColor(it.subject) + " " + (it.state || "") + (it.changed ? " changed" : "") + (fix ? " upd" : "") +
+        (state.open[key] ? " open" : "") + '" style="--i:' + idx + '" data-key="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' +
+        !!state.open[key] + '">' +
+        '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
+        '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
+        '<div class="who">' + [esc(who), n ? '<span class="nw">' + n + "</span>" : ""].filter(Boolean).join(" · ") + "</div>" + wasLine + "</div>" +
+        '<div class="room">' + roomsHTML(it.room) + "</div>" +
+        '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
+          (roomPlaces(it.room).length ? '<small class="place">' + roomPlaces(it.room).map(esc).join("<br>") + "</small>" : "") +
+          "</div></div></div>" +
+        (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' + timerHTML(it, now) : "") + "</article>";
+    }).join("");
   }
 
   // «Обычное расписание на <день> (без замен)» — в дни с заменами, чтобы сравнить, не открывая PDF
@@ -981,6 +1061,8 @@
 
   function renderTeacherDay(now) {
     var date = A.addDays(params.get("date") || now.date, state.offset);
+    $("dayHeadT").textContent = dayLabel(date, now);
+    $("dayHeadM").textContent = "";
     teacherDay(date).then(function (d) {
       teacherHeader();
       setTitle(A.humanDate(date));
@@ -1027,7 +1109,7 @@
           '<div class="who"><span class="groups">' + it.groups.map(esc).join(", ") + "</span>" +
           (n ? ' · <span class="nw">' + n + "</span>" : "") + "</div></div>" +
           '<div class="room">' + (it.rooms.length ? (it.rooms.every(function (r) { return /-\?$/.test(r); }) ? "" : "ауд. ") + it.rooms.map(roomLabel).map(esc).join(", ") : "") + "</div>" +
-          (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' : "") + "</article>";
+          (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' + timerHTML(it, now) : "") + "</article>";
       }).join("") : '<div class="empty">' + (d.holiday ? esc(d.holiday.name) : d.weekday === 7 ? "Выходной" : "Пар нет") + "</div>";
 
       animIn($("dayView"));
@@ -1258,6 +1340,8 @@
   }
   $("list").addEventListener("click", toggleLesson);
   $("list").addEventListener("keydown", toggleLesson);
+  $("nextList").addEventListener("click", toggleLesson);
+  $("nextList").addEventListener("keydown", toggleLesson);
 
   function toggleBase(e) {
     if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
@@ -1395,14 +1479,16 @@
     }, { passive: true });
   })();
 
-  document.querySelectorAll(".tabs button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      state.offset = b.dataset.day === "week" ? "week" : +b.dataset.day;
-      render(true);
-      // переключились снизу длинной страницы — вернуть наверх, к заголовку с датой
-      window.scrollTo(0, 0);
-    });
+  document.querySelector(".tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-day]");
+    if (!b) return;
+    state.offset = b.dataset.day === "week" ? "week" : +b.dataset.day;
+    render(true);
+    // переключились снизу длинной страницы — вернуть наверх, к заголовку с датой
+    window.scrollTo(0, 0);
   });
+  // компьютер ↔ телефон (desktop.js): второй столбец и полоса дней появляются или убираются
+  window.addEventListener("utgt-desk", function () { if (state.group || state.teacher) render(); });
 
   load().then(function () {
     drawNews();
