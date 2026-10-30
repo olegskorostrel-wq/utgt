@@ -54,6 +54,19 @@ async function tab(p, d) {
   await el.click();
 }
 
+// «Где преподаватель» и «История замен»: на телефоне — в раскрывающихся блоках, на компьютере — плитками справа
+async function openWhere(p) {
+  const t = p.locator('#tiles [data-tile="where"]');
+  if (await t.isVisible()) await t.click();
+  else await p.evaluate(() => { const d = document.getElementById('whereD'); d.open = true; d.scrollIntoView(); });
+}
+async function openHistory(p) {
+  const t = p.locator('#tiles [data-tile="history"]');
+  if (await t.isVisible()) return t.click();
+  await p.evaluate(() => { document.getElementById('useful').open = true; }); await p.waitForTimeout(200);
+  await p.click('#historyBtn');
+}
+
 // Сводка: печатает найденное (не больше 40 строк) и итог
 function report(name, problems) {
   console.log(`\n=== ${name}`);
@@ -62,4 +75,4 @@ function report(name, problems) {
   console.log(`ИТОГ: проблем ${problems.length}`);
 }
 
-module.exports = { ROOT, read, URL, SHOTS, groups, zdays, lastZ, NOW, WIDTHS, launch, page, open, report, tab };
+module.exports = { ROOT, read, URL, SHOTS, groups, zdays, lastZ, NOW, WIDTHS, launch, page, open, report, tab, openWhere, openHistory };

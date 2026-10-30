@@ -120,6 +120,9 @@
       <section id="nextList" class="list" aria-label="Уроки следующего учебного дня"></section>
     </section>
 
+    <!-- плитки разделов — только на компьютере (desktop.css), на телефоне те же разделы ниже, раскрывающимися блоками -->
+    <nav id="tiles" class="tiles" aria-label="Разделы"></nav>
+
     <details id="news" class="news" hidden>
       <summary>Новости техникума</summary>
       <ul id="newsList"></ul>
@@ -171,6 +174,17 @@
   <dialog id="viewer" class="viewer" aria-label="Распоряжение о замене">
     <button type="button" class="viewer-close" id="viewerClose" aria-label="Закрыть">✕</button>
     <div class="viewer-body"><img id="viewerImg" alt=""></div>
+  </dialog>
+
+  <!-- окно раздела, открытого плиткой (компьютер): звонки, учебная часть, кабинеты… -->
+  <dialog id="panel" class="picker panel" aria-labelledby="panelTitle">
+    <div class="picker-inner">
+      <div class="picker-head">
+        <h2 id="panelTitle"><i id="panelIcon" aria-hidden="true"></i><span id="panelName"></span></h2>
+        <button type="button" class="close" id="panelClose" aria-label="Закрыть">✕</button>
+      </div>
+      <div id="panelBody" class="panel-body"></div>
+    </div>
   </dialog>
 
   <dialog id="history" class="picker history" aria-labelledby="historyTitle">

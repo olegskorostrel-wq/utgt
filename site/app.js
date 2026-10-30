@@ -503,7 +503,153 @@
         var ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : "";
         return '<li><a href="' + esc(l.url) + '"' + ext + ">" + esc(l.title) + "</a></li>";
       }).join("") + "</ul>";
+    drawTiles(now);
   }
+
+  // ---------- плитки разделов (только компьютер) и окно раздела ----------
+  // Каждая плитка — иконка, название и живая подпись; нажатие открывает раздел в окне #panel.
+  function hm(s) { return +s.slice(0, 2) * 60 + +s.slice(3, 5); }
+  // пары дня по звонкам: [{ n: "1", name: "1 пара", from: "09:00", to: "10:30" }, …] (в понедельник сначала «Разговоры»)
+  function bellRows(monday) {
+    var b = state.data.bells, set = monday ? b.monday : b.other_days, rows = [];
+    if (monday && set.razgovory) rows.push({ n: "0", name: "Разговоры о важном", from: set.razgovory[0], to: set.razgovory[1] });
+    Object.keys(set.pairs).forEach(function (k) { rows.push({ n: k, name: k + " пара", from: set.pairs[k][0], to: set.pairs[k][1] }); });
+    return rows;
+  }
+  // подпись плитки «Звонки»: что идёт сейчас по звонкам
+  function bellsText(now) {
+    var wd = A.isoWeekday(now.date);
+    if (wd === 7) return "сегодня воскресенье";
+    var off = C.dayOff(now.date, state.data.calendar, state.group);
+    if (off) return "сегодня " + (off.kind === "holiday" ? "выходной" : off.reason.toLowerCase());
+    var rows = bellRows(wd === 1), m = now.minutes;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], name = r.n === "0" ? "«Разговоры о важном»" : r.n + "-я пара";
+      if (m < hm(r.from)) return (i ? "перемена · " : "") + name + " в " + r.from;
+      if (m < hm(r.to)) return "идёт " + name + " · до " + r.to;
+    }
+    return "пары на сегодня закончились";
+  }
+  function bellsHTML(now) {
+    var wd = A.isoWeekday(now.date);
+    return [[false, "Вторник — суббота"], [true, "Понедельник"]].map(function (x) {
+      var rows = bellRows(x[0]), today = x[0] === (wd === 1) && wd !== 7;
+      return '<h3 class="p-sub">' + x[1] + (today ? " · сегодня" : "") + "</h3>" + rows.map(function (r, i) {
+        var a = hm(r.from), b = hm(r.to), on = today && now.minutes >= a && now.minutes < b;
+        var gap = rows[i + 1] ? hm(rows[i + 1].from) - b : 0;
+        var note = on ? "идёт · ещё " + C.minutesText(b - now.minutes) : gap >= 30 ? "дальше обед " + gap + " мин" : "";
+        return '<div class="p-row' + (on ? " now" : "") + '"><b>' + esc(r.name) + "</b><span>" + r.from + " – " + r.to + "</span>" +
+          "<small>" + esc(note) + "</small></div>";
+      }).join("");
+    }).join("") + '<p class="p-note">Урок внутри пары — 45 минут, между уроками перемены нет.</p>';
+  }
+  function officeHTML(now) {
+    var info = state.data.info, o = info.office, st = C.officeStatus(now.date, now.minutes, o, state.data.calendar);
+    var g = state.group || "", curator = g && (info.curators || {})[g];
+    var place = ((state.data.rooms || {}).rooms || {})[o.room];
+    var cg = (state.data.calendar.groups || {})[g] || {}, cw = cg.courseworks || {};
+    var cwHtml = Object.keys(cw).map(function (sem) { return "<li>" + sem + " семестр: " + cw[sem].map(esc).join("; ") + "</li>"; }).join("");
+    return '<p class="p-big"><span class="dot ' + (st.open ? "on" : /^Обед/.test(st.text) ? "lunch" : "off") + '"></span>' + esc(st.text) + "</p>" +
+      '<div class="p-kv"><span>Кабинет</span><b>' + esc(o.room) + (place ? " · " + esc(place) : "") + "</b>" +
+      '<span>Телефон</span><b><a href="tel:' + esc(o.tel) + '">' + esc(o.phone) + "</a></b>" +
+      "<span>Пн – пт</span><b>" + o.hours["1"].join(" – ") + "</b><span>Суббота</span><b>" + o.hours["6"].join(" – ") + "</b>" +
+      "<span>Обед</span><b>" + o.lunch.join(" – ") + "</b></div>" +
+      (curator ? '<h3 class="p-sub">Куратор группы ' + esc(g) + "</h3><p>" + esc(teacherFull(curator) || curator) + "</p>" : "") +
+      (cwHtml ? '<h3 class="p-sub">Курсовые работы и проекты</h3><ul class="plain">' + cwHtml + "</ul>" : "");
+  }
+  // кабинеты по корпусам и этажам (data/rooms.json)
+  function roomsListHTML() {
+    var R = (state.data.rooms || {}).rooms || {}, B = (state.data.rooms || {}).buildings || {};
+    var FL = function (s) { return /^цоколь/.test(s) ? 0 : parseInt(s, 10) || 9; };
+    return '<p class="p-note">Крыло — если стоять лицом к зданию снаружи. Первая цифра номера — корпус.</p>' +
+      Object.keys(B).map(function (k) {
+        var by = {};
+        Object.keys(R).filter(function (r) { return r.split("-")[0] === k; }).forEach(function (r) {
+          var f = R[r].split(", ")[0];
+          (by[f] = by[f] || []).push(r);
+        });
+        var floors = Object.keys(by).sort(function (a, b) { return FL(a) - FL(b); });
+        if (!floors.length) return "";
+        return '<h3 class="p-sub">' + esc(B[k].name) + " · " + esc(B[k].address) + "</h3>" + floors.map(function (f) {
+          return '<div class="p-floor"><b>' + esc(f.charAt(0).toUpperCase() + f.slice(1)) + '</b><div class="p-rooms">' +
+            by[f].map(function (r) {
+              var rest = R[r].split(", ").slice(1).join(", ");
+              return '<span class="p-room"><b>' + esc(r) + "</b>" + (rest ? "<small>" + esc(rest) + "</small>" : "") + "</span>";
+            }).join("") + "</div></div>";
+        }).join("");
+      }).join("");
+  }
+  function linksHTML() {
+    var info = state.data.info, g = state.group || "", course = g.charAt(0);
+    var cg = (state.data.calendar.groups || {})[g] || {};
+    var links = info.links.concat(info.by_course[course] || []);
+    var gia = course === "4" && cg.specialty && info.gia_by_specialty[cg.specialty.code];
+    if (gia) links.push({ title: "Программа ГИА " + cg.specialty.code + " (на " + info.gia_year + " уч. год)", url: gia });
+    return '<ul class="p-links">' + links.map(function (l) {
+      var ext = /^https?:/.test(l.url) ? ' target="_blank" rel="noopener"' : "";
+      return '<li><a href="' + esc(l.url) + '"' + ext + ">" + esc(l.title) + "</a></li>";
+    }).join("") + "</ul>";
+  }
+  var TILES = {
+    bells: ["🔔", "Звонки"], office: ["👩‍🏫", "Учебная часть"], where: ["🔍", "Где преподаватель"],
+    rooms: ["🗺️", "Кабинеты"], history: ["🕑", "История замен"], codes: ["🎓", "Расшифровка групп"],
+    links: ["🔗", "Ссылки"], install: ["📲", "Установить"]
+  };
+  function drawTiles(now) {
+    var info = state.data.info, g = state.group || "";
+    var st = C.officeStatus(now.date, now.minutes, info.office, state.data.calendar);
+    var sp = ((state.data.calendar.groups || {})[g] || {}).specialty;
+    var sub = {
+      bells: esc(bellsText(now)),
+      office: '<span class="' + (st.open ? "on" : /^Обед/.test(st.text) ? "lunch" : "") + '">' + esc(st.text) + "</span>",
+      where: state.whereT ? esc(state.whereT) : "по фамилии или предмету",
+      rooms: "этаж и крыло",
+      history: "все распоряжения с 19 октября",
+      codes: sp ? esc(g) + " — " + esc(sp.code) : "шифр и специальность",
+      links: esc(info.links.map(function (l) { return l.title.replace(/\s*\(.*\)$/, ""); }).join(", ")),
+      install: "как приложение на компьютер"
+    };
+    var show = Object.keys(TILES).filter(function (k) { return k !== "install" || installWay(); });
+    $("tiles").innerHTML = show.map(function (k) {
+      return '<button type="button" class="tile" data-tile="' + k + '"><i aria-hidden="true">' + TILES[k][0] + "</i>" +
+        "<span><b>" + TILES[k][1] + "</b><small>" + sub[k] + "</small></span></button>";
+    }).join("");
+    // открытое окно со временем (звонки, учебная часть) — тоже свежее
+    var p = $("panel");
+    if (p.open && (p.dataset.kind === "bells" || p.dataset.kind === "office")) $("panelBody").innerHTML = panelHTML(p.dataset.kind, now);
+  }
+  function panelHTML(kind, now) {
+    if (kind === "bells") return bellsHTML(now);
+    if (kind === "office") return officeHTML(now);
+    if (kind === "rooms") return roomsListHTML();
+    if (kind === "codes") return codesHTML(state.group || "");
+    if (kind === "links") return linksHTML();
+    if (kind === "install") return installHTML();
+    return "";
+  }
+  function openPanel(kind) {
+    if (kind === "history") return openHistory();
+    var p = $("panel"), body = $("panelBody");
+    p.dataset.kind = kind;
+    $("panelIcon").textContent = TILES[kind][0];
+    $("panelName").textContent = TILES[kind][1];
+    if (kind === "where") { body.innerHTML = ""; body.appendChild($("whereBox")); }
+    else body.innerHTML = panelHTML(kind, A.moscowNow());
+    if (p.showModal) p.showModal(); else p.setAttribute("open", "");
+    if (kind === "where") $("whereInput").focus();
+  }
+  $("tiles").addEventListener("click", function (e) {
+    var t = e.target.closest("[data-tile]");
+    if (t) openPanel(t.dataset.tile);
+  });
+  $("panelClose").addEventListener("click", function () { $("panel").close(); });
+  $("panel").addEventListener("click", function (e) { if (e.target === this) this.close(); });
+  // поиск преподавателя возвращается на своё место (на телефоне он в раскрывающемся блоке)
+  $("panel").addEventListener("close", function () {
+    if (this.dataset.kind === "where") $("whereD").appendChild($("whereBox"));
+    this.dataset.kind = "";
+    if (state.data) drawTiles(A.moscowNow());
+  });
 
   // «Расшифровка групп»: буква в названии группы — специальность, первая цифра — курс.
   // У одной буквы на разных курсах может быть разный шифр (новые стандарты) — показываем каждый.
@@ -1001,11 +1147,13 @@
     installEvt = null;
     if (state.data) drawUseful(A.moscowNow());
   });
-  $("usefulBody").addEventListener("click", function (e) {
+  function onInstall(e) {
     if (!e.target.closest("#installBtn") || !installEvt) return;
     installEvt.prompt();
     installEvt.userChoice.then(function () { installEvt = null; drawUseful(A.moscowNow()); });
-  });
+  }
+  $("usefulBody").addEventListener("click", onInstall);
+  $("panelBody").addEventListener("click", onInstall);
   // интернет вернулся — сразу подтянуть свежее
   window.addEventListener("online", function () {
     if (state.data) load().then(function () { drawNews(); render(); }).catch(function () { render(); });

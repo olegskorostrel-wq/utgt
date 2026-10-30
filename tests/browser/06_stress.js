@@ -13,7 +13,7 @@ function rnd(seed) { let x = seed; return () => (x = (x * 1103515245 + 12345) % 
     const p = await page(b, { w: s.w, h: 800, mob: s.mob, dark: s.dark });
     await p.goto(URL + '?group=11-%D0%90'); await p.waitForSelector('#list .lesson, #list .empty');
     const SEL = ['#groupBtn', '#themeBtn', '#netBtn', '#infoBtn', '.tabs button', '#list .lesson', '#list .tlesson', '.wday[role=button] h3', '#base > summary', '#base li[role=button]',
-      '#news > summary', '#whereD > summary', '#useful > summary', '#whereList button', '#calendar li', '#langSwitch', '#historyBtn', '#historyList summary',
+      '#news > summary', '#whereD > summary', '#useful > summary', '#whereList button', '#calendar li', '#langSwitch', '#historyBtn', '#historyList summary', '#tiles .tile', '#panelClose',
       '#courses button[data-group]', '#whoSeg button', '#teacherList button[data-teacher]', '.close', '.disclaimer', '.snake canvas', '.snake-close'];
     for (let i = 0; i < STEPS; i++) {
       const r = R();

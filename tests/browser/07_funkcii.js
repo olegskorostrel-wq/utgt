@@ -1,7 +1,7 @@
 // Каждая функция сайта по отдельности, по нескольку раз: выбор группы/преподавателя, история замен,
 // кнопка «i», значок интернета, метки отсчёта, «где преподаватель», змейка, счётчик, свайпы, тема,
 // подгруппа, неправильные адреса, часы после смены минуты.
-const { URL, lastZ, launch, page, open, report, tab } = require('./lib');
+const { URL, lastZ, launch, page, open, report, tab, openWhere, openHistory } = require('./lib');
 (async () => {
   const b = await launch(); const P = []; const ok = (c, msg) => { if (!c) P.push(msg); };
   const step = async (name, fn) => { try { await fn(); } catch (e) { P.push(name + ': не удалось — ' + e.message.split('\n')[0]); } };
@@ -27,8 +27,7 @@ const { URL, lastZ, launch, page, open, report, tab } = require('./lib');
 
     await step(T + 'история замен', async () => {
       for (let i = 0; i < 3; i++) {
-        await p.evaluate(() => { document.getElementById('useful').open = true; }); await p.waitForTimeout(200);
-        await p.click('#historyBtn'); await p.waitForSelector('#historyList details');
+        await openHistory(p); await p.waitForSelector('#historyList details');
         await p.evaluate(() => document.querySelectorAll('#historyList details').forEach((d) => (d.open = true))); await p.waitForTimeout(300);
         const sc = await p.evaluate(() => { const l = document.getElementById('historyList'); l.scrollTop = 400; return l.scrollHeight <= l.clientHeight + 2 || l.scrollTop > 0; });
         ok(sc, T + 'история замен не листается');
@@ -79,7 +78,7 @@ const { URL, lastZ, launch, page, open, report, tab } = require('./lib');
     });
 
     await step(T + 'где сейчас преподаватель', async () => {
-      await p.evaluate(() => { const d = document.getElementById('whereD'); d.open = true; d.scrollIntoView(); });
+      await openWhere(p);
       await p.waitForSelector('#whereList button');
       for (let i = 0; i < 3; i++) {
         await p.click('#whereList button'); await p.waitForTimeout(500);
@@ -93,6 +92,31 @@ const { URL, lastZ, launch, page, open, report, tab } = require('./lib');
       await p.fill('#whereInput', 'ззззз'); await p.waitForTimeout(200);
       ok((await p.textContent('#whereList')).includes('Не нашлось'), T + 'нет надписи «не нашлось»');
       await p.fill('#whereInput', 'ё'); await p.fill('#whereInput', '');
+      if (await p.$('#panel[open]')) {
+        await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+        ok(await p.evaluate(() => document.getElementById('whereBox').parentElement.id === 'whereD'), T + 'поиск преподавателя не вернулся на место после окна');
+      }
+    });
+
+    // плитки разделов (только компьютер): каждая открывает своё окно с содержимым, закрывается крестиком и Esc
+    if (!s.mob) await step(T + 'плитки разделов', async () => {
+      const tiles = await p.$$eval('#tiles [data-tile]', (x) => x.map((e) => e.dataset.tile));
+      ok(tiles.length >= 7, T + 'плиток меньше 7: ' + tiles.join(','));
+      ok(await p.evaluate(() => !document.getElementById('whereD').getClientRects().length && !document.getElementById('useful').getClientRects().length),
+        T + 'на компьютере видны старые блоки «Где преподаватель» / «Полезное» вместе с плитками');
+      for (const [k, t] of tiles.entries()) {
+        await p.click('#tiles [data-tile="' + t + '"]'); await p.waitForTimeout(400);
+        const r = await p.evaluate(() => { const d = document.querySelector('dialog[open]'); if (!d) return null;
+          const b = d.getBoundingClientRect(); return { id: d.id, len: d.innerText.trim().length, inside: b.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth }; });
+        ok(r && r.len > 20, T + 'плитка «' + t + '» не открыла окно с содержимым');
+        ok(!r || r.inside, T + 'окно плитки «' + t + '» вылезает за экран');
+        if (k % 2) await p.keyboard.press('Escape'); else await p.click('dialog[open] .close');
+        await p.waitForTimeout(300);
+        ok(!(await p.$('dialog[open]')), T + 'окно плитки «' + t + '» не закрылось');
+      }
+      await p.click('#tiles [data-tile="bells"]'); await p.waitForTimeout(300);
+      ok((await p.$$('#panelBody .p-row')).length >= 10, T + 'в окне «Звонки» нет пар');
+      await p.keyboard.press('Escape');
     });
 
     await step(T + 'змейка', async () => {

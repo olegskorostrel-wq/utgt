@@ -1,7 +1,7 @@
 // Быстрые нажатия: всё раскрывающееся (новости, «где преподаватель», полезное, обычное расписание,
 // карточки пар, дни недели, дни истории) — 1…7 нажатий подряд с паузами 40…450 мс. Итог должен
 // совпадать с числом нажатий, а текст не вылезать за рамку ни во время анимации, ни после.
-const { URL, lastZ, launch, page, report, tab } = require('./lib');
+const { URL, lastZ, launch, page, report, tab, openHistory } = require('./lib');
 (async () => {
   const b = await launch(); const problems = []; let runs = 0;
   for (const s of [{ w: 393, mob: true }, { w: 1366, mob: false }]) {
@@ -24,7 +24,7 @@ const { URL, lastZ, launch, page, report, tab } = require('./lib');
     try {
       await go();
       for (const id of ['news', 'whereD', 'useful', 'base']) {
-        const vis = await p.evaluate((i) => { const d = document.getElementById(i); if (!d || d.hidden) return false; d.scrollIntoView({ block: 'center' }); return true; }, id);
+        const vis = await p.evaluate((i) => { const d = document.getElementById(i); if (!d || !d.getClientRects().length) return false; d.scrollIntoView({ block: 'center' }); return true; }, id);
         if (vis) await check(id, '#' + id + ' > summary', ...det(id));
       }
       await p.evaluate(() => document.querySelector('#list .lesson').scrollIntoView({ block: 'center' }));
@@ -34,8 +34,7 @@ const { URL, lastZ, launch, page, report, tab } = require('./lib');
       await p.evaluate(() => document.querySelector('.wday[role=button]').scrollIntoView({ block: 'center' }));
       await check('день недели', '.wday[role=button] h3', () => document.querySelector('.wday[role=button]').classList.contains('open'),
         () => { const w = document.querySelector('.wday[role=button]'); return Math.round(Math.max(...[...w.querySelectorAll('.det')].map((d) => d.getBoundingClientRect().bottom)) - w.getBoundingClientRect().bottom); });
-      await go(); await p.evaluate(() => { document.getElementById('useful').open = true; }); await p.waitForTimeout(300);
-      await p.click('#historyBtn'); await p.waitForSelector('#historyList details'); await p.waitForTimeout(800);
+      await go(); await openHistory(p); await p.waitForSelector('#historyList details'); await p.waitForTimeout(800);
       await p.evaluate(() => { document.querySelector('#historyList details').id = 'hd0'; });
       await check('день в истории', '#hd0 > summary', ...det('hd0'));
     } catch (e) { problems.push(`${s.w}px: не удалось — ${e.message.split('\n')[0]}`); }

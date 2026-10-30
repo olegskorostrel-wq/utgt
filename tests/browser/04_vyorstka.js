@@ -1,7 +1,7 @@
 // Вёрстка: все группы × «Сегодня/Завтра/Неделя» × 9 ширин экрана (280…1920) + крупный шрифт (×1.3, ×1.6),
 // светлая и тёмная тема. Всё раскрыто. Ничего не вылезает за карточки и экран, текст не обрезается,
 // длинное в окнах листается.
-const { URL, WIDTHS, groups, launch, page, report, tab } = require('./lib');
+const { URL, WIDTHS, groups, launch, page, report, tab, openWhere, openHistory } = require('./lib');
 
 function layoutCheck() {
   const bad = [];
@@ -75,13 +75,13 @@ const openAll = (p) => p.evaluate(() => {
     try {
       await p.goto(URL + '?group=11-%D0%90'); await p.waitForSelector('#list .lesson, #list .empty');
       // «Где сейчас преподаватель» с ответом
-      await p.evaluate(() => { document.getElementById('whereD').open = true; });
+      await openWhere(p);
       await p.waitForSelector('#whereList button', { timeout: 8000 }); await p.click('#whereList button'); await check('где сейчас преподаватель');
+      if (await p.$('#panel[open]')) { await p.keyboard.press('Escape'); await p.waitForTimeout(300); }
       await p.click('#groupBtn'); await check('выбор группы');
       await p.click('#whoSeg button[data-who="teacher"]'); await p.waitForTimeout(800); await check('выбор преподавателя');
       await p.keyboard.press('Escape');
-      await p.evaluate(() => { document.getElementById('useful').open = true; }); await p.waitForTimeout(300);
-      await p.click('#historyBtn'); await p.waitForSelector('#historyList details'); await check('история замен');
+      await openHistory(p); await p.waitForSelector('#historyList details'); await check('история замен');
       await p.keyboard.press('Escape');
     } catch (e) { problems.push(tag + ', окна: не удалось — ' + e.message.split('\n')[0]); }
     problems.push(...p.errs.map((x) => tag + ': ' + x));

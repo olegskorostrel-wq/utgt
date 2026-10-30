@@ -1,6 +1,6 @@
 /* Раскладка для компьютера (включает desktop.js: класс .desk на <html>).
    Сверху синяя полоса: часы, дата, группа, полоса дней и «до каникул»; ниже три столбца:
-   выбранный день, следующий учебный день, справа замены, новости, «Где преподаватель», «Полезное». */
+   выбранный день, следующий учебный день, справа замены, плитки разделов (открываются окном) и новости. */
 .desk { --bar1: #1d47a8; --bar2: #2f6be0; --bar3: #3b82f6; }
 @media (prefers-color-scheme: dark) { .desk:not([data-theme="light"]) { --bar1: #132c66; --bar2: #1d47a8; --bar3: #2a5bc4; } }
 .desk[data-theme="dark"] { --bar1: #132c66; --bar2: #1d47a8; --bar3: #2a5bc4; }
@@ -133,9 +133,62 @@
 .desk .listbox > .info-btn { display: none; }
 .desk .listbox { margin-top: 0; }
 
+/* ---------- плитки разделов справа (вместо раскрывающихся «Где преподаватель» и «Полезное») ---------- */
+.desk #tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.desk #whereD, .desk #useful { display: none; }
+.desk .tile {
+  display: flex; gap: 10px; align-items: center; min-width: 0; padding: 11px 12px; text-align: left; font: inherit; color: var(--text);
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+}
+.desk .tile:hover { border-color: var(--accent); }
+.desk .tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.desk .tile i, .desk #panelIcon {
+  flex: 0 0 38px; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+  font-style: normal; font-size: 20px; background: var(--accent-soft);
+}
+.desk .tile span { min-width: 0; overflow-wrap: break-word; }
+.desk .tile b { display: block; font-size: 15px; line-height: 1.25; }
+.desk .tile small { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; line-height: 1.3; }
+.desk .tile small .on { color: var(--ok); font-weight: 600; }
+.desk .tile small .lunch { color: var(--warn); font-weight: 600; }
+/* правый столбец узкий — иконка над текстом, чтобы длинные названия влезали */
+@media (max-width: 1400px) {
+  .desk .tile { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .desk .tile b { font-size: 14.5px; }
+}
+
 /* наведение мышью и окна выбора */
 .desk .course button:hover, .desk .tlist button:hover { border-color: var(--accent); }
 .desk .picker { width: min(760px, calc(100vw - 64px)); }
+/* окно раздела */
+.desk .picker.panel { height: fit-content; max-height: calc(100vh - 64px); width: min(560px, calc(100vw - 64px)); }
+.desk .picker.panel .picker-inner { height: auto; max-height: calc(100vh - 64px); padding: 0; }
+.desk .panel .picker-head { gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.desk #panelTitle { display: flex; align-items: center; gap: 12px; flex: 1; }
+.desk .panel-body { overflow-y: auto; overscroll-behavior: contain; padding: 4px 18px 20px; }
+.desk .panel-body > :first-child { margin-top: 14px; }
+.desk .p-sub { margin: 16px 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.desk .p-note { margin: 12px 0 0; color: var(--muted); font-size: 13.5px; }
+.desk .p-row { display: grid; grid-template-columns: 170px 120px 1fr; gap: 10px; padding: 8px 12px; border-radius: 10px; font-variant-numeric: tabular-nums; }
+.desk .p-row span, .desk .p-row small { color: var(--muted); }
+.desk .p-row small { font-size: 13px; text-align: right; align-self: center; }
+.desk .p-row.now { background: var(--accent-soft); }
+.desk .p-row.now span, .desk .p-row.now small { color: var(--accent); font-weight: 600; }
+.desk .p-big { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
+.desk .p-big .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 4px var(--line); }
+.desk .p-big .dot.on { background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
+.desk .p-big .dot.lunch { background: var(--warn); box-shadow: 0 0 0 4px var(--warn-soft); }
+.desk .p-kv { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; font-size: 15px; }
+.desk .p-kv span { color: var(--muted); }
+.desk .p-floor { display: grid; grid-template-columns: 120px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.desk .p-floor > b { font-size: 14px; }
+.desk .p-rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+.desk .p-room { padding: 4px 9px; border-radius: 8px; background: var(--bg); font-size: 14px; }
+.desk .p-room small { display: block; color: var(--muted); font-size: 12px; max-width: 260px; }
+.desk .p-links { margin: 0; padding-left: 20px; line-height: 1.8; }
+.desk .panel .office.codes { border-top: 0; padding-top: 0; }
+.desk .panel .office.codes > strong { display: none; }
+.desk .panel .where small { display: block; color: var(--muted); }
 .desk .course .grid { grid-template-columns: repeat(6, 1fr); }
 .desk .tlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .desk .wday[role="button"]:hover { border-color: var(--accent); }

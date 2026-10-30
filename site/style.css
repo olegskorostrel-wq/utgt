@@ -126,6 +126,8 @@ h1::first-letter { text-transform: uppercase; }
 .wday li.changed + li { border-top-color: transparent; }
 /* подписи столбцов и рамка-таймер идущей пары — только на компьютере */
 .col-head, .lesson .timer { display: none; }
+/* плитки разделов и их окно — только на компьютере (desktop.css) */
+#tiles { display: none; }
 .banner { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 15px; }
 .banner strong { display: block; }
 .banner.info { background: var(--accent-soft); }
