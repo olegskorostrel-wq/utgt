@@ -1,7 +1,7 @@
 // Каждая функция сайта по отдельности, по нескольку раз: выбор группы/преподавателя, история замен,
 // кнопка «i», значок интернета, метки отсчёта, «где преподаватель», змейка, счётчик, свайпы, тема,
 // подгруппа, неправильные адреса, часы после смены минуты.
-const { URL, lastZ, launch, page, open, report } = require('./lib');
+const { URL, lastZ, launch, page, open, report, tab } = require('./lib');
 (async () => {
   const b = await launch(); const P = []; const ok = (c, msg) => { if (!c) P.push(msg); };
   const step = async (name, fn) => { try { await fn(); } catch (e) { P.push(name + ': не удалось — ' + e.message.split('\n')[0]); } };
@@ -39,8 +39,8 @@ const { URL, lastZ, launch, page, open, report } = require('./lib');
     });
 
     if (s.mob) await step(T + 'кнопка «i»', async () => {
-      for (const tab of ['0', '1']) {
-        await p.click('.tabs button[data-day="' + tab + '"]'); await p.waitForTimeout(600);
+      for (const d of ['0', '1']) {
+        await tab(p, d); await p.waitForTimeout(600);
         for (let i = 0; i < 4; i++) {
           await p.click('#infoBtn'); await p.waitForTimeout(250);
           const r = await p.evaluate(() => { const i = document.getElementById('infoBtn').getBoundingClientRect(), t = document.querySelector('.tabs').getBoundingClientRect(); const hit = document.elementFromPoint(i.left + i.width / 2, i.top + 4); return { gap: i.top - t.bottom, top: !!hit && !!hit.closest('#infoBtn'), open: !document.getElementById('banner').hidden }; });
@@ -48,7 +48,7 @@ const { URL, lastZ, launch, page, open, report } = require('./lib');
           ok(r.open === (i % 2 === 0), T + 'плашка о заменах не переключается');
         }
       }
-      await p.click('.tabs button[data-day="0"]');
+      await tab(p, '0');
     });
 
     await step(T + 'значок интернета', async () => {
@@ -109,7 +109,7 @@ const { URL, lastZ, launch, page, open, report } = require('./lib');
     });
 
     if (s.mob) await step(T + 'свайпы по дням', async () => {
-      await p.click('.tabs button[data-day="0"]'); await p.waitForTimeout(500);
+      await tab(p, '0'); await p.waitForTimeout(500);
       const swipe = async (dx, dy = 0) => {
         const t = (x, y) => [{ identifier: 1, clientX: x, clientY: y }];
         await p.dispatchEvent('#list', 'touchstart', { touches: t(200, 600), changedTouches: t(200, 600) });
@@ -120,7 +120,7 @@ const { URL, lastZ, launch, page, open, report } = require('./lib');
       ok((await swipe(-150)) === 'week', T + 'свайп влево не перешёл на «Неделю»');
       ok((await swipe(150)) === '1', T + 'свайп вправо не вернул «Завтра»');
       ok((await swipe(-60, 300)) === '1', T + 'вертикальная прокрутка переключила день');
-      await p.click('.tabs button[data-day="0"]');
+      await tab(p, '0');
     });
 
     await step(T + 'тема и подгруппа', async () => {

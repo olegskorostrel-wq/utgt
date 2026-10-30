@@ -1,7 +1,7 @@
 // Вёрстка: все группы × «Сегодня/Завтра/Неделя» × 9 ширин экрана (280…1920) + крупный шрифт (×1.3, ×1.6),
 // светлая и тёмная тема. Всё раскрыто. Ничего не вылезает за карточки и экран, текст не обрезается,
 // длинное в окнах листается.
-const { URL, WIDTHS, groups, launch, page, report } = require('./lib');
+const { URL, WIDTHS, groups, launch, page, report, tab } = require('./lib');
 
 function layoutCheck() {
   const bad = [];
@@ -62,14 +62,14 @@ const openAll = (p) => p.evaluate(() => {
       try {
         await p.goto(URL + '?group=' + encodeURIComponent(g)); await p.waitForSelector('#list .lesson, #list .empty');
         await check(g + ' сегодня');
-        await p.click('.tabs button[data-day="1"]'); await check(g + ' завтра');
-        await p.click('.tabs button[data-day="week"]'); await check(g + ' неделя');
+        await tab(p, '1'); await check(g + ' завтра');
+        await tab(p, 'week'); await check(g + ' неделя');
       } catch (e) { problems.push(tag + ', ' + g + ': не удалось — ' + e.message.split('\n')[0]); }
     }
     for (const t of ['Певцова Л.А.', 'Рыжикова Т.П.', 'Мигальникова О.А.']) {
       try {
         await p.goto(URL + '?teacher=' + encodeURIComponent(t)); await p.waitForSelector('.tlesson, .empty'); await check(t);
-        await p.click('.tabs button[data-day="week"]'); await check(t + ' неделя');
+        await tab(p, 'week'); await check(t + ' неделя');
       } catch (e) { problems.push(tag + ', ' + t + ': не удалось — ' + e.message.split('\n')[0]); }
     }
     try {

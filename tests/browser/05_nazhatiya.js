@@ -1,7 +1,7 @@
 // Быстрые нажатия: всё раскрывающееся (новости, «где преподаватель», полезное, обычное расписание,
 // карточки пар, дни недели, дни истории) — 1…7 нажатий подряд с паузами 40…450 мс. Итог должен
 // совпадать с числом нажатий, а текст не вылезать за рамку ни во время анимации, ни после.
-const { URL, lastZ, launch, page, report } = require('./lib');
+const { URL, lastZ, launch, page, report, tab } = require('./lib');
 (async () => {
   const b = await launch(); const problems = []; let runs = 0;
   for (const s of [{ w: 393, mob: true }, { w: 1366, mob: false }]) {
@@ -30,7 +30,7 @@ const { URL, lastZ, launch, page, report } = require('./lib');
       await p.evaluate(() => document.querySelector('#list .lesson').scrollIntoView({ block: 'center' }));
       await check('карточка пары', '#list .lesson', () => document.querySelector('#list .lesson').classList.contains('open'),
         () => { const l = document.querySelector('#list .lesson'), c = l.querySelector('.full > div'); return Math.round(c.getBoundingClientRect().bottom - l.getBoundingClientRect().bottom); });
-      await p.click('.tabs button[data-day="week"]'); await p.waitForTimeout(900);
+      await tab(p, 'week'); await p.waitForTimeout(900);
       await p.evaluate(() => document.querySelector('.wday[role=button]').scrollIntoView({ block: 'center' }));
       await check('день недели', '.wday[role=button] h3', () => document.querySelector('.wday[role=button]').classList.contains('open'),
         () => { const w = document.querySelector('.wday[role=button]'); return Math.round(Math.max(...[...w.querySelectorAll('.det')].map((d) => d.getBoundingClientRect().bottom)) - w.getBoundingClientRect().bottom); });
