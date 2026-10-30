@@ -1504,6 +1504,27 @@
   // компьютер ↔ телефон (desktop.js): второй столбец и полоса дней появляются или убираются
   window.addEventListener("utgt-desk", function () { if (state.group || state.teacher) render(); });
 
+  // Сайт открыт во встроенном браузере ВК / Телеграма / Инстаграма — плашка «Открыть в Хроме» (Андроид)
+  // или подсказка «Открыть в Safari» (Айфон: перебросить в другой браузер оттуда нельзя). Закрыли — не показываем неделю.
+  (function inApp() {
+    var ua = navigator.userAgent || "", INAPP_KEY = "utgt-inapp-hide";
+    if (!/VKAndroidApp|com\.vkontakte|VKClient|vkclient|Telegram|Instagram|FBAN|FBAV/i.test(ua)) return;
+    if (Date.now() - (+store(INAPP_KEY) || 0) < 7 * 864e5) return;
+    var name = /Telegram/i.test(ua) ? "Телеграма" : /Instagram/i.test(ua) ? "Инстаграма" : /FBAN|FBAV/i.test(ua) ? "Фейсбука" : "ВКонтакте";
+    var url = location.href;
+    var action = /Android/i.test(ua)
+      ? '<a class="inapp-go" href="intent://' + esc(url.replace(/^https?:\/\//, "")) + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" +
+        encodeURIComponent(url) + ';end">Открыть в Хроме</a>'
+      : "<small>Нажмите «…» или значок «поделиться» вверху и выберите «Открыть в Safari».</small>";
+    document.body.insertAdjacentHTML("afterbegin", '<div class="inapp" id="inapp" role="note"><div class="inapp-in"><p><strong>Вы во встроенном браузере ' + name +
+      "</strong>В обычном браузере сайт работает быстрее, и его можно установить как приложение.</p>" + action +
+      '<button type="button" class="inapp-x" aria-label="Закрыть">✕</button></div></div>');
+    document.querySelector("#inapp .inapp-x").addEventListener("click", function () {
+      store(INAPP_KEY, String(Date.now()));
+      $("inapp").remove();
+    });
+  })();
+
   load().then(function () {
     drawNews();
     // преподаватель: ?teacher=… или запомненный выбор (если в ссылке нет группы)
