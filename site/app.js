@@ -929,6 +929,11 @@
   }
   // полоса дней (две недели без воскресений и «Неделя») — на компьютере вместо вкладок
   var WD_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+  // «Завтра» для автоперехода, когда пары на сегодня закончились. На компьютере в полосе дней нет воскресенья —
+  // в субботу сразу понедельник (иначе ни один день в полосе не выбран)
+  function nextOffset(now) {
+    return isDesk() && A.isoWeekday(A.addDays(now.date, 1)) === 7 ? 2 : 1;
+  }
   function drawStrip(now) {
     var nav = document.querySelector(".tabs");
     nav.querySelectorAll(".strip").forEach(function (b) { b.remove(); });
@@ -1688,7 +1693,7 @@
         if (params.get("date")) return render(true);
         return teacherDay(now.date).then(function (d) {
           var last = d.items[d.items.length - 1];
-          if (d.weekday === 7 || !last || now.minutes >= last.end) state.offset = 1;
+          if (d.weekday === 7 || !last || now.minutes >= last.end) state.offset = nextOffset(now);
           render(true);
         });
       });
@@ -1703,7 +1708,7 @@
         if (!params.get("date")) {
           var today = build(now.date, s, zamenaForGroup(r[1], wanted));
           var last = today.items[today.items.length - 1];
-          if (today.weekday === 7 || !last || now.minutes >= last.end) state.offset = 1;
+          if (today.weekday === 7 || !last || now.minutes >= last.end) state.offset = nextOffset(now);
         }
         render(true);
       });
