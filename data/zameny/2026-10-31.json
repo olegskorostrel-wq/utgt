@@ -1,0 +1,23 @@
+{
+ "date": "2026-10-31",
+ "group": "11-А",
+ "source": "https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html",
+ "fetched_at": "2026-10-30T14:18+03:00",
+ "first_seen": "2026-10-30T14:18+03:00",
+ "updated_at": null,
+ "prev_all_changes": null,
+ "images": [
+  {
+   "url": "https://utgt-pgups.ru/images/31.10.2024.png",
+   "file": "2026-10-31-1.png",
+   "sha1": "82f2f82d9a53e827a55ac2f68df4f5f04d107bc2"
+  }
+ ],
+ "title": "",
+ "po_raspisaniyu": false,
+ "ocr_ok": false,
+ "ocr_uncertain": false,
+ "groups_in_order": [],
+ "changes": [],
+ "all_changes": {}
+}
