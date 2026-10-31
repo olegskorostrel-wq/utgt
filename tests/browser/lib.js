@@ -46,8 +46,8 @@ async function open(p, query = '?group=' + encodeURIComponent('11-А')) {
   await p.waitForTimeout(700);
 }
 
-// Вкладка дня: на телефоне «Сегодня / Завтра / Неделя», на компьютере — полоса дней в шапке (видимая кнопка).
-// «Завтра» на компьютере может не быть в полосе (воскресенье) — тогда следующий день после выбранного.
+// День: кнопка полосы дней (две недели без воскресений и «Неделя»), пока полоса не построена — старая вкладка.
+// «Завтра» может не быть в полосе (воскресенье) — тогда следующий день после выбранного.
 async function tab(p, d) {
   let el = p.locator('.tabs button[data-day="' + d + '"]:visible').first();
   if (String(d) === '1' && !(await el.count())) el = p.locator('.tabs .strip[aria-selected="true"] ~ .strip:not(.wk):visible').first();

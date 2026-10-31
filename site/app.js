@@ -50,7 +50,7 @@
   function roomsHTML(room) {
     if (!room) return "";
     var parts = String(room).split(" / ").map(roomLabel);
-    return parts.length < 2 ? (/^(\d|\?)/.test(parts[0]) ? "ауд. " : "") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
+    return parts.length < 2 ? (/^(\d|\?)/.test(parts[0]) ? '<span class="pre">ауд. </span>' : "") + esc(parts[0]) : parts.map(function (r) { return '<span class="sg">' + esc(r) + "</span>"; }).join("");
   }
   // Где кабинет: «Ауд. 1-28: 2 этаж, левое крыло» (этажи — data/rooms.json, со слов куратора;
   // корпус и так виден по первой цифре номера)
@@ -174,7 +174,7 @@
   // или преподавателя, а вкладку с тех пор не открывали. Открыл «Завтра» — точка пропадает.
   var SEEN_KEY = "utgt-seen";
   function drawTomorrowDot(now) {
-    var who = state.group || state.teacher, btn = document.querySelector('.tabs button[data-day="1"]');
+    var who = state.group || state.teacher, btn = document.querySelector('.tabs .strip[data-day="1"]') || document.querySelector('.tabs button[data-day="1"]');
     if (!who || !btn) return;
     var date = A.addDays(params.get("date") || now.date, 1);
     zamenaFor(date).then(function (z) {
@@ -211,6 +211,7 @@
     document.querySelectorAll(".tabs button").forEach(function (b) {
       b.setAttribute("aria-selected", String(b.dataset.day === String(state.offset)));
     });
+    scrollStrip();
     drawTomorrowDot(now);
     if (state.offset === "week" || state.teacher || !isDesk()) $("nextDay").hidden = true;
     $("dayHead").hidden = state.offset === "week";
@@ -861,6 +862,8 @@
 
     $("list").innerHTML = cardsHTML(ag, date, now, upd);
     drawDayHead(ag, date, now);
+    drawNextUp(ag, date, now);
+    state.shareDay = { ag: ag, date: date };
     if (isDesk() && !state.teacher) renderNext(date, now); else $("nextDay").hidden = true;
 
     animIn($("dayView"));
@@ -871,6 +874,7 @@
     }).join(", ") : "";
     $("unverified").hidden = !!schedule.verified;
     $("lessonHint").hidden = false;
+    $("shareBtn").hidden = !ag.items.length;
 
     $("images").hidden = !z || !z.images.length;
     $("imageList").innerHTML = imagesHTML(z, date);
@@ -927,17 +931,17 @@
       });
     });
   }
-  // полоса дней (две недели без воскресений и «Неделя») — на компьютере вместо вкладок
+  // полоса дней (две недели без воскресений и «Неделя») — вместо вкладок «Сегодня / Завтра / Неделя»
   var WD_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-  // «Завтра» для автоперехода, когда пары на сегодня закончились. На компьютере в полосе дней нет воскресенья —
+  // «Завтра» для автоперехода, когда пары на сегодня закончились. В полосе дней нет воскресенья —
   // в субботу сразу понедельник (иначе ни один день в полосе не выбран)
   function nextOffset(now) {
-    return isDesk() && A.isoWeekday(A.addDays(now.date, 1)) === 7 ? 2 : 1;
+    return A.isoWeekday(A.addDays(now.date, 1)) === 7 ? 2 : 1;
   }
   function drawStrip(now) {
     var nav = document.querySelector(".tabs");
     nav.querySelectorAll(".strip").forEach(function (b) { b.remove(); });
-    if (!isDesk()) return;
+    nav.classList.add("has-strip");
     var base = params.get("date") || now.date, wd = A.isoWeekday(base), mon = A.addDays(base, wd === 7 ? 1 : 1 - wd), html = "", ahead = 0;
     for (var i = 0; i < 14; i++) {
       var d = A.addDays(mon, i);
@@ -951,6 +955,14 @@
         '" data-day="' + off + '" aria-label="' + esc(A.humanDate(d)) + '"><b>' + WD_SHORT[A.isoWeekday(d) - 1] + "</b>" + Number(d.slice(8)) + "</button>";
     }
     nav.insertAdjacentHTML("beforeend", html + '<button type="button" role="tab" class="strip wk" data-day="week"><b>Неделя</b></button>');
+  }
+  // выбранный день — в начало видимой части полосы (на телефоне она листается вбок); только когда выбор сменился,
+  // чтобы ежеминутная перерисовка не сбивала полосу, которую листают пальцем
+  function scrollStrip() {
+    var nav = document.querySelector(".tabs"), sel = nav.querySelector('.strip[aria-selected="true"]');
+    if (!sel || nav.scrollWidth <= nav.clientWidth + 1 || scrollStrip.last === state.offset + "|" + nav.clientWidth) return;
+    scrollStrip.last = state.offset + "|" + nav.clientWidth;
+    nav.scrollLeft = sel.dataset.day === "week" ? nav.scrollWidth : Math.max(0, sel.offsetLeft - nav.offsetLeft - 4);
   }
 
   // Рамка-таймер идущей пары (на компьютере): синяя линия обходит карточку по мере того, как идёт пара
@@ -988,9 +1000,101 @@
         '<div class="full"><div><div class="in">' + fullSubject(it.subject) + teacherInfo(it.teacher) +
           (roomPlaces(it.room).length ? '<small class="place">' + roomPlaces(it.room).map(esc).join("<br>") + "</small>" : "") +
           "</div></div></div>" +
-        (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' + timerHTML(it, now) : "") + "</article>";
+        (it.state === "now" ? timerHTML(it, now) : "") + "</article>";
     }).join("");
   }
+
+  // До первой пары и на перемене (телефон, сегодня): крупно — какая пара следующая и через сколько.
+  // Во время пары не нужно — её и так видно рамкой «Сейчас»; на компьютере не показываем вовсе.
+  function drawNextUp(ag, date, now) {
+    var box = $("nextUp"), items = ag.items, next = null, prev = null;
+    if (!isDesk() && !state.teacher && date === now.date && !items.some(function (it) { return it.state === "now"; })) {
+      for (var i = 0; i < items.length && !next; i++) if (items[i].start > now.minutes) { next = items[i]; prev = items[i - 1] || null; }
+    }
+    box.hidden = !next;
+    if (!next) return;
+    var gap = prev ? next.start - prev.end : 0, wait = C.minutesText(next.start - now.minutes);
+    box.innerHTML = "<small>" + (!prev ? "Первая пара через " + wait : (gap >= 30 ? "Обед" : "Перемена") + " · следующая пара через " + wait) + "</small>" +
+      "<b>" + esc(String(next.subject).split(" / ").map(nice).join(" / ")) + "</b>" +
+      "<span>" + next.startText + " – " + next.endText + (next.room ? '<span class="rm">' + roomsHTML(next.room) + "</span>" : "") + "</span>";
+  }
+
+  // «Поделиться»: картинка выбранного дня (всегда светлая, с цветами предметов) — в меню «Поделиться» телефона,
+  // а где его нет — просто скачивается
+  var SHARE_C = ["#2456c7", "#7a3fc2", "#1f8a5b", "#c0541d", "#0d7f95", "#9a6a12", "#b3263a", "#3d8a1f", "#c2387e", "#4b55c2"]; // как .sc0–.sc9 в style.css
+  function shareCanvas(ag, date) {
+    var W = 600, P = 24, TX = P + 104, k = 2, font = getComputedStyle(document.body).fontFamily;
+    var c = document.createElement("canvas"), x = c.getContext("2d");
+    function f(weight, size) { x.font = weight + " " + size + "px " + font; }
+    // перенос по словам, не больше двух строк (вторая — с многоточием)
+    function wrap(text, max) {
+      var words = text.split(" "), out = [""];
+      words.forEach(function (w) {
+        var t = out[out.length - 1] ? out[out.length - 1] + " " + w : w;
+        if (x.measureText(t).width <= max || !out[out.length - 1]) out[out.length - 1] = t; else out.push(w);
+      });
+      if (out.length > 2) { out = out.slice(0, 2); out[1] += "…"; }
+      return out;
+    }
+    var rows = ag.items.map(function (it) {
+      f(600, 20);
+      var room = it.room ? String(it.room).split(" / ").map(roomLabel).join(", ") : "";
+      var sub = wrap(String(it.subject).split(" / ").map(nice).join(" / "), W - TX - P - (room ? x.measureText(room).width + 16 : 0));
+      return { it: it, room: room, sub: sub, h: 30 + sub.length * 26 + 22 };
+    });
+    var head = 100, cancel = ag.cancelled.length ? "Отменено: " + ag.cancelled.map(function (z) { return nice(z.subject) + " (" + z.startText + ")"; }).join(", ") : "";
+    var foot = 48 + (cancel ? 24 : 0), H = head + rows.reduce(function (s, r) { return s + r.h; }, 0) + foot;
+    c.width = W * k; c.height = H * k; x.scale(k, k);
+    x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+    var g = x.createLinearGradient(0, 0, W, head); g.addColorStop(0, "#1d47a8"); g.addColorStop(1, "#3b82f6");
+    x.fillStyle = g; x.fillRect(0, 0, W, head);
+    x.fillStyle = "rgba(255,255,255,.85)"; f(500, 16);
+    x.fillText(state.group + (ag.weekday === 7 ? "" : " · " + ag.week + "-я неделя"), P, 36);
+    var t = A.humanDate(date); x.fillStyle = "#fff"; f(700, 28); x.fillText(t.charAt(0).toUpperCase() + t.slice(1), P, 74);
+    var y = head;
+    rows.forEach(function (r, i) {
+      var col = SHARE_C[+subjColor(r.it.subject).slice(2)];
+      if (i) { x.fillStyle = "#eef0f4"; x.fillRect(0, y, W, 1); }
+      x.fillStyle = col; x.fillRect(0, y, 5, r.h);
+      x.fillStyle = "#10131a"; f(700, 21); x.fillText(r.it.startText, P, y + 34);
+      x.fillStyle = "#6b7280"; f(400, 16); x.fillText(r.it.endText, P, y + 58);
+      x.fillStyle = "#10131a"; f(600, 20);
+      r.sub.forEach(function (l, j) { x.fillText(l, TX, y + 34 + j * 26); });
+      var ly = y + 34 + r.sub.length * 26 - 2;
+      x.fillStyle = "#6b7280"; f(400, 16); x.fillText(r.it.teacher || "", TX, ly);
+      if (r.it.changed) {
+        var tw = r.it.teacher ? x.measureText(r.it.teacher + "  ").width : 0;
+        x.fillStyle = "#9a5b00"; f(600, 15); x.fillText("замена", TX + tw, ly);
+      }
+      if (r.room) { x.fillStyle = col; f(700, 20); x.textAlign = "right"; x.fillText(r.room, W - P, y + 34); x.textAlign = "left"; }
+      y += r.h;
+    });
+    x.fillStyle = "#eef0f4"; x.fillRect(0, y, W, 1);
+    x.fillStyle = "#6b7280"; f(400, 14);
+    if (cancel) { x.fillText(wrap(cancel, W - 2 * P)[0], P, y + 28); y += 24; }
+    x.fillText("С заменами · raspisanie-utgt.github.io", P, y + 30);
+    return c;
+  }
+  $("shareBtn").addEventListener("click", function () {
+    var d = state.shareDay;
+    if (!d) return;
+    var url = shareCanvas(d.ag, d.date).toDataURL("image/png"), bin = atob(url.split(",")[1]), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    // имя файла латиницей: с русскими буквами браузер может молча заменить его на «download»
+    var lat = String(state.group).replace(/[А-ЯЁ]/g, function (ch) { return "ABVGDEEZZIIKLMNOPRSTUFHCCSSYYYEUA".charAt("АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".indexOf(ch)) || "X"; });
+    var name = "raspisanie-" + lat + "-" + d.date.slice(8) + "." + d.date.slice(5, 7) + ".png";
+    var blob = new Blob([bytes], { type: "image/png" }), file = typeof File === "function" ? new File([blob], name, { type: "image/png" }) : null;
+    function download() {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    }
+    // картинку готовим сразу, без ожиданий: iPhone разрешает «Поделиться» только прямо по нажатию
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file] }).catch(function (e) { if (!e || e.name !== "AbortError") download(); });
+    } else download();
+  });
 
   // «Обычное расписание на <день> (без замен)» — в дни с заменами, чтобы сравнить, не открывая PDF
   function drawBase(ag, z, date, schedule) {
@@ -1257,13 +1361,13 @@
         if (it.changed) tags += '<span class="tag">замена</span>';
         if (it.uncertain) tags += '<span class="tag" title="распознано неуверенно">?</span>';
         var n = lessonsLabel(it.lessons);
-        return gapRow + '<article class="lesson tlesson ' + (it.state || "") + (it.changed ? " changed" : "") + '" style="--i:' + idx + '">' +
+        return gapRow + '<article class="lesson tlesson ' + subjColor(it.subject) + " " + (it.state || "") + (it.changed ? " changed" : "") + '" style="--i:' + idx + '">' +
           '<div class="time">' + it.startText + "<small>" + it.endText + "</small></div>" +
           '<div><div class="subj">' + subjectsHTML(it.subject) + tags + "</div>" +
           '<div class="who"><span class="groups">' + it.groups.map(esc).join(", ") + "</span>" +
           (n ? ' · <span class="nw">' + n + "</span>" : "") + "</div></div>" +
           '<div class="room">' + (it.rooms.length ? (it.rooms.every(function (r) { return /-\?$/.test(r); }) ? "" : "ауд. ") + it.rooms.map(roomLabel).map(esc).join(", ") : "") + "</div>" +
-          (it.state === "now" ? '<div class="corner" aria-hidden="true"></div>' + timerHTML(it, now) : "") + "</article>";
+          (it.state === "now" ? timerHTML(it, now) : "") + "</article>";
       }).join("") : '<div class="empty">' + (d.holiday ? esc(d.holiday.name) : d.weekday === 7 ? "Выходной" : "Пар нет") + "</div>";
 
       animIn($("dayView"));
@@ -1274,6 +1378,8 @@
       }).join(", ") : "";
       $("unverified").hidden = true;
       $("lessonHint").hidden = true;
+      $("shareBtn").hidden = true;
+      $("nextUp").hidden = true;
       var z = d.z;
       $("images").hidden = !z || !z.images.length;
       $("imageList").innerHTML = imagesHTML(z, date);
@@ -1625,9 +1731,9 @@
     });
   })();
 
-  // Свайп по расписанию: влево — следующая вкладка (Сегодня -> Завтра -> Неделя), вправо — предыдущая
+  // Свайп по расписанию: влево — следующий день полосы (в конце «Неделя»), вправо — предыдущий
   (function () {
-    var TABS = [0, 1, "week"], x0 = null, y0 = 0, t0 = 0;
+    var x0 = null, y0 = 0, t0 = 0;
     var area = document.querySelector("main");
     area.addEventListener("touchstart", function (e) {
       x0 = null;
@@ -1639,6 +1745,8 @@
       var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
       x0 = null;
       if (Math.abs(dx) < 60 || Math.abs(dx) < 1.8 * Math.abs(dy) || Date.now() - t0 > 800) return;
+      var TABS = Array.prototype.map.call(document.querySelectorAll(".tabs .strip"), function (b) { return b.dataset.day === "week" ? "week" : +b.dataset.day; });
+      if (!TABS.length) TABS = [0, 1, "week"];
       var i = TABS.indexOf(state.offset), j = i + (dx < 0 ? 1 : -1);
       if (i < 0 || j < 0 || j >= TABS.length) return;
       state.offset = TABS[j];

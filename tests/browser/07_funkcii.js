@@ -119,6 +119,35 @@ const { URL, lastZ, launch, page, open, report, tab, openWhere, openHistory } = 
       await p.keyboard.press('Escape');
     });
 
+    // полоса дней (и на телефоне): выбранный день виден, нажатие на другой день его выбирает
+    await step(T + 'полоса дней', async () => {
+      await open(p);
+      const sel = await p.evaluate(() => { const n = document.querySelector('.tabs'), b = n.querySelector('.strip[aria-selected="true"]'); if (!b) return null;
+        const r = b.getBoundingClientRect(), nr = n.getBoundingClientRect(); return { day: b.dataset.day, inside: r.left >= nr.left - 1 && r.right <= nr.right + 1 }; });
+      ok(sel && sel.inside, T + 'в полосе дней не виден выбранный день');
+      const other = p.locator('.tabs .strip:not(.wk):not([aria-selected="true"]):not(.past):visible').first();
+      const d = await other.getAttribute('data-day'); await other.click(); await p.waitForTimeout(600);
+      ok(await p.evaluate((d) => document.querySelector('.tabs .strip[data-day="' + d + '"]').getAttribute('aria-selected') === 'true', d), T + 'нажатие на день в полосе не выбрало его');
+      ok(await p.evaluate(() => [...document.querySelectorAll('.tabs > button:not(.strip)')].every((b) => !b.getClientRects().length)), T + 'старые вкладки «Сегодня / Завтра» видны вместе с полосой');
+      await open(p);
+    });
+
+    // «Поделиться»: картинка дня — в меню «Поделиться» или скачивается
+    await step(T + 'поделиться', async () => {
+      ok(await p.isVisible('#shareBtn'), T + 'нет надписи «Поделиться»');
+      const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 5000 }), p.click('#shareBtn')]);
+      ok(/^raspisanie-11-A-\d\d\.\d\d\.png$/.test(dl.suggestedFilename()), T + 'картинка дня скачалась с именем ' + dl.suggestedFilename());
+      const size = (await require('fs').promises.stat(await dl.path())).size;
+      ok(size > 10000, T + 'картинка дня слишком маленькая: ' + size + ' байт');
+    });
+
+    // крупная «следующая пара»: во время пары её нет (видно рамкой «Сейчас»), на компьютере нет вовсе
+    await step(T + 'следующая пара крупно', async () => {
+      const r = await p.evaluate(() => ({ now: !!document.querySelector('#list .lesson.now'), shown: !document.getElementById('nextUp').hidden }));
+      ok(!(r.now && r.shown), T + 'крупная «следующая пара» показана во время пары');
+      if (!s.mob) ok(!r.shown, T + 'крупная «следующая пара» на компьютере');
+    });
+
     await step(T + 'змейка', async () => {
       await p.evaluate(() => document.activeElement && document.activeElement.blur());
       if (s.mob) { for (let i = 0; i < 5; i++) await p.tap('.disclaimer'); } else { for (const k of 'wasd') await p.keyboard.press(k); }
@@ -138,12 +167,16 @@ const { URL, lastZ, launch, page, open, report, tab, openWhere, openHistory } = 
         const t = (x, y) => [{ identifier: 1, clientX: x, clientY: y }];
         await p.dispatchEvent('#list', 'touchstart', { touches: t(200, 600), changedTouches: t(200, 600) });
         await p.dispatchEvent('#list', 'touchend', { touches: [], changedTouches: t(200 + dx, 600 + dy) });
-        await p.waitForTimeout(500); return p.$eval('.tabs button[aria-selected="true"]', (x) => x.dataset.day);
+        await p.waitForTimeout(500); return p.$eval('.tabs .strip[aria-selected="true"]', (x) => x.dataset.day);
       };
-      ok((await swipe(-150)) === '1', T + 'свайп влево не перешёл на «Завтра»');
-      ok((await swipe(-150)) === 'week', T + 'свайп влево не перешёл на «Неделю»');
-      ok((await swipe(150)) === '1', T + 'свайп вправо не вернул «Завтра»');
-      ok((await swipe(-60, 300)) === '1', T + 'вертикальная прокрутка переключила день');
+      // свайп листает дни полосы по порядку (воскресенья в ней нет), в конце — «Неделя»
+      const days = await p.$$eval('.tabs .strip', (x) => x.map((e) => e.dataset.day));
+      const at = days.indexOf('0');
+      ok((await swipe(-150)) === days[at + 1], T + 'свайп влево не перешёл на следующий день');
+      ok((await swipe(-150)) === days[at + 2], T + 'второй свайп влево не перешёл дальше');
+      ok((await swipe(150)) === days[at + 1], T + 'свайп вправо не вернул предыдущий день');
+      ok((await swipe(-60, 300)) === days[at + 1], T + 'вертикальная прокрутка переключила день');
+      await tab(p, 'week'); ok((await swipe(-150)) === 'week', T + 'свайп влево после «Недели» что-то переключил');
       await tab(p, '0');
     });
 

@@ -92,13 +92,18 @@
       <ul id="baseList"></ul>
     </details>
     <section id="banner" class="banner" hidden></section>
+    <!-- до первой пары и на перемене: какая пара следующая и через сколько (только телефон) -->
+    <div id="nextUp" class="next-up" aria-live="polite" hidden></div>
     <div class="listbox">
       <button type="button" id="infoBtn" class="info-btn" aria-controls="banner" aria-expanded="false"
         aria-label="Замены на этот день" hidden>i</button>
       <section id="list" class="list" aria-label="Уроки"></section>
     </div>
     <section id="cancelled" class="cancelled" hidden></section>
-    <p class="hint small" id="lessonHint">Если нажать на урок, можно увидеть полное имя преподавателя.</p>
+    <div class="hint-row">
+      <p class="hint small" id="lessonHint">Если нажать на урок, можно увидеть полное имя преподавателя.</p>
+      <button type="button" class="share-btn" id="shareBtn" hidden>Поделиться</button>
+    </div>
     <label class="switch" id="langSwitch" hidden>
       <input type="checkbox" id="langToggle">
       <span class="track" aria-hidden="true"><i></i></span>
