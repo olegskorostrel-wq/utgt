@@ -107,9 +107,9 @@ h1::first-letter { text-transform: uppercase; }
 /* полоса дней — только на компьютере (desktop.css) */
 /* полоса дней (две недели без воскресений и «Неделя»): когда построена, вместо «Сегодня / Завтра / Неделя»;
    на телефоне листается пальцем вбок */
-.tabs.has-strip { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
-.tabs.has-strip::-webkit-scrollbar { display: none; }
-.tabs.has-strip > button:not(.strip) { display: none; }
+.tabs { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs:empty { min-height: 50px; } /* место под полосу — чтобы страница не прыгнула, когда она появится */
 .tabs .strip { flex: 0 0 52px; padding: 6px 0; border-radius: 12px; font-size: 14px; line-height: 1.25; color: var(--muted); }
 .tabs .strip b { display: block; font-size: 15px; color: var(--text); }
 .tabs .strip.off { opacity: .45; }
@@ -248,6 +248,15 @@ h1::first-letter { text-transform: uppercase; }
 .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 20px; text-align: center; color: var(--muted); }
 
 .hint { margin: 10px 2px 0; color: var(--muted); font-size: 13px; }
+/* серые заготовки карточек, пока грузится расписание */
+.skel {
+  height: 62px; border-radius: 12px; border: 1px solid var(--line);
+  background: linear-gradient(90deg, var(--card) 30%, color-mix(in srgb, var(--line) 70%, var(--card)) 50%, var(--card) 70%);
+  background-size: 300% 100%; animation: skel 1.4s linear infinite;
+}
+.skel + .skel { margin-top: 8px; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 /* «Поделиться» — неприметной надписью справа от подсказки: нужна редко */
 .hint-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .hint-row .hint { flex: 1; }

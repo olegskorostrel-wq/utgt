@@ -75,11 +75,8 @@
       </div>
     </header>
 
-    <nav class="tabs" role="tablist">
-      <button type="button" role="tab" data-day="0"><span class="t">Сегодня</span></button>
-      <button type="button" role="tab" data-day="1"><span class="t">Завтра</span></button>
-      <button type="button" role="tab" data-day="week"><span class="t">Неделя</span></button>
-    </nav>
+    <!-- полоса дней (две недели без воскресений и «Неделя») — рисует app.js сразу при открытии -->
+    <nav class="tabs" role="tablist" aria-label="Дни"></nav>
 
 
     <section id="weekView" class="week" hidden></section>
@@ -97,11 +94,14 @@
     <div class="listbox">
       <button type="button" id="infoBtn" class="info-btn" aria-controls="banner" aria-expanded="false"
         aria-label="Замены на этот день" hidden>i</button>
-      <section id="list" class="list" aria-label="Уроки"></section>
+      <section id="list" class="list" aria-label="Уроки" aria-busy="true">
+        <!-- пока грузится расписание — серые заготовки карточек -->
+        <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+      </section>
     </div>
     <section id="cancelled" class="cancelled" hidden></section>
     <div class="hint-row">
-      <p class="hint small" id="lessonHint">Если нажать на урок, можно увидеть полное имя преподавателя.</p>
+      <p class="hint small" id="lessonHint" hidden>Если нажать на урок, можно увидеть полное имя преподавателя.</p>
       <button type="button" class="share-btn" id="shareBtn" hidden>Поделиться</button>
     </div>
     <label class="switch" id="langSwitch" hidden>

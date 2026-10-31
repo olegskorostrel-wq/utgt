@@ -861,6 +861,7 @@
     drawBase(ag, z, date, schedule);
 
     $("list").innerHTML = cardsHTML(ag, date, now, upd);
+    $("list").removeAttribute("aria-busy");
     drawDayHead(ag, date, now);
     drawNextUp(ag, date, now);
     state.shareDay = { ag: ag, date: date };
@@ -941,13 +942,12 @@
   function drawStrip(now) {
     var nav = document.querySelector(".tabs");
     nav.querySelectorAll(".strip").forEach(function (b) { b.remove(); });
-    nav.classList.add("has-strip");
     var base = params.get("date") || now.date, wd = A.isoWeekday(base), mon = A.addDays(base, wd === 7 ? 1 : 1 - wd), html = "", ahead = 0;
     for (var i = 0; i < 14; i++) {
       var d = A.addDays(mon, i);
       if (A.isoWeekday(d) === 7) continue;
       var off = Math.round((Date.parse(d) - Date.parse(base)) / 864e5);
-      var dead = d < base || !!C.dayOff(d, state.data.calendar, state.group);
+      var dead = d < base || !!(state.data && C.dayOff(d, state.data.calendar, state.group));
       // past — прошедшие дни недели, far5/far — дальше 5/8 дней вперёд: на небольших экранах их не видно (desktop.css)
       var cls = d < base ? " past" : ahead >= 8 ? " far" : ahead >= 5 ? " far5" : "";
       if (d >= base) ahead++;
@@ -1362,6 +1362,7 @@
       $("base").hidden = true;
 
       var list = $("list");
+      list.removeAttribute("aria-busy");
       list.innerHTML = d.items.length ? d.items.map(function (it, idx) {
         var gapRow = idx ? gapHTML(d.items[idx - 1], it, date, now) : "";
         var tags = "";
@@ -1792,6 +1793,19 @@
       store(INAPP_KEY, String(Date.now()));
       $("inapp").remove();
     });
+  })();
+
+  // Сразу, ещё до загрузки данных: полоса дней, запомненная группа и сегодняшняя дата —
+  // а не пустые «Группа / Расписание» (данные на слабом интернете идут несколько секунд)
+  (function () {
+    var now = A.moscowNow(), who = params.get("group") || params.get("teacher") ||
+      (store(WHO_KEY) === "teacher" ? store(TEACHER_KEY) : store(STORE_KEY));
+    setClock(now.time);
+    drawStrip(now);
+    document.querySelectorAll(".tabs button").forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.day === "0")); });
+    scrollStrip();
+    if (who) { $("groupName").textContent = who; $("groupName").dataset.typed = who; }
+    setTitle(A.humanDate(params.get("date") || now.date));
   })();
 
   load().then(function () {
