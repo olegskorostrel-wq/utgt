@@ -1334,11 +1334,19 @@
       });
 
       var banner = $("banner"), cls = "info", html, where = isDesk() ? "справа" : "ниже"; // где картинка распоряжения
-      if (d.z && !d.z.po_raspisaniyu) {
+      // распознано неуверенно (у любой группы: перепутанная группа может оказаться чьей угодно) — сверить с картинкой
+      var unsure = d.z && !d.z.po_raspisaniyu && (d.z.ocr_group_doubt || Object.keys(d.z.all_changes || {}).some(function (g) {
+        return g === "?" || d.z.all_changes[g].some(function (r) { return r.uncertain; });
+      }));
+      if (d.z && !d.z.po_raspisaniyu && !d.z.ocr_ok) {
+        cls = "warn";
+        html = "<strong>Замены опубликованы, но таблицу распознать не удалось</strong>Посмотрите картинку " + where + ".";
+      } else if (d.z && !d.z.po_raspisaniyu) {
         var touched = d.removed.length || d.items.some(function (i) { return i.changed; });
-        cls = touched ? "warn" : "ok";
+        cls = touched || unsure ? "warn" : "ok";
         html = "<strong>Замены на этот день учтены</strong>" +
-          (d.removed.length ? "Часть пар снята — см. ниже." : touched ? "Пары по замене отмечены." : "Ваших пар замены не коснулись.");
+          (d.removed.length ? "Часть пар снята — см. ниже." : touched ? "Пары по замене отмечены." : "Ваших пар замены не коснулись.") +
+          (unsure ? " Но часть строк распознана неуверенно — сверьтесь с картинкой " + where + "." : "");
       } else if (d.z) {
         cls = "ok";
         html = "<strong>Замен нет</strong>На сайте техникума: занятия по расписанию.";

@@ -32,6 +32,9 @@ def test_normalize_group(text, expected):
 @pytest.mark.parametrize("text,expected", [
     ("5-6", ([5, 6], None)), ("8-30", ([0], "08:30")), ("14-50", ([], "14:50")),
     ("3—", ([3, 4], None)), ("5-10", ([5, 6, 7, 8, 9, 10], None)),
+    # дефис потерялся при чтении одними цифрами
+    ("34", ([3, 4], None)), ("78", ([7, 8], None)), ("910", ([9, 10], None)), ("830", ([0], "08:30")),
+    ("1450", ([], "14:50")), ("10", ([10], None)), ("4", ([4], None)),
 ])
 def test_parse_lessons(text, expected):
     assert scraper.parse_lessons(text) == expected
@@ -179,13 +182,48 @@ def test_fix_digits():
     assert scraper.fix_digits("2-]2") == "2-12" and scraper.fix_digits("1-З") == "1-3"
 
 
+def rows_of(tables, date):
+    scraper.check_with_schedule(tables, date, tables[0].get("title", ""))
+    return [(r["group"], r["lessons"], r["subject"][:22], r["room"], r["uncertain"]) for t in tables for r in t["rows"]]
+
+
 @needs_tesseract
 def test_ocr_whole_order_small_image_31_10():
-    """Картинка — всё распоряжение целиком, мелко: линии бланка над таблицей не мешают найти таблицу,
-    а криво прочитанное название группы и «1-8» вместо «7-8» помечаются как неуверенные."""
+    """Мелкая картинка (621 точка): каждую ячейку читаем несколькими способами и голосуем —
+    раньше «11-П» читалось как «11-И», «21-П 7-8» как «21-Д 1-8», «2-7» как «2-1»."""
     t = scraper.ocr_table(FIX / "31.10.2026.png", scraper.subject_vocab())
-    assert t["ok"]
-    assert "Суббота" in t["title"]
-    assert scraper.group_changes(t) == []  # у 11-А замен нет
-    assert t["group_doubt"]  # «11-П» прочитано как «11-И» — сайт попросит сверить с картинкой
-    assert all(r["uncertain"] for r in t["rows"] if len(r["lessons"]) >= 7 and r["lessons"][0] == 1)
+    assert t["ok"] and "Суббота" in t["title"]
+    C, B, M = "Отменить", "Биология", "МДК.03.01 Технологии п"
+    assert rows_of([t], "2026-10-31") == [
+        ("11-П", [1, 2], C, "", False), ("11-Д", [5, 6], C, "", False), ("11-Л", [7, 8], B, "2-7", False),
+        ("21-П", [7, 8], C, "", False), ("21-С", [3, 4, 5, 6], C, "", False), ("41-А", [1, 2], C, "", False),
+        ("41-С", [1, 2, 3, 4], C, "", False), ("41-С", [5, 6, 7, 8], M, "1-30", False)]
+
+
+@needs_tesseract
+def test_ocr_small_image_02_11():
+    """Мелкая картинка на 29 строк: «8-30» (раньше 8-50), «7-8» (раньше 1-8), П/Д в группах, «Акт. зал»,
+    кабинет 1-28 (прочитался то как 1-25, то как 1-28 — решают прошлые распоряжения 21-Д)."""
+    t = scraper.ocr_table(FIX / "02.11.2026.png", scraper.subject_vocab())
+    got = rows_of([t], "2026-11-02")
+    assert [(g, l, r) for g, l, _, r, _ in got] == [
+        ("11-П", [0], ""), ("11-П", [5, 6], ""), ("11-Д", [0], ""), ("11-Д", [7, 8], "1-30"), ("11-А", [0], "1-25"),
+        ("11-С", [0], "Акт. зал"), ("11-С", [7, 8], "2-5"), ("11-В", [0], "1-9"), ("11-Л", [0], "1-3"), ("11-Л", [7, 8], "2-7"),
+        ("21-П", [0], "Акт. зал"), ("21-Д", [0], "1-28"), ("21-А", [0], "1-10"), ("21-С", [0], "1-14"), ("21-Л", [0], "1-32"),
+        ("31-П", [0], "2-7"), ("31-П", [1, 2], "1-9"), ("31-П", [5, 6], ""), ("31-Д", [0], "1-31"),
+        ("31-А", [0], ""), ("31-А", [1, 2], ""), ("31-А", [7, 8], "1-10"), ("31-А", [5, 6], ""),
+        ("31-С", [0], "1-24"), ("31-С", [7, 8], "1-32"), ("41-П", [0], ""), ("41-П", [5, 6, 7, 8], ""),
+        ("41-С", [0], ""), ("41-С", [9, 10], "2-10")]
+    assert not any(u for *_, u in got)
+
+
+def test_check_with_schedule():
+    """Отмена уроков, которых у группы в этот день нет, — неуверенно; ничья по кабинету — по расписанию."""
+    sched = {"21-П": {"days": {"6": [{"lessons": [7, 8], "week": 2, "subject": "История России", "room": "2-10"}],
+                               "1": [{"lessons": [1, 2], "subject": "Геодезия", "room": "2-2"}]}}}
+    row = lambda **k: {"group": "21-П", "lessons": [7, 8], "time": None, "subject": "Отменить", "room": "", "uncertain": False, **k}
+    t = {"rows": [row(), row(lessons=[1, 2]), row(subject="Геодезия", room="2-1", room_alts=["2-1", "2-2"]),
+                  row(subject="История России", room="1-5", room_alts=["1-5", "1-6"])]}
+    scraper.check_with_schedule([t], "2026-10-31", "Суббота, 2-я неделя", schedules=sched, past={})
+    assert [(r["room"], r["uncertain"]) for r in t["rows"]] == [("", False), ("", True), ("2-2", False), ("1-5", True)]
+    assert all("room_alts" not in r for r in t["rows"])

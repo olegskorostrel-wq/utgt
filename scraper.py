@@ -17,6 +17,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
@@ -24,7 +25,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image
+from PIL import Image, ImageOps
 
 URL = "https://utgt-pgups.ru/ochnoe-zaochnoe-otdelenie/58-zamena-zanyatij.html"
 GROUP = "11-А"
@@ -109,12 +110,26 @@ def _runs(mask):
     return out
 
 
-def _tesseract(img, psm):
+def _tesseract(img, psm, lang="rus", extra=()):
     with tempfile.NamedTemporaryFile(suffix=".png") as f:
         img.save(f.name)
-        r = subprocess.run(["tesseract", f.name, "-", "-l", "rus", "--psm", str(psm)],
+        r = subprocess.run(["tesseract", f.name, "-", "-l", lang, "--psm", str(psm), *extra],
                            capture_output=True, text=True, check=True)
     return " ".join(r.stdout.split())
+
+
+# только цифры и дефис: на мелких картинках «7-8» иначе читается как «1-8», «8-30» — как «8-50»
+DIGITS = ("-c", "tessedit_char_whitelist=0123456789-")
+
+
+def _vote(values):
+    """Самое частое из прочитанного (None — не прочиталось) и уверенность: за него больше половины
+    прочитанных вариантов. Одно и то же место читаем по-разному — так случайная ошибка не проходит."""
+    vals = [v for v in values if v is not None]
+    if not vals:
+        return None, False
+    best, n = Counter(vals).most_common(1)[0]
+    return best, n * 2 > len(vals)
 
 
 def normalize_group(text):
@@ -158,8 +173,19 @@ def fix_digits(text):
 
 
 def parse_lessons(text):
-    """'5-6' -> ([5, 6], None); '8-30' -> ([0], '08:30') ; '3' -> ([3], None)."""
+    """'5-6' -> ([5, 6], None); '8-30' -> ([0], '08:30') ; '3' -> ([3], None).
+    Дефис потерялся: '34' -> ([3, 4], None), '910' -> ([9, 10], None), '830' -> ([0], '08:30')."""
     t = text.replace("—", "-").replace("–", "-").replace(":", "-")
+    m = re.fullmatch(r"\s*(\d{2,4})\s*", t)
+    if m and m.group(1) != "10":
+        d = m.group(1)
+        if d == "910":
+            return [9, 10], None
+        if len(d) == 2 and 1 <= int(d[0]) < int(d[1]) <= 9:
+            return list(range(int(d[0]), int(d[1]) + 1)), None
+        if len(d) >= 3 and int(d[-2:]) < 60 and 8 <= int(d[:-2]) <= 18:
+            time = f"{int(d[:-2]):02d}:{d[-2:]}"
+            return ([0] if time == "08:30" else []), time
     nums = [int(n) for n in re.findall(r"\d{1,2}", t)]
     if len(nums) >= 2:
         a, b = nums[0], nums[1]
@@ -214,14 +240,16 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
     row_h = np.median(np.diff(hlines))
     scale = max(3, int(round(66 / max(row_h, 1))))
 
-    def cell(x0, x1, y0, y1, psm, k=None):
+    def cell(x0, x1, y0, y1, psm, k=None, pad=False, lang="rus", extra=()):
         c = im.crop((x0 + 2, y0 + 2, x1 - 1, y1 - 1))
         dark = (np.array(c) < 128).mean() if c.width > 4 and c.height > 4 else 0
         if dark < 0.004:
             return "", dark
         k = k or scale
         c = c.resize((c.width * k, c.height * k), Image.LANCZOS)
-        return _tesseract(c, psm), dark
+        if pad:  # белое поле вокруг: мелкие буквы у самой рамки ячейки иначе путаются (П -> И, 7 -> 1)
+            c = ImageOps.expand(c, border=c.height // 2, fill=255)
+        return _tesseract(c, psm, lang, extra), dark
 
     title, rows, in_table, group, uncertain, group_doubt = "", [], False, None, False, False
     for y0, y1 in zip(hlines, hlines[1:]):
@@ -238,12 +266,19 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
             continue
         g_text, g_dark = texts[0]
         g, g_ok = normalize_group(g_text)
-        for k in (3, 5, 2):  # мелкие картинки: пробуем другой масштаб
-            if g and g_ok or not g_text:
-                break
-            g2, ok2 = normalize_group(cell(vlines[0], vlines[1], y0, y1, 7, k)[0])
-            if g2 and (ok2 or not g):
-                g, g_ok = g2, ok2
+        if g_text:
+            # ещё два чтения с белым полем; группа — за которую большинство настоящих прочтений
+            reads = [g_text] + [cell(vlines[0], vlines[1], y0, y1, 7, k, pad=True)[0] for k in (4, 5)]
+            known = [n for n, ok in map(normalize_group, reads) if n and ok]
+            best, sure = _vote(known)
+            if best:
+                g, g_ok = best, sure
+            for k in (3, 5, 2):  # ничего не прочиталось как группа — пробуем другой масштаб
+                if g and g_ok:
+                    break
+                g2, ok2 = normalize_group(cell(vlines[0], vlines[1], y0, y1, 7, k)[0])
+                if g2 and (ok2 or not g):
+                    g, g_ok = g2, ok2
         row_uncertain = False
         if g:
             group = g
@@ -253,10 +288,35 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
             # в ячейке группы что-то написано, но прочитать не вышло:
             # не приписываем строку предыдущей группе молча
             group, row_uncertain, group_doubt = "?", True, True
-        lessons, time = parse_lessons(raw[1] if len(raw) > 1 else "")
+        # урок: обычное чтение и ещё четыре разными способами (подобраны на мелких картинках 19.10–02.11:
+        # каждый способ где-то ошибается, большинство — нет); берём то, за что большинство
+        lesson_reads = [raw[1] if len(raw) > 1 else ""]
+        if lesson_reads[0]:
+            lesson_reads += [cell(vlines[1], vlines[2], y0, y1, 7, k, pad=True, lang=lang, extra=extra)[0]
+                             for k, lang, extra in ((5, "eng", DIGITS), (3, "eng", DIGITS), (4, "rus", DIGITS), (4, "rus", ()))]
+        parsed = [(tuple(l), t) for l, t in map(parse_lessons, lesson_reads)]
+        best, lessons_sure = _vote([p for p in parsed if p[0] or p[1]])
+        lessons, time = (list(best[0]), best[1]) if best else ([], None)
+        if best and not lessons_sure:
+            row_uncertain = True
         subject = raw[2] if len(raw) > 2 else ""
         room = fix_digits(raw[3]) if len(raw) > 3 else ""
-        if not re.search(r"\d-\d", room):
+        room_alts = []
+        if len(raw) > 3 and re.match(r"\s*ак", raw[3], re.I):  # «АкКтТ.ЗАЛ»
+            room = "Акт. зал"
+        elif len(raw) > 3 and raw[3]:
+            # кабинет: несколько масштабов; «]» в конце — это 7 или 1 (на мелкой картинке не различить)
+            room_reads = [raw[3]] + [cell(vlines[3], vlines[4], y0, y1, 7, k, pad=pad)[0] for k, pad in ((3, False), (6, False), (4, True))]
+            votes = Counter()
+            for r in room_reads:
+                r = r.replace(" ", "")
+                variants = {snap_room(fix_digits(r), rooms), snap_room(fix_digits(r.replace("]", "7")), rooms)}
+                votes.update(v for v in variants if v in rooms)
+            if votes:
+                top = votes.most_common()
+                room_alts = [v for v, n in top if n == top[0][1]]
+                room = room_alts[0]  # ничья (несколько кабинетов) — решит сверка (check_with_schedule)
+        if not re.search(r"\d-\d", room) and room != "Акт. зал":
             m = re.search(r"\s*[|\]]?\s*(\d-\d{1,2})\s*$", subject)
             room = m.group(1) if m else ""
             if m:
@@ -269,13 +329,66 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
         if len(lessons) >= 7 and lessons[0] == 1:  # «1-8» на мелкой картинке — обычно неверно прочитанное «7-8»
             row_uncertain = True
         rows.append({"group": group, "lessons": lessons, "time": time, "subject": subject,
-                     "room": room, "uncertain": row_uncertain or not s_ok, "raw": raw})
+                     "room": room, "uncertain": row_uncertain or not s_ok, "raw": raw,
+                     "room_alts": room_alts if len(room_alts) > 1 else []})
         uncertain |= row_uncertain and (group or "").startswith(("1", "?"))
     return {"ok": in_table and bool(rows), "title": title, "rows": rows,
             # рамка таблицы на картинке: сайт показывает только её, крупно (x0, y0, x1, y1, ширина, высота)
             "box": [int(vlines[0]), int(hlines[0]), int(vlines[-1]), int(hlines[-1]), im.width, im.height],
             "uncertain_course1": uncertain, "group_doubt": group_doubt,
             "error": None if in_table else "не найдена шапка таблицы"}
+
+
+def check_with_schedule(tables, date, title="", schedules=None, past=None):
+    """Сверка распознанного с расписанием групп и прошлыми заменами (меняет строки на месте):
+    - кабинет прочитался по-разному (ничья) — берём тот, что у группы по этому предмету в расписании
+      или в прошлых распоряжениях; не нашёлся — строка неуверенная;
+    - отменяют уроки, которых у группы в этот день по расписанию нет, — скорее всего, неверно
+      прочитана группа или номера уроков: строка неуверенная."""
+    if schedules is None:
+        idx = json.loads((ROOT / "data" / "groups" / "index.json").read_text(encoding="utf-8"))
+        schedules = {g["group"]: json.loads((ROOT / "data" / "groups" / g["file"]).read_text(encoding="utf-8"))
+                     for g in idx["groups"]}
+    if past is None:
+        past = past_rooms(before=date)
+    wd = dt.date.fromisoformat(date).isoweekday()
+    m = re.search(r"([12])\s*-?\s*я\s+недел", title or "")
+    week = int(m.group(1)) if m else None
+    for t in tables:
+        for r in t["rows"]:
+            s = schedules.get(r["group"])
+            alts = r.pop("room_alts", None) or []
+            if not s:
+                if len(alts) > 1:
+                    r["uncertain"] = True
+                continue
+            if len(alts) > 1:
+                own = {e["room"] for d in s["days"].values() for e in d if e["subject"] == r["subject"]}
+                hits = [a for a in alts if a in own] or [a for a in alts if a in past.get((r["group"], r["subject"]), ())]
+                if len(hits) == 1:
+                    r["room"] = hits[0]
+                else:
+                    r["uncertain"] = True
+            day = [e for e in s["days"].get(str(wd), []) if not (e.get("week") and week and e["week"] != week)]
+            have = {n for e in day for n in e["lessons"]}
+            if r["subject"] == CANCEL and r["lessons"] and not set(r["lessons"]) & have:
+                r["uncertain"] = True
+    return tables
+
+
+def past_rooms(before=None, archive=ROOT / "data" / "archive"):
+    """Кабинеты из прошлых распоряжений: {(группа, предмет): {кабинеты}} — чтобы решать ничью по кабинету."""
+    import gzip
+    out = {}
+    for p in sorted(archive.glob("????-??.json.gz")):
+        for date, z in json.loads(gzip.decompress(p.read_bytes()).decode("utf-8")).items():
+            if before and date >= before:
+                continue
+            for g, rows in (z.get("all_changes") or {}).items():
+                for r in rows:
+                    if r.get("room") and not r.get("uncertain"):
+                        out.setdefault((g, r["subject"]), set()).add(r["room"])
+    return out
 
 
 def group_changes(table, group=GROUP):
@@ -328,7 +441,8 @@ def process_block(block, session, vocab, out_dir=OUT_DIR, log=print):
         if t.get("box"):
             img["table"] = t["box"]
         tables.append(t)
-        changes += group_changes(t)
+    check_with_schedule(tables, date, next((t["title"] for t in tables if t.get("title")), ""))
+    changes = [c for t in tables for c in group_changes(t)]
     meta = {
         "date": date,
         "group": GROUP,
@@ -364,6 +478,7 @@ def reprocess(out_dir=OUT_DIR, vocab=None, log=print):
         if not meta["images"]:
             continue
         tables = [ocr_table(out_dir / i["file"], vocab) for i in meta["images"]]
+        check_with_schedule(tables, meta["date"], next((t["title"] for t in tables if t.get("title")), ""))
         for i, t in zip(meta["images"], tables):
             if t.get("box"):
                 i["table"] = t["box"]

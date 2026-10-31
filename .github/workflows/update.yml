@@ -31,10 +31,10 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Установить tesseract (русский)
+      - name: Установить tesseract (русский; английский — для чтения одних цифр)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q tesseract-ocr tesseract-ocr-rus
+          sudo apt-get install -y -q tesseract-ocr tesseract-ocr-rus tesseract-ocr-eng
 
       - run: pip install -r requirements.txt
 
