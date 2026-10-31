@@ -76,6 +76,11 @@
     var cancelled = [], extra = [];
     var changes = (zamena && zamena.changes) || [];
     changes.forEach(function (c, i) {
+      // строка со временем вместо урока («8-30»): в понедельник до первой пары — это «Разговоры о важном»
+      // (урок 0) — меняем их кабинет или отменяем их, а не добавляем вторую карточку
+      if (!c.lessons.length && c.time && wd === 1 && toMin(c.time) < toMin(bells.monday.pairs["1"][0])) {
+        c = Object.assign({}, c, { lessons: [0] });
+      }
       if (!c.lessons.length) {
         if (c.time && c.subject !== CANCEL) {
           var t = toMin(c.time);

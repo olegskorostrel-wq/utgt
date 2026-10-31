@@ -19,6 +19,15 @@ test("понедельник 26.10 без замен", () => {
   ]);
 });
 
+test("понедельник: строка «8-30» в заменах — это «Разговоры о важном», а не вторая карточка", () => {
+  const z = (subject, room) => ({ changes: [{ lessons: [], time: "08:30", subject, room, uncertain: false }] });
+  const ag = A.build("2026-11-02", schedule, bells, z("Разговоры о важном", "1-25"));
+  assert.deepStrictEqual(brief(ag).slice(0, 2), ["08:30-09:15 Разговоры о важном 1-25 *", "09:20-10:50 Информатика 1-25"]);
+  const off = A.build("2026-11-02", schedule, bells, z("Отменить", ""));
+  assert.strictEqual(off.items[0].subject, "Информатика");
+  assert.deepStrictEqual(off.cancelled.map((c) => c.subject), ["Разговоры о важном"]);
+});
+
 test("пятница, 3-я пара: 1-я неделя История, 2-я неделя Литература (на всю пару)", () => {
   const w1 = A.build("2026-10-23", schedule, bells, null);
   const w2 = A.build("2026-10-30", schedule, bells, null);
