@@ -42,8 +42,9 @@ KNOWN_GROUPS = ["11-П", "11-Д", "11-А", "11-С", "11-В", "11-Л",
                 "21-П", "21-Д", "21-А", "21-С", "21-Л",
                 "31-П", "31-Д", "31-А", "31-С",
                 "41-П", "41-Д", "41-А", "41-С"]
-# Как tesseract путает буквы групп. «Д» на мелких картинках часто читается как 1 или 7.
-LETTER_FIX = {"п": "П", "д": "Д", "1": "Д", "7": "Д", "а": "А", "a": "А", "с": "С",
+# Как tesseract путает буквы групп. Цифру вместо буквы («11-1», «21-7») не угадываем: на мелких картинках
+# так читаются и «Д», и «П» — пусть решают другие чтения той же ячейки.
+LETTER_FIX = {"п": "П", "д": "Д", "а": "А", "a": "А", "с": "С",
               "c": "С", "©": "С", "в": "В", "b": "В", "л": "Л"}
 
 CANCEL = "Отменить"
@@ -122,14 +123,18 @@ def _tesseract(img, psm, lang="rus", extra=()):
 DIGITS = ("-c", "tessedit_char_whitelist=0123456789-")
 
 
+VOTE_SHARE = 0.6  # доля согласных прочтений, чтобы считать ответ уверенным (подобрано: tools/ocr_proverka.py)
+ROOM_ALT_MIN = 1  # сколько прочтений должно быть за другой кабинет, чтобы считать кабинет спорным
+
+
 def _vote(values):
-    """Самое частое из прочитанного (None — не прочиталось) и уверенность: за него больше половины
-    прочитанных вариантов. Одно и то же место читаем по-разному — так случайная ошибка не проходит."""
+    """Самое частое из прочитанного (None — не прочиталось) и уверенность: все прочтения согласны.
+    Одно и то же место читаем по-разному — так случайная ошибка не проходит, а расхождение видно."""
     vals = [v for v in values if v is not None]
     if not vals:
         return None, False
     best, n = Counter(vals).most_common(1)[0]
-    return best, n * 2 > len(vals)
+    return best, n >= VOTE_SHARE * len(vals)
 
 
 def normalize_group(text):
@@ -242,7 +247,9 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
 
     def cell(x0, x1, y0, y1, psm, k=None, pad=False, lang="rus", extra=()):
         c = im.crop((x0 + 2, y0 + 2, x1 - 1, y1 - 1))
-        dark = (np.array(c) < 128).mean() if c.width > 4 and c.height > 4 else 0
+        # пусто ли: считаем и серые точки — мелкий размытый текст бывает совсем не чёрным,
+        # и «11-В» иначе принимается за пустую ячейку (строка молча уходит предыдущей группе)
+        dark = (np.array(c) < 192).mean() if c.width > 4 and c.height > 4 else 0
         if dark < 0.004:
             return "", dark
         k = k or scale
@@ -252,6 +259,7 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
         return _tesseract(c, psm, lang, extra), dark
 
     title, rows, in_table, group, uncertain, group_doubt = "", [], False, None, False, False
+    group_sure = True  # группа текущего блока прочитана уверенно — следующие строки блока наследуют это
     for y0, y1 in zip(hlines, hlines[1:]):
         if y1 - y0 < 8:
             continue
@@ -266,9 +274,11 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
             continue
         g_text, g_dark = texts[0]
         g, g_ok = normalize_group(g_text)
-        if g_text:
+        g_ink = g_dark >= 0.004  # в ячейке группы что-то есть (даже если прочиталась пустота)
+        if g_ink:
             # ещё два чтения с белым полем; группа — за которую большинство настоящих прочтений
             reads = [g_text] + [cell(vlines[0], vlines[1], y0, y1, 7, k, pad=True)[0] for k in (4, 5)]
+            g_text = " ".join(r for r in reads if r)
             known = [n for n, ok in map(normalize_group, reads) if n and ok]
             best, sure = _vote(known)
             if best:
@@ -281,13 +291,15 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
                     g, g_ok = g2, ok2
         row_uncertain = False
         if g:
-            group = g
-            row_uncertain = not g_ok
+            group, group_sure = g, g_ok
             group_doubt |= not g_ok  # название группы прочитано криво — строка может быть чьей угодно
-        elif not g_ok:
+        elif not g_ok or re.search(r"[0-9А-Яа-яA-Za-z]", g_text) or (g_ink and not g_text and g_dark > 0.03):
             # в ячейке группы что-то написано, но прочитать не вышло:
             # не приписываем строку предыдущей группе молча
-            group, row_uncertain, group_doubt = "?", True, True
+            group, group_sure, group_doubt = "?", False, True
+        if group is None:  # первая строка таблицы, а группа не прочиталась — не терять строку молча
+            group, group_sure, group_doubt = "?", False, True
+        row_uncertain = not group_sure
         # урок: обычное чтение и ещё четыре разными способами (подобраны на мелких картинках 19.10–02.11:
         # каждый способ где-то ошибается, большинство — нет); берём то, за что большинство
         lesson_reads = [raw[1] if len(raw) > 1 else ""]
@@ -313,9 +325,8 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
                 variants = {snap_room(fix_digits(r), rooms), snap_room(fix_digits(r.replace("]", "7")), rooms)}
                 votes.update(v for v in variants if v in rooms)
             if votes:
-                top = votes.most_common()
-                room_alts = [v for v, n in top if n == top[0][1]]
-                room = room_alts[0]  # ничья (несколько кабинетов) — решит сверка (check_with_schedule)
+                room_alts = [v for i, (v, n) in enumerate(votes.most_common()) if i == 0 or n >= ROOM_ALT_MIN]
+                room = room_alts[0]  # прочтения расходятся — решит сверка (check_with_schedule)
         if not re.search(r"\d-\d", room) and room != "Акт. зал":
             m = re.search(r"\s*[|\]]?\s*(\d-\d{1,2})\s*$", subject)
             room = m.group(1) if m else ""
@@ -324,10 +335,16 @@ def ocr_table(path, vocab=EXTRA_SUBJECTS, rooms=None):
         room = snap_room(room, rooms)
         subject = subject.strip(" |]")
         subject, s_ok = snap_subject(subject, vocab)
+        if not subject and texts[2][1] > 0.01:  # в ячейке что-то написано, а прочиталась пустота
+            s_ok = False
         if not lessons and not time:
             row_uncertain = True
         if len(lessons) >= 7 and lessons[0] == 1:  # «1-8» на мелкой картинке — обычно неверно прочитанное «7-8»
             row_uncertain = True
+        if len(lessons) > 1 and (lessons[0] % 2 == 0 or lessons[-1] % 2 == 1):
+            row_uncertain = True  # пары — с нечётного урока по чётный: «1-5», «4-6» — скорее всего, цифра прочитана неверно
+        if not room and len(texts) > 3 and texts[3][1] > 0.01:
+            row_uncertain = True  # в ячейке кабинета что-то написано, а кабинет не прочитался
         rows.append({"group": group, "lessons": lessons, "time": time, "subject": subject,
                      "room": room, "uncertain": row_uncertain or not s_ok, "raw": raw,
                      "room_alts": room_alts if len(room_alts) > 1 else []})
@@ -368,7 +385,7 @@ def check_with_schedule(tables, date, title="", schedules=None, past=None):
                 if len(hits) == 1:
                     r["room"] = hits[0]
                 else:
-                    r["uncertain"] = True
+                    r["uncertain"] = True  # прочтения расходятся, и расписание не подсказывает
             day = [e for e in s["days"].get(str(wd), []) if not (e.get("week") and week and e["week"] != week)]
             have = {n for e in day for n in e["lessons"]}
             if r["subject"] == CANCEL and r["lessons"] and not set(r["lessons"]) & have:

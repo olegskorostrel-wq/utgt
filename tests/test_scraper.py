@@ -22,7 +22,7 @@ def test_parse_page_finds_ochnoe_block():
 
 
 @pytest.mark.parametrize("text,expected", [
-    ("11-А", ("11-А", True)), ("2]1-А", ("21-А", True)), ("11-7", ("11-Д", True)),
+    ("11-А", ("11-А", True)), ("2]1-А", ("21-А", True)), ("11-7", ("11-7", False)),  # цифру вместо буквы не угадываем
     ("21-С©", ("21-С", True)), ("11", (None, False)), ("и", (None, True)), ("", (None, True)),
 ])
 def test_normalize_group(text, expected):
