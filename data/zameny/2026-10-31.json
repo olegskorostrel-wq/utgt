@@ -24,19 +24,19 @@
  "title": "Суббота, 2-я неделя",
  "po_raspisaniyu": false,
  "ocr_ok": true,
- "ocr_uncertain": true,
+ "ocr_uncertain": false,
  "groups_in_order": [
   "11-Д",
-  "11-И",
   "11-Л",
-  "21-Д",
+  "11-П",
+  "21-П",
   "21-С",
   "41-А",
   "41-С"
  ],
  "changes": [],
  "all_changes": {
-  "11-И": [
+  "11-П": [
    {
     "lessons": [
      1,
@@ -45,7 +45,7 @@
     "time": null,
     "subject": "Отменить",
     "room": "",
-    "uncertain": true
+    "uncertain": false
    }
   ],
   "11-Д": [
@@ -63,37 +63,25 @@
   "11-Л": [
    {
     "lessons": [
-     1,
-     2,
-     3,
-     4,
-     5,
-     6,
      7,
      8
     ],
     "time": null,
     "subject": "Биология",
-    "room": "2-1",
-    "uncertain": true
+    "room": "2-7",
+    "uncertain": false
    }
   ],
-  "21-Д": [
+  "21-П": [
    {
     "lessons": [
-     1,
-     2,
-     3,
-     4,
-     5,
-     6,
      7,
      8
     ],
     "time": null,
     "subject": "Отменить",
     "room": "",
-    "uncertain": true
+    "uncertain": false
    }
   ],
   "21-С": [
@@ -149,5 +137,6 @@
    }
   ]
  },
- "ocr_group_doubt": true
+ "ocr_group_doubt": false,
+ "checked_by_hand": "2026-10-31 12:20 — распознавание перепутало строки (11-П, 11-Л, 21-П), сверено с картинкой вручную"
 }
